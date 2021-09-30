@@ -201,9 +201,13 @@ public class Geosphere : MonoBehaviour
     {
         // Builds Game Object
         MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>();
+        if (meshFilter == null)
+            return;
 
+#if UNITY_EDITOR
         EditorApplication.delayCall += () =>
         {
+#endif
             meshFilter.sharedMesh = new Mesh();
 
             Vector3[] vertices = GetVertexes();
@@ -213,7 +217,9 @@ public class Geosphere : MonoBehaviour
             meshFilter.sharedMesh.triangles = tris;
             meshFilter.sharedMesh.uv = GetUVs();
             meshFilter.sharedMesh.normals = GetNormals();
+#if UNITY_EDITOR
         };
+#endif
 
         SphereCollider sphereCollider = gameObject.GetComponent<SphereCollider>();
         if (sphereCollider != null)

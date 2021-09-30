@@ -112,13 +112,17 @@ public class FlatMap : MonoBehaviour
     void BuildGameObject()
     {
         // Builds Game Object
+#if UNITY_EDITOR
         EditorApplication.delayCall += () => {
+#endif
             MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>();
             meshFilter.sharedMesh = new Mesh();
             meshFilter.sharedMesh.vertices = vertices;
             meshFilter.sharedMesh.triangles = triangles;
             meshFilter.sharedMesh.uv = uvs;
             meshFilter.sharedMesh.normals = normals;
+#if UNITY_EDITOR
         };
+#endif
     }
 }
