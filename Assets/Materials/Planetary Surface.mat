@@ -1,0 +1,146 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Planetary Surface
+  m_Shader: {fileID: 4800000, guid: 398f651102b27db429700ea8400ffad4, type: 3}
+  m_ShaderKeywords: 
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BumpMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailAlbedoMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _FlowTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _LandMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ParallaxMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BumpScale: 1
+    - _ColorStep1: 0.01
+    - _ColorStep2: 0.1
+    - _ColorStep3: 0.6
+    - _ColorStep4: 0.8
+    - _ColorStep5: 0.95
+    - _ColorStep6: 1
+    - _ColorStep7: 1
+    - _ColorStep8: 1
+    - _ColorSteps: 6
+    - _Cutoff: 0.5
+    - _DesertThreshold1: 10
+    - _DesertThreshold2: 20
+    - _DetailNormalMapScale: 1
+    - _DrawType: 0
+    - _DstBlend: 0
+    - _GlossMapScale: 1
+    - _Glossiness: 0.793
+    - _GlossyReflections: 1
+    - _HeightRange: 0.35
+    - _HighHumidityLightnessPercentage: 0.691
+    - _HumiditySeed: 565925
+    - _IceTemperatureThreshold1: 0
+    - _IceTemperatureThreshold2: -20
+    - _IsEroded: 0
+    - _IsFlowTexSet: 0
+    - _IsHeightmapSet: 0
+    - _IsLandmaskSet: 0
+    - _IsMainmapSet: 0
+    - _Lacunarity: 1.77
+    - _LandGlossiness: 0.219
+    - _LandMetallic: 0
+    - _Metallic: 0
+    - _Mode: 0
+    - _Multiplier: 1.9966671
+    - _NormalScale: 50
+    - _OcclusionStrength: 1
+    - _OceanColorStep1: 0
+    - _OceanColorStep2: 0.5
+    - _OceanColorStep3: 1
+    - _OceanColorStep4: 1
+    - _OceanColorSteps: 3
+    - _Octaves: 20
+    - _Parallax: 0.02
+    - _Persistence: 0.7
+    - _RidgedNoise: 0
+    - _Seed: 31415
+    - _SmoothnessTextureChannel: 0
+    - _SpecularHighlights: 1
+    - _SrcBlend: 1
+    - _TemperatureSeed: 21800
+    - _UVSec: 0
+    - _WaterLevel: 0.6
+    - _XOffset: 0.8219774
+    - _YOffset: 0.74469984
+    - _ZOffset: 0.40527508
+    - _ZWrite: 1
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color1: {r: 0.6901961, g: 0.6392157, b: 0.43137255, a: 1}
+    - _Color2: {r: 0.50980395, g: 0.5019608, b: 0.27058825, a: 1}
+    - _Color3: {r: 0.20392157, g: 0.27450982, b: 0.039215688, a: 1}
+    - _Color4: {r: 0.5294118, g: 0.5411765, b: 0.3647059, a: 1}
+    - _Color5: {r: 0.45882353, g: 0.4117647, b: 0.3254902, a: 1}
+    - _Color6: {r: 0.95686275, g: 0.95686275, b: 0.95686275, a: 1}
+    - _Color7: {r: 0.95686275, g: 0.95686275, b: 0.95686275, a: 1}
+    - _Color8: {r: 0.95686275, g: 0.95686275, b: 0.95686275, a: 1}
+    - _DesertColor: {r: 0.7529412, g: 0.8862745, b: 0.5568628, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _IceColor: {r: 0.95686275, g: 0.95686275, b: 0.95686275, a: 1}
+    - _OceanColor1: {r: 0.2509804, g: 0.33333334, b: 0.39215687, a: 1}
+    - _OceanColor2: {r: 0.19215687, g: 0.21176471, b: 0.28627452, a: 1}
+    - _OceanColor3: {r: 0.19607843, g: 0.2, b: 0.2784314, a: 1}
+    - _OceanColor4: {r: 0.19607843, g: 0.2, b: 0.2784314, a: 1}
+  m_BuildTextureStacks: []

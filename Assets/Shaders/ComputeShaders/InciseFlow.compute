@@ -1,0 +1,244 @@
+#pragma kernel CSMain
+
+StructuredBuffer<uint> dropPoints;
+RWStructuredBuffer<float> heightMap;
+int mapWidth;
+int mapHeight;
+float waterLevel;
+RWTexture2D<float4> flowMap;
+float4 riverColor = float4(0, 0, 1, 1);
+int maxFlowLength = 2000;
+float flowHeightDelta = 0.01;
+float brushSize = 2;
+float brushExponent = 2;
+float inertia = 0.75; // 0- always changes direction. 1- never changes direction.
+
+#define HEIGHT_FACTOR 1000
+
+void ErodeHeightsAround(uint index)
+{
+    //heightMap[index] -= flowHeightDelta;
+    uint x = index % mapWidth;
+    uint y = index / mapWidth;
+
+    for (int i = 0; i < 2 * brushSize + 1; i++)
+    {
+        int yDelta = i - brushSize;
+        int brushY = y + yDelta;
+
+        for (int j = 0; j < 2 * brushSize + 1; j++)
+        {
+            int xDelta = j - brushSize;
+            int brushX = x + xDelta;
+
+            float distanceToCenter = sqrt(yDelta * yDelta + xDelta * xDelta);
+            if (distanceToCenter > brushSize)
+                continue;
+
+            float heightRatio = (brushSize - distanceToCenter) / brushSize;
+            heightRatio = pow(abs(heightRatio), brushExponent);
+
+            float heightToDecrease = flowHeightDelta * heightRatio;
+            heightMap[index] -= heightToDecrease;
+        }
+    }
+}
+
+int GetLowestHeightNeighbor(uint2 position, float currentHeight, float2 lastGradient, out float2 thisGradient, int updateGradient)
+{
+    thisGradient = float2(0, 0);
+
+    int nextX = position.x + 1;
+    int lastX = position.x - 1;
+    int nextY = position.y + 1;
+    int lastY = position.y - 1;
+
+    if (nextX >= mapWidth) nextX = 0;
+    if (lastX < 0) lastX = mapWidth - 1;
+    if (nextY >= mapHeight) nextY = mapHeight - 1;
+    if (lastY < 0) lastY = 0;
+
+    int indexN = nextY * mapWidth + position.x;
+    int indexE = position.y * mapWidth + nextX;
+    int indexS = lastY * mapWidth + position.x;
+    int indexW = position.y * mapWidth + lastX;
+    int indexNE = nextY * mapWidth + nextX;
+    int indexSE = lastY * mapWidth + nextX;
+    int indexSW = lastY * mapWidth + lastX;
+    int indexNW = nextY * mapWidth + lastX;
+
+    float heightN = heightMap[indexN];
+    float heightE = heightMap[indexE];
+    float heightS = heightMap[indexS];
+    float heightW = heightMap[indexW];
+    float heightNE = heightMap[indexNE];
+    float heightSE = heightMap[indexSE];
+    float heightSW = heightMap[indexSW];
+    float heightNW = heightMap[indexNW];
+
+    if (flowMap[float2((int)position.x, nextY)].a != 0)
+        heightN = 1;
+    if (flowMap[float2(nextX, (int)position.y)].a != 0)
+        heightE = 1;
+    if (flowMap[float2((int)position.x, nextY)].a != 0)
+        heightS = 1;
+    if (flowMap[float2(lastX, (int)position.y)].a != 0)
+        heightW = 1;
+    if (flowMap[float2(nextX, nextY)].a != 0)
+        heightNE = 1;
+    if (flowMap[float2(nextX, lastY)].a != 0)
+        heightSE = 1;
+    if (flowMap[float2(lastX, lastY)].a != 0)
+        heightSW = 1;
+    if (flowMap[float2(lastX, nextY)].a != 0)
+        heightNW = 1;
+
+    float2 lowestHeightGradient = float2(0, 0);
+
+    float lowestHeight = 1;
+    int lowestHeightIndex = -1;
+
+    if (heightN <= heightE && heightN <= heightS && heightN <= heightW && heightN <= heightNE && heightN <= heightNW && heightN <= heightSE && heightN <= heightSW)
+    {
+        lowestHeight = heightN;
+        lowestHeightIndex = indexN;
+        lowestHeightGradient = float2(0, 1);
+    }
+    else if (heightE <= heightS && heightE <= heightW && heightE <= heightNE && heightE <= heightNW && heightE <= heightSE && heightE <= heightSW)
+    {
+        lowestHeight = heightE;
+        lowestHeightIndex = indexE;
+        lowestHeightGradient = float2(1, 0);
+    }
+    else if (heightS <= heightW && heightS <= heightNE && heightS <= heightNW && heightS <= heightSE && heightS <= heightSW)
+    {
+        lowestHeight = heightS;
+        lowestHeightIndex = indexS;
+        lowestHeightGradient = float2(0, -1);
+    }
+    else if (heightW <= heightNE && heightW <= heightNW && heightW <= heightSE && heightW <= heightSW)
+    {
+        lowestHeight = heightW;
+        lowestHeightIndex = indexW;
+        lowestHeightGradient = float2(-1, 0);
+    }
+    else if (heightNE <= heightNW && heightNE <= heightSE && heightNE <= heightSW)
+    {
+        lowestHeight = heightNE;
+        lowestHeightIndex = indexNE;
+        lowestHeightGradient = float2(1, 1);
+    }
+    else if (heightNW <= heightSE && heightNW <= heightSW)
+    {
+        lowestHeight = heightNW;
+        lowestHeightIndex = indexNW;
+        lowestHeightGradient = float2(-1, 1);
+    }
+    else if (heightSE <= heightSW)
+    {
+        lowestHeight = heightSE;
+        lowestHeightIndex = indexSE;
+        lowestHeightGradient = float2(1, -1);
+    }
+    else
+    {
+        lowestHeight = heightSW;
+        lowestHeightIndex = indexSW;
+        lowestHeightGradient = float2(-1, -1);
+    }
+    
+    if (lowestHeight < waterLevel)
+    {
+        thisGradient = lowestHeightGradient;
+        return lowestHeightIndex;
+    }
+    float heightDelta = currentHeight - lowestHeight;
+    lowestHeightGradient *= heightDelta * HEIGHT_FACTOR;
+
+    if (updateGradient > 0)
+        thisGradient = lastGradient * inertia + lowestHeightGradient * (1 - inertia);
+    else
+        thisGradient = lowestHeightGradient;
+
+    if (abs(thisGradient.x) > abs(2 * thisGradient.y) && thisGradient.x > 0)
+    {
+        // East.
+        lowestHeightIndex = indexE;
+    }
+    else if (abs(thisGradient.x) > abs(2 * thisGradient.y) && thisGradient.x < 0)
+    {
+        // West.
+        lowestHeightIndex = indexW;
+    }
+    else if (abs(thisGradient.y) > abs(2 * thisGradient.x) && thisGradient.y > 0)
+    {
+        // North.
+        lowestHeightIndex = indexN;
+    }
+    else if (abs(thisGradient.y) > abs(2 * thisGradient.x) && thisGradient.y < 0)
+    {
+        // South.
+        lowestHeightIndex = indexS;
+    }
+    else
+    {
+        if (thisGradient.x > 0 && thisGradient.y > 0)
+        {
+            // NorthEast
+            lowestHeightIndex = indexNE;
+        }
+        else if (thisGradient.x < 0 && thisGradient.y > 0)
+        {
+            // NorthWest
+            lowestHeightIndex = indexNW;
+        }
+        else if (thisGradient.x > 0 && thisGradient.y < 0)
+        {
+            // SouthEast
+            lowestHeightIndex = indexSE;
+        }
+        else if (thisGradient.x < 0 && thisGradient.y < 0)
+        {
+            // SouthhWest
+            lowestHeightIndex = indexSW;
+        }
+        else
+        {
+            lowestHeightIndex = -1;
+        }
+    }
+
+    return lowestHeightIndex;
+}
+
+[numthreads(8, 1, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= dropPoints.Length || id.x < 0)
+        return;
+
+    uint index = dropPoints[id.x];
+    int lastIndexDelta = 0;
+    float2 lastGradient = float2(0, 0);
+
+    for (int i = 0; i < maxFlowLength; i++)
+    {
+        uint2 position = uint2( index % mapWidth,
+                                index / mapWidth);
+        flowMap[position] = riverColor;
+
+        float currentHeight = heightMap[index];
+        if (currentHeight < waterLevel)
+            break;
+        ErodeHeightsAround(index);
+
+        float2 thisGradient = float2(0, 0);
+        int lowestHeightNeighborIndex = GetLowestHeightNeighbor(position, currentHeight, lastGradient, thisGradient, i);
+        if (lowestHeightNeighborIndex <= -1 || lowestHeightNeighborIndex >= (int)heightMap.Length)
+            break;
+
+        lastIndexDelta = lowestHeightNeighborIndex - index;
+        index = lowestHeightNeighborIndex;
+        lastGradient = thisGradient;
+    }
+}

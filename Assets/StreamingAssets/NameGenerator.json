@@ -1,0 +1,39 @@
+{
+    "Types": [
+        {
+            "TypeName": "World Names",
+            "Type": 0,
+            "Syllabes": [
+                { "List": [ "El", "Cen", "My", "Ar", "Kar", "U", "E", "Ska", "Vel", "Ver", "An", "Cy", "Rho", "Fal", "Gara", "Nu", "Y", "Lan" ] },
+                { "List": [ "der", "try", "thr", "d", "pen", "ta", "ran", "ti", "er", "", "gar" ] },
+                { "List": [ "an", "a", "ia", "yn", "tor", "zia", "ren", "gua", "gna", "ne", "reen", "d" ] }
+            ]
+        },
+        {
+            "TypeName": "Kingdom Names",
+            "Type": 1,
+            "Syllabes": [
+                { "List": [ "Empire of ", "Confederacy of ", "Kingdom of ", "Nation of ", "Federation of ", "Grand Duchy of ", "Principality of ", "Republic of ", "Holy Empire of ", "Council of ", "Tribe of " ] },
+                { "List": [ "Cal", "Tar", "Za", "Dal", "Zy", "Ti", "Ve", "The", "Heu", "Luk", "La", "Ra", "Hon", "Al", "Nor", "T", "Lor", "Ur", "Dar", "Ez", "Kwan", "Tei", "Yu", "Sar" ] },
+                { "List": [ "dwyn", "fah", "mora", "'hamar", "ril", "yana", "rien", "tsch", "shan", "gran", "v", "drich", "tgar", "vor", "akh", "via", "gath", "hon", "lun", "oku", "hai", "dan" ] }
+            ]
+        },
+        {
+            "TypeName": "Town Names",
+            "Type": 2,
+            "Syllabes": [
+                { "List": [ "Te", "Hy", "O", "Y", "La", "Du", "Wy", "Ha", "Os", "Ar", "Ti", "Vi", "Ca", "Ser", "Fa", "Si", "E" ] },
+                { "List": [ "tre", "per", "r", "u", "ch", "w", "n", "g", "a", "e", "sa", "gu", "go", "m", "", "h", "y" ] },
+                { "List": [ "hahn", "ion", "lain", "le", "t", "dren", "lych", "dark", "wall", "len", "bel", "la", "mar", "dun", "na", "via", "shal", "har", "on", "in" ] }
+            ]
+        },
+        {
+            "TypeName": "Composite Town Names",
+            "Type": 2,
+            "Syllabes": [
+                { "List": [ "Clear", "Dark", "High", "Hill", "Red", "Blue", "Green", "Far", "Near", "Will", "Twin" ] },
+                { "List": [ "ford", "water", "woods", "bay", "valley", "burg", "town", "brook", "peaks", "port", "land", "fort", "gard" ] }
+            ]
+        }
+    ]
+}
