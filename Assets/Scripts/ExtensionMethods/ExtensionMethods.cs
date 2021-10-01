@@ -409,6 +409,17 @@ public static partial class ExtensionMethods
         }
     }
 
+    public static List<Transform> GetAllChildrenNamed(this Transform transform, string name)
+    {
+        List<Transform> children = new List<Transform>();
+        foreach(Transform child in transform)
+        {
+            if (child.name.Contains(name))
+                children.Add(child);
+        }
+        return children;
+    }
+
     public static void SaveAsPNG(this Texture2D _texture, string _fullPath)
     {
         byte[] _bytes = _texture.EncodeToPNG();

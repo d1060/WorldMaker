@@ -9,7 +9,6 @@ public class AppData
     static public readonly string baseAppDataFile = "WorldGen.AppData.json";
     public bool KeepSeedOnRegenerate = true;
     public bool AutoRegenerate = false;
-    public string LoadedWorld = "";
     public bool SaveMainMap = true;
     public bool SaveHeightMap = true;
     public bool SaveLandMask = true;
@@ -18,6 +17,8 @@ public class AppData
     public bool SaveTemperature = true;
     public bool SaveRivers = true;
     public string LastSavedImageFolder = "";
+    public List<string> RecentWorlds = new List<string>();
+    int MaxRecentWorlds = 8;
 
     #region Singleton
     static AppData myInstance = null;
@@ -56,7 +57,6 @@ public class AppData
             {
                 string json = System.IO.File.ReadAllText(filePath);
                 AppData ad = JsonUtility.FromJson<AppData>(json);
-                LoadedWorld = ad.LoadedWorld;
                 KeepSeedOnRegenerate = ad.KeepSeedOnRegenerate;
                 SaveMainMap = ad.SaveMainMap;
                 SaveHeightMap = ad.SaveHeightMap;
@@ -67,6 +67,7 @@ public class AppData
                 SaveRivers = ad.SaveRivers;
                 LastSavedImageFolder = ad.LastSavedImageFolder;
                 AutoRegenerate = ad.AutoRegenerate;
+                RecentWorlds = ad.RecentWorlds;
                 return true;
             }
         }
@@ -76,5 +77,31 @@ public class AppData
         }
         return false;
         //#endif
+    }
+
+    public void AddRecentWorld(string fileName)
+    {
+        if (AppData.instance.RecentWorlds.Contains(fileName))
+        {
+            AppData.instance.RecentWorlds.Remove(fileName);
+            AppData.instance.RecentWorlds.Insert(0, fileName);
+        }
+        else if (AppData.instance.RecentWorlds.Count < MaxRecentWorlds)
+        {
+            AppData.instance.RecentWorlds.Insert(0, fileName);
+        }
+        else if (!AppData.instance.RecentWorlds.Contains(fileName))
+        {
+            AppData.instance.RecentWorlds.RemoveAt(AppData.instance.RecentWorlds.Count - 1);
+            AppData.instance.RecentWorlds.Insert(0, fileName);
+        }
+    }
+
+    public void RemoveRecentWorld(string fileName)
+    {
+        if (AppData.instance.RecentWorlds.Contains(fileName))
+        {
+            AppData.instance.RecentWorlds.Remove(fileName);
+        }
     }
 }

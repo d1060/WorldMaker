@@ -75,7 +75,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.textureSettings = textureSettings;
         MapData.instance.erosionSettings = erosionSettings;
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
-        if (MapData.instance.Load(AppData.instance.LoadedWorld))
+        if (MapData.instance.Load())
         {
             mapSettings = MapData.instance.mapSettings;
             textureSettings = MapData.instance.textureSettings;
@@ -90,6 +90,7 @@ public partial class Map : MonoBehaviour
     {
         centerScreenWorldPosition = new Vector2(0.5f, 0.5f);
         UpdateMenuFields();
+        UpdateRecentWorldsPanel();
         GenerateSeeds();
         UpdateSurfaceMaterialProperties();
 
@@ -98,11 +99,11 @@ public partial class Map : MonoBehaviour
         NameGenerator.instance.SetSeed(namesSeed);
         if (MapData.instance.WorldName == null || MapData.instance.WorldName == "")
             MapData.instance.WorldName = NameGenerator.instance.GetName(NameGeneratorType.Types.World);
-        if (AppData.instance.LoadedWorld == null || AppData.instance.LoadedWorld == "")
-        {
-            AppData.instance.LoadedWorld = Path.Combine(Application.persistentDataPath, MapData.baseMapDataFile);
-            AppData.instance.Save();
-        }
+        //if (AppData.instance.LoadedWorld == null || AppData.instance.LoadedWorld == "")
+        //{
+        //    AppData.instance.LoadedWorld = Path.Combine(Application.persistentDataPath, MapData.baseMapDataFile);
+        //    AppData.instance.Save();
+        //}
         ApplyWorldName();
     }
 
@@ -148,7 +149,7 @@ public partial class Map : MonoBehaviour
         {
             if (LoadData())
             {
-                AppData.instance.LoadedWorld = MapData.instance.DataFile;
+                AppData.instance.RecentWorlds.Add(MapData.instance.DataFile);
                 AppData.instance.Save();
             }
         }
@@ -335,24 +336,31 @@ public partial class Map : MonoBehaviour
     {
         MapData.instance.Save();
 
-        string directory = System.IO.Path.GetDirectoryName(AppData.instance.LoadedWorld);
-        string savedFile = StandaloneFileBrowser.SaveFilePanel("Save Map as JSON file", directory, "", new[] {
+        string directory = System.IO.Path.GetDirectoryName(AppData.instance.RecentWorlds.Count > 0 ? AppData.instance.RecentWorlds[0] : AppData.instance.LastSavedImageFolder);
+        string savedFile = StandaloneFileBrowser.SaveFilePanel("Save Map as JSON file", directory, MapData.instance.WorldName + ".json", new[] {
                 new ExtensionFilter("JSon File", "json")
             });
         if (savedFile != null && savedFile != "")
         {
-            AppData.instance.LoadedWorld = savedFile;
+            AppData.instance.AddRecentWorld(savedFile);
             MapData.instance.Save(savedFile);
             AppData.instance.Save();
+            UpdateRecentWorldsPanel();
         }
 
         EventSystem eventSystem = cameraController.eventSystemObject.GetComponent<EventSystem>();
         eventSystem.SetSelectedGameObject(null);
     }
 
+    public void LoadDataVoid()
+    {
+        LoadData();
+        AppData.instance.Save();
+    }
+
     public bool LoadData()
     {
-        string directory = System.IO.Path.GetDirectoryName(AppData.instance.LoadedWorld);
+        string directory = System.IO.Path.GetDirectoryName(AppData.instance.RecentWorlds.Count > 0 ? AppData.instance.RecentWorlds[0] : AppData.instance.LastSavedImageFolder);
         string[] paths = StandaloneFileBrowser.OpenFilePanel("Load Map from a JSON file", directory,
             new[] {
                 new ExtensionFilter("JSON file", "json" )
@@ -377,6 +385,8 @@ public partial class Map : MonoBehaviour
             ReGenerateWorld(true);
 
             UpdateMenuFields();
+            AppData.instance.AddRecentWorld(openFile);
+            UpdateRecentWorldsPanel();
             return true;
         }
         return false;

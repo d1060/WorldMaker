@@ -21,7 +21,10 @@ public partial class Map : MonoBehaviour
         string lastSavedImageFolder = AppData.instance.LastSavedImageFolder;
         if (lastSavedImageFolder == null || lastSavedImageFolder == "" || !Directory.Exists(lastSavedImageFolder))
         {
-            lastSavedImageFolder = System.IO.Path.GetDirectoryName(AppData.instance.LoadedWorld);
+            if (AppData.instance.RecentWorlds.Count > 0)
+                lastSavedImageFolder = System.IO.Path.GetDirectoryName(AppData.instance.RecentWorlds[0]);
+            else
+                lastSavedImageFolder = Application.persistentDataPath;
         }
 
         string savedFile = StandaloneFileBrowser.SaveFilePanel("Save Generated Image Files", lastSavedImageFolder, MapData.instance.WorldName, new[] { new ExtensionFilter("Png Image", "png") });

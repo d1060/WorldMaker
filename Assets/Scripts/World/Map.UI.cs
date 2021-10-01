@@ -11,6 +11,7 @@ using UnityEngine.EventSystems;
 
 public partial class Map : MonoBehaviour
 {
+    Transform mainMenuPanelTransform = null;
     Transform setupPanelTransform = null;
     Transform worldNameTransform = null;
     Transform gradientPanelTransform = null;
@@ -21,6 +22,7 @@ public partial class Map : MonoBehaviour
     bool showGlobe = false;
     bool showBorders = false;
     bool doRuler = false;
+    public GameObject recentWorldButtonPrefab;
 
     #region MapData
     public string UISeed
@@ -378,66 +380,79 @@ public partial class Map : MonoBehaviour
 
         HeightMap2Texture();
         UpdateSurfaceMaterialHeightMap(true);
+        MapData.instance.Save();
     }
 
     public void SetNumErosionInterations(string value)
     {
         erosionSettings.numErosionIterations = value.ToInt();
+        MapData.instance.Save();
     }
 
     public void SetErosionBrushRadius(float value)
     {
         erosionSettings.erosionBrushRadius = (int)value;
+        MapData.instance.Save();
     }
 
     public void SetErosionMaxDropletLifetime(string value)
     {
         erosionSettings.maxLifetime = value.ToInt();
+        MapData.instance.Save();
     }
 
     public void SetErosionSedimentCapacity(string value)
     {
         erosionSettings.sedimentCapacityFactor = value.ToFloat();
+        MapData.instance.Save();
     }
 
     public void SetErosionMinSedimentCapacity(string value)
     {
         erosionSettings.minSedimentCapacity = value.ToFloat();
+        MapData.instance.Save();
     }
 
     public void SetErosionDepositSpeed(float value)
     {
         erosionSettings.depositSpeed = value;
+        MapData.instance.Save();
     }
 
     public void SetErosionErodeSpeed(float value)
     {
         erosionSettings.erodeSpeed = value;
+        MapData.instance.Save();
     }
 
     public void SetErosionEvaporateSpeed(float value)
     {
         erosionSettings.evaporateSpeed = value;
+        MapData.instance.Save();
     }
 
     public void SetErosionGravity(string value)
     {
         erosionSettings.gravity = value.ToFloat();
+        MapData.instance.Save();
     }
 
     public void SetErosionStartSpeed(float value)
     {
         erosionSettings.startSpeed = value;
+        MapData.instance.Save();
     }
 
     public void SetErosionWaterSpeed(float value)
     {
         erosionSettings.startWater = value;
+        MapData.instance.Save();
     }
 
     public void SetErosionInertia(float value)
     {
         erosionSettings.inertia = value;
+        MapData.instance.Save();
     }
     #endregion
 
@@ -445,6 +460,7 @@ public partial class Map : MonoBehaviour
     public void SetNumRivers(string rivers)
     {
         inciseFlowSettings.numIterations = rivers.ToInt();
+        MapData.instance.Save();
     }
 
     public Color RiverColor
@@ -457,27 +473,32 @@ public partial class Map : MonoBehaviour
         set
         {
             inciseFlowSettings.riverColor = value;
+            MapData.instance.Save();
         }
     }
 
     public void SetStartingAlpha(float startingAlpha)
     {
         inciseFlowSettings.startingAlpha = startingAlpha;
+        MapData.instance.Save();
     }
 
     public void SetFlowHeightDelta(string flowHeightDelta)
     {
         inciseFlowSettings.flowHeightDelta = flowHeightDelta.ToFloat();
+        MapData.instance.Save();
     }
 
     public void SetRiverBrushSize(float brushSize)
     {
         inciseFlowSettings.brushSize = brushSize;
+        MapData.instance.Save();
     }
 
     public void SetRiverBrushExponent(float brushExponent)
     {
         inciseFlowSettings.brushExponent = brushExponent;
+        MapData.instance.Save();
     }
     #endregion
 
@@ -504,92 +525,7 @@ public partial class Map : MonoBehaviour
         if (textureSettings.textureWidth != width)
         {
             textureSettings.textureWidth = width;
-        }
-    }
-
-    public void DoPlayGenerateTextures(bool playGenerateTextures)
-    {
-        if (!playGenerateTextures)
-        {
-            //Textures.instance.ResumeMatrixTextureBuild();
-
-            Canvas canvas = null;
-            if (cam == null)
-                return;
-
-            canvas = cam.GetComponentInChildren<Canvas>();
-            if (canvas == null)
-                return;
-
-            ButtonToggle[] buttonToggles = canvas.transform.GetComponentsInChildren<ButtonToggle>();
-            foreach (ButtonToggle buttonToggle in buttonToggles)
-            {
-                if (buttonToggle.transform.name == "Button Pause")
-                {
-                    buttonToggle.Enable();
-                }
-            }
-        }
-    }
-
-    public void DoPauseGenerateTextures(bool pauseGenerateTextures)
-    {
-        if (!pauseGenerateTextures)
-        {
-            //Textures.instance.PauseMatrixTextureBuild();
-
-            Canvas canvas = null;
-            if (cam == null)
-                return;
-
-            canvas = cam.GetComponentInChildren<Canvas>();
-            if (canvas == null)
-                return;
-
-            ButtonToggle[] buttonToggles = canvas.transform.GetComponentsInChildren<ButtonToggle>();
-            foreach (ButtonToggle buttonToggle in buttonToggles)
-            {
-                if (buttonToggle.transform.name == "Button Play")
-                {
-                    buttonToggle.Enable();
-                }
-            }
-        }
-    }
-
-    public void DoStopGenerateTextures(bool stopGenerateTextures)
-    {
-        if (!stopGenerateTextures)
-        {
-            //Textures.instance.StopTextureMatrixBuild();
-
-            Canvas canvas = null;
-            if (cam == null)
-                return;
-
-            canvas = cam.GetComponentInChildren<Canvas>();
-            if (canvas == null)
-                return;
-
-            ButtonToggle[] buttonToggles = canvas.transform.GetComponentsInChildren<ButtonToggle>();
-            foreach (ButtonToggle buttonToggle in buttonToggles)
-            {
-                if (buttonToggle.transform.name == "Button Play")
-                {
-                    buttonToggle.Disable();
-                }
-                else if (buttonToggle.transform.name == "Button Pause")
-                {
-                    buttonToggle.Disable();
-                }
-            }
-
-            if (setupPanelTransform == null)
-                return;
-
-            //textureSettings.textureSize = Textures.instance.CurrentTextureSize;
-            UpdateUIInputField(setupPanelTransform, "Texture Width Text Box", textureSettings.textureWidth.ToString());
-            UpdateUIInputField(setupPanelTransform, "Texture Height Text Box", textureSettings.textureHeight.ToString());
+            MapData.instance.Save();
         }
     }
 
@@ -601,6 +537,7 @@ public partial class Map : MonoBehaviour
     public void UseImages(Boolean useImages)
     {
         mapSettings.UseImages = useImages;
+        MapData.instance.Save();
         if (!firstUpdate)
         {
             MapData.instance.Save();
@@ -691,6 +628,7 @@ public partial class Map : MonoBehaviour
         if (canvas == null)
             return;
 
+        mainMenuPanelTransform = null;
         setupPanelTransform = null;
         worldNameTransform = null;
         gradientPanelTransform = null;
@@ -699,7 +637,11 @@ public partial class Map : MonoBehaviour
 
         foreach (Transform canvasChildTransform in canvas.transform)
         {
-            if (canvasChildTransform.name == "World Menu Panel")
+            if (canvasChildTransform.name == "Main Menu Panel")
+            {
+                mainMenuPanelTransform = canvasChildTransform;
+            }
+            else if (canvasChildTransform.name == "World Menu Panel")
             {
                 setupPanelTransform = canvasChildTransform;
             }
@@ -1028,4 +970,145 @@ public partial class Map : MonoBehaviour
         Vector3 newPosition = new Vector3(0, -1680, rectTransform.localPosition.z);
         rectTransform.localPosition = newPosition;
     }
+
+    #region RecentWorlds
+    string recentWorldsObjectTextName = "Recent Worlds Text ";
+    public void UpdateRecentWorldsPanel()
+    {
+        if (mainMenuPanelTransform == null)
+            return;
+
+        ActivateComponent(mainMenuPanelTransform, "Recent Worlds Text", AppData.instance.RecentWorlds.Count > 0);
+        List<Transform> recentWorldsTransforms = mainMenuPanelTransform.GetAllChildrenNamed(recentWorldsObjectTextName);
+
+        for (int i = 0; i < AppData.instance.RecentWorlds.Count; i++)
+        {
+            if (i < recentWorldsTransforms.Count)
+            {
+                AssertRecentWorldsObject(recentWorldsTransforms[i], i);
+            }
+            else
+            {
+                AddRecentWorldsObject(i);
+            }
+        }
+        if (recentWorldsTransforms.Count > AppData.instance.RecentWorlds.Count)
+        {
+            for (int i = AppData.instance.RecentWorlds.Count; i < recentWorldsTransforms.Count; i++)
+            {
+                RemoveRecentWorldsObject(recentWorldsTransforms[i], i);
+            }
+        }
+
+        RectTransform rectTransform = mainMenuPanelTransform as RectTransform;
+        Vector2 prevAnchoredPosition = new Vector2(rectTransform.anchoredPosition.x, rectTransform.anchoredPosition.y);
+        rectTransform.sizeDelta = new Vector2(rectTransform.sizeDelta.x, 25 +
+            (AppData.instance.RecentWorlds.Count > 0 ? 10 : 0) +
+            AppData.instance.RecentWorlds.Count * 10);
+        rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x, prevAnchoredPosition.y);
+    }
+
+    void ActivateComponent(Transform transform, string name, bool active = true)
+    {
+        Component component = transform.GetChildWithName(name);
+        if (component == null || component.gameObject == null)
+            return;
+
+        component.gameObject.SetActive(active);
+    }
+
+    void AssertRecentWorldsObject(Transform textObjectTransform, int index)
+    {
+        TextMeshProUGUI textMeshProUGUI = textObjectTransform.GetComponentInChildren<TextMeshProUGUI>();
+        if (textMeshProUGUI == null)
+            return;
+
+        string fileName = Path.GetFileName(AppData.instance.RecentWorlds[index]);
+        fileName = fileName.Replace(".json", "");
+        textMeshProUGUI.text = fileName;
+    }
+
+    void AddRecentWorldsObject(int index)
+    {
+        string newObjectName = recentWorldsObjectTextName + index.ToString();
+        GameObject gameObject = GameObject.Instantiate(recentWorldButtonPrefab, mainMenuPanelTransform);
+        gameObject.name = newObjectName;
+        TextMeshProUGUI textMeshProUGUI = gameObject.GetComponentInChildren<TextMeshProUGUI>();
+        RectTransform rectTransform = gameObject.transform as RectTransform;
+
+        string fileName = Path.GetFileName(AppData.instance.RecentWorlds[index]);
+        fileName = fileName.Replace(".json", "");
+        textMeshProUGUI.text = fileName;
+
+        RectTransform parentRectTransform = mainMenuPanelTransform as RectTransform;
+
+        rectTransform.anchorMin = parentRectTransform.anchorMin;
+        rectTransform.anchorMax = parentRectTransform.anchorMax;
+        rectTransform.localScale = new Vector3(1, 1, 1);
+        rectTransform.localPosition = new Vector3(10, 0, 0);
+        rectTransform.anchoredPosition = new Vector2(5, 0 - (index * 10 + 32));
+        rectTransform.sizeDelta = new Vector2(parentRectTransform.sizeDelta.x - 10, 10);
+
+        Button button = gameObject.GetComponent<Button>();
+        button.onClick.AddListener(ClickRecentWorld);
+    }
+
+    void RemoveRecentWorldsObject(Transform textObjectTeansform, int index)
+    {
+        GameObject.DestroyImmediate(textObjectTeansform);
+    }
+
+    public void ClickRecentWorld()
+    {
+        if (EventSystem.current.IsPointerOverGameObject())
+        {
+            PointerEventData pointerData = new PointerEventData(EventSystem.current)
+            {
+                pointerId = -1,
+            };
+
+            pointerData.position = Input.mousePosition;
+
+            List<RaycastResult> results = new List<RaycastResult>();
+            EventSystem.current.RaycastAll(pointerData, results);
+
+            foreach (RaycastResult raycastResult in results)
+            {
+                if (raycastResult.gameObject.name.Contains(recentWorldsObjectTextName))
+                {
+                    string name = raycastResult.gameObject.name;
+                    name = name.Replace(recentWorldsObjectTextName, "");
+                    int recentWorldId = name.ToInt();
+
+                    if (recentWorldId < AppData.instance.RecentWorlds.Count)
+                    {
+                        string fileName = AppData.instance.RecentWorlds[recentWorldId];
+                        if (File.Exists(fileName) && MapData.instance.Load(fileName))
+                        {
+                            textureSettings = MapData.instance.textureSettings;
+                            mapSettings = MapData.instance.mapSettings;
+                            erosionSettings = MapData.instance.erosionSettings;
+                            inciseFlowSettings = MapData.instance.inciseFlowSettings;
+
+                            GenerateSeeds();
+                            ReGenerateWorld(true);
+
+                            UpdateMenuFields();
+                            AppData.instance.AddRecentWorld(fileName);
+                            UpdateRecentWorldsPanel();
+                            return;
+                        }
+                        else
+                        {
+                            AppData.instance.RemoveRecentWorld(fileName);
+                        }
+                        UpdateRecentWorldsPanel();
+                        AppData.instance.Save();
+                        return;
+                    }
+                }
+            }
+        }
+    }
+    #endregion
 }
