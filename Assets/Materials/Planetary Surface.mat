@@ -88,7 +88,7 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.793
     - _GlossyReflections: 1
-    - _HeightRange: 0.3107155
+    - _HeightRange: 0.33772627
     - _HighHumidityLightnessPercentage: 0.691
     - _HumiditySeed: 520164
     - _IceTemperatureThreshold1: 0
@@ -121,7 +121,7 @@ Material:
     - _SrcBlend: 1
     - _TemperatureSeed: 664260
     - _UVSec: 0
-    - _WaterLevel: 0.3918851
+    - _WaterLevel: 0.38715586
     - _XOffset: 0.47400188
     - _YOffset: 0.5737374
     - _ZOffset: 0.050538227

@@ -45,6 +45,7 @@ public partial class Map : MonoBehaviour
     int mapInfosWidth;
     int mapInfosHeight;
     public GameObject waypointMarkerPrefab;
+    public GameObject terrainBrushPrefab;
     float heightRatio = 10;
     Vector3 mouseMapHit = Vector3.zero;
     bool firstUpdate = true;
@@ -52,6 +53,7 @@ public partial class Map : MonoBehaviour
 
     //MapSector mainMap;
     GameObject waypointMarker;
+    GameObject terrainBrush;
     WaypointController waypointController = null;
 
     public bool ShowBorders { get { return showBorders; } }
@@ -165,11 +167,33 @@ public partial class Map : MonoBehaviour
 
     public void DoRuler(bool doRuler)
     {
+        if (doRuler && doTerrainBrush)
+        {
+            TerrainToggleButton?.Disable();
+            HideTerrainBrush();
+            this.doTerrainBrush = false;
+        }
         this.doRuler = doRuler;
         if (this.doRuler)
             ShowWaypointMarker();
         else
             HideWaypointMarker();
+    }
+
+    public void DoTerrainBrush(bool doTerrainBrush)
+    {
+        if (doTerrainBrush && this.doRuler)
+        {
+            WaypointToggleButton?.Disable();
+            HideWaypointMarker();
+            totalPathLabel.enabled = false;
+            this.doRuler = false;
+        }
+        this.doTerrainBrush = doTerrainBrush;
+        if (this.doTerrainBrush)
+            ShowTerrainBrush();
+        else
+            HideTerrainBrush();
     }
 
     void ShowWaypointMarker()
@@ -201,6 +225,41 @@ public partial class Map : MonoBehaviour
 
         if (WaypointController.WaypointsCount <= 0)
             totalPathLabel.enabled = false;
+    }
+
+    void ShowTerrainBrush()
+    {
+        RaiseTerrainImage?.SetActive(true);
+        LowerTerrainImage?.SetActive(true);
+        BrushSizeSlider?.transform.gameObject.SetActive(true);
+        BrushStrengthSlider?.transform.gameObject.SetActive(true);
+        if (terrainBrush == null)
+        {
+            Vector3 position = Vector3.zero;
+            if (mouseMapHit != Vector3.zero)
+                position = new Vector3(mouseMapHit.x, mouseMapHit.y, mouseMapHit.z);
+
+            terrainBrush = Instantiate(terrainBrushPrefab, position, Quaternion.identity);
+            terrainBrush.name = "Terrain Brush";
+            TerrainBrush terrainBrushScript = terrainBrush.GetComponent<TerrainBrush>();
+            terrainBrushScript.map = this;
+            terrainBrushScript.radius = BrushSizeSlider.value;
+            terrainBrushScript.strength = BrushStrengthSlider.value;
+        }
+    }
+
+    void HideTerrainBrush()
+    {
+        RaiseTerrainImage?.SetActive(false);
+        LowerTerrainImage?.SetActive(false);
+        BrushSizeSlider?.transform.gameObject.SetActive(false);
+        BrushStrengthSlider?.transform.gameObject.SetActive(false);
+
+        if (terrainBrush != null)
+        {
+            GameObject.DestroyImmediate(terrainBrush);
+            terrainBrush = null;
+        }
     }
 
     public void DoShowBorders(bool showBorders)

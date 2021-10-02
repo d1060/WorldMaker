@@ -69,6 +69,23 @@ public class CameraController : MonoBehaviour
         if(Input.GetKeyDown(KeyCode.Mouse1))
             isLeftMouseButtonDown = true;
 
+
+        bool performZoom = true;
+        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && mouseWheel != 0)
+        {
+            if (map.ChangeTerrainBrushSize(mouseWheel))
+                performZoom = false;
+        }
+
+        if ((Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift)) && mouseWheel != 0)
+        {
+            if (map.ChangeTerrainBrushStrength(mouseWheel))
+                performZoom = false;
+        }
+
+        if (!performZoom)
+            mouseWheel = 0;
+
         PointerEventData pointerEventData = new PointerEventData(eventSystem);
         pointerEventData.position = Input.mousePosition;
         List<RaycastResult> graphicRaycastResults = new List<RaycastResult>();
@@ -128,6 +145,7 @@ public class CameraController : MonoBehaviour
                 prevMousePosition = new Vector3(float.MinValue, float.MinValue, float.MinValue);
             }
         }
+
         // Context Menu Opening.
         else if (graphicRaycastResults.Count == 0 && isLeftMouseButtonDown)
         {
@@ -414,13 +432,16 @@ public class CameraController : MonoBehaviour
 
     public void OpenContextMenu()
     {
-        ContextMenu contextMenuScript = contextMenu.GetComponent<ContextMenu>();
-        if (contextMenuScript != null)
+        if (!map.DoingTerrainBrush)
         {
-            RectTransform canvasRect = canvas.transform as RectTransform;
-            contextMenuScript.Open(new Vector3(Input.mousePosition.x - canvasRect.sizeDelta.x / 2,
-                                               Input.mousePosition.y - canvasRect.sizeDelta.y / 2,
-                                               Input.mousePosition.z));
+            ContextMenu contextMenuScript = contextMenu.GetComponent<ContextMenu>();
+            if (contextMenuScript != null)
+            {
+                RectTransform canvasRect = canvas.transform as RectTransform;
+                contextMenuScript.Open(new Vector3(Input.mousePosition.x - canvasRect.sizeDelta.x / 2,
+                                                   Input.mousePosition.y - canvasRect.sizeDelta.y / 2,
+                                                   Input.mousePosition.z));
+            }
         }
     }
 

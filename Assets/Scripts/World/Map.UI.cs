@@ -22,7 +22,196 @@ public partial class Map : MonoBehaviour
     bool showGlobe = false;
     bool showBorders = false;
     bool doRuler = false;
+    bool doTerrainBrush = false;
     public GameObject recentWorldButtonPrefab;
+
+    GameObject raiseTerrainImage = null;
+    GameObject lowerTerrainImage = null;
+    ButtonToggle terrainToggleButton = null;
+    ButtonToggle waypointToggleButton = null;
+    Slider brushSizeSlider = null;
+    Slider brushStrengthSlider = null;
+
+    GameObject RaiseTerrainImage
+    {
+        get
+        {
+            if (raiseTerrainImage == null)
+            {
+                Canvas canvas = cam.GetComponentInChildren<Canvas>();
+                if (canvas != null)
+                {
+                    foreach (Transform child in canvas.transform)
+                    {
+                        if (child.name == "Raise Terrain Image")
+                        {
+                            raiseTerrainImage = child.gameObject;
+                        }
+                    }
+                }
+            }
+            return raiseTerrainImage;
+        }
+    }
+
+    GameObject LowerTerrainImage
+    {
+        get
+        {
+            if (lowerTerrainImage == null)
+            {
+                Canvas canvas = cam.GetComponentInChildren<Canvas>();
+                if (canvas != null)
+                {
+                    foreach (Transform child in canvas.transform)
+                    {
+                        if (child.name == "Lower Terrain Image")
+                        {
+                            lowerTerrainImage = child.gameObject;
+                        }
+                    }
+                }
+            }
+            return lowerTerrainImage;
+        }
+    }
+
+    ButtonToggle TerrainToggleButton
+    {
+        get
+        {
+            if (terrainToggleButton == null)
+            {
+                Canvas canvas = cam.GetComponentInChildren<Canvas>();
+                if (canvas != null)
+                {
+                    foreach (Transform child in canvas.transform)
+                    {
+                        if (child.name == "Terrain Button")
+                        {
+                            terrainToggleButton = child.GetComponent<ButtonToggle>();
+                        }
+                    }
+                }
+            }
+            return terrainToggleButton;
+        }
+    }
+
+    ButtonToggle WaypointToggleButton
+    {
+        get
+        {
+            if (waypointToggleButton == null)
+            {
+                Canvas canvas = cam.GetComponentInChildren<Canvas>();
+                if (canvas != null)
+                {
+                    foreach (Transform child in canvas.transform)
+                    {
+                        if (child.name == "Ruler Button")
+                        {
+                            waypointToggleButton = child.GetComponent<ButtonToggle>();
+                        }
+                    }
+                }
+            }
+            return waypointToggleButton;
+        }
+    }
+
+    Slider BrushSizeSlider
+    {
+        get
+        {
+            if (brushSizeSlider == null)
+            {
+                Canvas canvas = cam.GetComponentInChildren<Canvas>();
+                if (canvas != null)
+                {
+                    foreach (Transform child in canvas.transform)
+                    {
+                        if (child.name == "Brush Size Slider")
+                        {
+                            brushSizeSlider = child.GetComponent<Slider>();
+                        }
+                    }
+                }
+            }
+            return brushSizeSlider;
+        }
+    }
+
+    Slider BrushStrengthSlider
+    {
+        get
+        {
+            if (brushStrengthSlider == null)
+            {
+                Canvas canvas = cam.GetComponentInChildren<Canvas>();
+                if (canvas != null)
+                {
+                    foreach (Transform child in canvas.transform)
+                    {
+                        if (child.name == "Brush Strengh Slider")
+                        {
+                            brushStrengthSlider = child.GetComponent<Slider>();
+                        }
+                    }
+                }
+            }
+            return brushStrengthSlider;
+        }
+    }
+
+    public bool DoingTerrainBrush { get { return doTerrainBrush; } }
+
+    public void SetTerrainBrushSize(float value)
+    {
+        if (doTerrainBrush)
+        {
+            if (terrainBrush != null)
+            {
+                TerrainBrush terrainBrushScript = terrainBrush.GetComponent<TerrainBrush>();
+                terrainBrushScript.radius = BrushSizeSlider.value;
+            }
+        }
+    }
+
+    public bool ChangeTerrainBrushSize(float delta)
+    {
+        if (doTerrainBrush)
+        {
+            BrushSizeSlider.value += delta * 10;
+            if (terrainBrush != null)
+            {
+                TerrainBrush terrainBrushScript = terrainBrush.GetComponent<TerrainBrush>();
+                terrainBrushScript.radius = BrushSizeSlider.value;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public void SetTerrainBrushStrength(float falue)
+    {
+
+    }
+
+    public bool ChangeTerrainBrushStrength(float delta)
+    {
+        if (doTerrainBrush)
+        {
+            BrushStrengthSlider.value += delta / 2;
+            if (terrainBrush != null)
+            {
+                TerrainBrush terrainBrushScript = terrainBrush.GetComponent<TerrainBrush>();
+                terrainBrushScript.strength = BrushStrengthSlider.value;
+            }
+            return true;
+        }
+        return false;
+    }
 
     #region MapData
     public string UISeed

@@ -425,4 +425,69 @@ public partial class Map : MonoBehaviour
         HidePlottingRiversPanel();
         yield return null;
     }
+
+    public void AlterTerrain(Vector2 coordinates, float radius, float elevationDelta)
+    {
+        GenerateHeightMap();
+
+        float radiusInPixels = radius;
+        if (!showGlobe)
+        {
+            radiusInPixels *= textureSettings.textureWidth / mapWidth;
+        }
+        else
+        {
+            float radiusRatio = radius / geoSphere.Radius;
+            if (radiusRatio > 1)
+                radiusRatio = 1;
+            float angle = Mathf.Asin(radiusRatio);
+            radiusInPixels = (textureSettings.textureWidth / (2 * Mathf.PI)) * angle;
+        }
+
+        Vector2i pixelCoordinates = new Vector2i(
+                (int)(coordinates.x * textureSettings.textureWidth),
+                (int)(coordinates.y * textureSettings.textureHeight));
+
+        for (int x = -(int)radiusInPixels; x <= (int)radiusInPixels; x++)
+        {
+            int pixelX = pixelCoordinates.x + x;
+            if (pixelX < 0) pixelX += textureSettings.textureWidth;
+            if (pixelX >= textureSettings.textureWidth) pixelX -= textureSettings.textureWidth;
+
+            for (int y = -(int)radiusInPixels; y <= (int)radiusInPixels; y++)
+            {
+                int actualY = y;
+                int pixelY = pixelCoordinates.y + y;
+                if (pixelY < 0)
+                {
+                    pixelY = 0;
+                    actualY = -pixelCoordinates.y;
+                }
+                if (pixelY >= textureSettings.textureHeight)
+                {
+                    pixelY = textureSettings.textureHeight - 1;
+                    actualY = textureSettings.textureHeight - 1 - pixelCoordinates.y;
+                }
+
+                float pixelDistance = Mathf.Sqrt(x * x + actualY * actualY);
+                if (pixelDistance > radiusInPixels)
+                    continue;
+
+                int index = pixelY * textureSettings.textureWidth + pixelX;
+
+                float distanceRatio = 1 - (pixelDistance / radiusInPixels);
+                float heightToAlter = elevationDelta * distanceRatio;
+
+                float height = erodedHeightMap[index];
+                height += heightToAlter;
+                if (height < 0) height = 0;
+                if (height > 1) height = 1;
+                erodedHeightMap[index] = height;
+            }
+        }
+
+        HeightMap2Texture();
+        planetSurfaceMaterial.SetTexture("_MainTex", heightmap);
+        planetSurfaceMaterial.SetInt("_IsEroded", 1);
+    }
 }
