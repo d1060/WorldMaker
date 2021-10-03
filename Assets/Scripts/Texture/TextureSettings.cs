@@ -16,8 +16,6 @@ public class TextureSettings
     public Color32 desertColor = new Color32(192, 226, 142, 255);
     public float desertThreshold1 = 10;
     public float desertThreshold2 = 15;
-    [Range(0, 1)]
-    public float heightScale = 0.35f;
     public Color32[] land1Color = new Color32[] 
     {
         new Color32(176, 163, 110, 255),
@@ -57,6 +55,7 @@ public class TextureSettings
     public float waterLevel = 0.6f;
     [Header("Terrain Settings")]
     public NoiseSettings surfaceNoiseSettings;
+    public NoiseSettings surfaceNoiseSettings2;
     public NoiseSettings temperatureNoiseSettings;
     public NoiseSettings humidityNoiseSettings;
     [Range(0, 1)]
@@ -64,15 +63,20 @@ public class TextureSettings
     [Range(0, 1)]
     public float erosionNoiseMerge = 0.5f;
 
+    int selectedLayer = 1;
     public float[] TextureSteps { get { return textureSteps; } set { textureSteps = value; } }
     public int MaxZoomLevel { get { return zoomLevelDistances.Length - 1; } }
-    public int SurfaceNoiseSeed { get; set; }
     public int TemperatureNoiseSeed { get; set; }
     public int HumidityNoiseSeed { get; set; }
-    public float Detail { get { return surfaceNoiseSettings.octaves; } set { surfaceNoiseSettings.octaves = (int)value; } }
-    public float Scale { get { return surfaceNoiseSettings.lacunarity; } set { surfaceNoiseSettings.lacunarity = value; } }
-    public float Multiplier { get { return surfaceNoiseSettings.multiplier; } set { surfaceNoiseSettings.multiplier = value; } }
-    public float Persistence { get { return surfaceNoiseSettings.persistence; } set { surfaceNoiseSettings.persistence = value; } }
+    public float Detail { get { return selectedLayer == 1 ? surfaceNoiseSettings.octaves : surfaceNoiseSettings2.octaves; } set { if (selectedLayer == 1) surfaceNoiseSettings.octaves = (int)value; else surfaceNoiseSettings2.octaves = (int)value; } }
+    public float Scale { get { return selectedLayer == 1 ? surfaceNoiseSettings.lacunarity : surfaceNoiseSettings2.lacunarity; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.lacunarity = value; else surfaceNoiseSettings2.lacunarity = value; } }
+    public float Multiplier { get { return selectedLayer == 1 ? surfaceNoiseSettings.multiplier : surfaceNoiseSettings2.multiplier; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.multiplier = value; else surfaceNoiseSettings2.multiplier = value; } }
+    public float Persistence { get { return selectedLayer == 1 ? surfaceNoiseSettings.persistence : surfaceNoiseSettings2.persistence; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.persistence = value; else surfaceNoiseSettings2.persistence = value; } }
+    public float LayerStrength { get { return selectedLayer == 1 ? surfaceNoiseSettings.layerStrength : surfaceNoiseSettings2.layerStrength; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.layerStrength = value; else surfaceNoiseSettings2.layerStrength = value; } }
+    public float HeightExponent { get { return selectedLayer == 1 ? surfaceNoiseSettings.heightExponent : surfaceNoiseSettings2.heightExponent; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.heightExponent = value; else surfaceNoiseSettings2.heightExponent = value; } }
+    public bool Ridged { get { return selectedLayer == 1 ? surfaceNoiseSettings.ridged : surfaceNoiseSettings2.ridged; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.ridged = value; else surfaceNoiseSettings2.ridged = value; } }
+    public float HeightScale { get { return selectedLayer == 1 ? surfaceNoiseSettings.heightScale : surfaceNoiseSettings2.heightScale; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.heightScale = value; else surfaceNoiseSettings2.heightScale = value; } }
+    public int SelectedLayer { get { return selectedLayer; } set { selectedLayer = value; } }
 
     public void Clear()
     {

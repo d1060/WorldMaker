@@ -134,7 +134,7 @@ public partial class Map : MonoBehaviour
 
         if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.E))
         {
-            PerformErosionCycle();
+            StartCoroutine(PerformErosionCycle());
         }
 
         if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.P))
@@ -478,8 +478,10 @@ public partial class Map : MonoBehaviour
     void GenerateSeeds()
     {
         System.Random masterRandom = new System.Random(mapSettings.Seed);
-        textureSettings.SurfaceNoiseSeed = (int)(masterRandom.NextDouble() * 1000000); // Seeds of value greater than 8,388,600 may be lost due to the intrinsic conversion into float when passing into a material.
+        textureSettings.surfaceNoiseSettings.seed = (int)(masterRandom.NextDouble() * 1000000); // Seeds of value greater than 8,388,600 may be lost due to the intrinsic conversion into float when passing into a material.
         textureSettings.surfaceNoiseSettings.noiseOffset = new Vector3((float)masterRandom.NextDouble(), (float)masterRandom.NextDouble(), (float)masterRandom.NextDouble());
+        textureSettings.surfaceNoiseSettings2.seed = (int)(masterRandom.NextDouble() * 1000000); // Seeds of value greater than 8,388,600 may be lost due to the intrinsic conversion into float when passing into a material.
+        textureSettings.surfaceNoiseSettings2.noiseOffset = new Vector3((float)masterRandom.NextDouble(), (float)masterRandom.NextDouble(), (float)masterRandom.NextDouble());
         textureSettings.TemperatureNoiseSeed = (int)(masterRandom.NextDouble() * 1000000);
         textureSettings.HumidityNoiseSeed = (int)(masterRandom.NextDouble() * 1000000);
         namesSeed = (int)(masterRandom.NextDouble() * 1000000);

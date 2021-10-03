@@ -18,6 +18,7 @@ public partial class Map : MonoBehaviour
     Transform contextMenuPanelTransform = null;
     Transform erosionPanelTransform = null;
     Transform inciseFlowPanelTransform = null;
+    Transform noisePanelTransform = null;
     bool showTemperature = false;
     bool showGlobe = false;
     bool showBorders = false;
@@ -455,11 +456,11 @@ public partial class Map : MonoBehaviour
     bool cyclicalNoiseTypeUpdate = false;
     public void SetNormalNoiseType(bool normalNoise)
     {
-        textureSettings.surfaceNoiseSettings.ridged = !normalNoise;
+        textureSettings.Ridged = !normalNoise;
         if (!cyclicalNoiseTypeUpdate)
         {
             cyclicalNoiseTypeUpdate = true;
-            UpdateUIToggle(setupPanelTransform, "Toggle Ridged Noise", textureSettings.surfaceNoiseSettings.ridged);
+            UpdateUIToggle(noisePanelTransform, "Toggle Ridged Noise", textureSettings.Ridged);
             cyclicalNoiseTypeUpdate = false;
         }
         UpdateSurfaceMaterialProperties();
@@ -468,11 +469,11 @@ public partial class Map : MonoBehaviour
 
     public void SetRidgedNoiseType(bool ridged)
     {
-        textureSettings.surfaceNoiseSettings.ridged = ridged;
+        textureSettings.Ridged = ridged;
         if (!cyclicalNoiseTypeUpdate)
         {
             cyclicalNoiseTypeUpdate = true;
-            UpdateUIToggle(setupPanelTransform, "Toggle Regular Noise", !textureSettings.surfaceNoiseSettings.ridged);
+            UpdateUIToggle(noisePanelTransform, "Toggle Regular Noise", !textureSettings.Ridged);
             cyclicalNoiseTypeUpdate = false;
         }
         UpdateSurfaceMaterialProperties();
@@ -501,6 +502,28 @@ public partial class Map : MonoBehaviour
         }
     }
 
+    public void SetNoiseLayer1()
+    {
+        textureSettings.SelectedLayer = 1;
+        MapData.instance.textureSettings = textureSettings;
+        UpdateNoiseLayerFields();
+    }
+
+    public void SetNoiseLayer2()
+    {
+        textureSettings.SelectedLayer = 2;
+        MapData.instance.textureSettings = textureSettings;
+        UpdateNoiseLayerFields();
+    }
+
+    public void NewHeightScale(float value)
+    {
+        textureSettings.HeightScale = value;
+        MapData.instance.textureSettings = textureSettings;
+        UpdateSurfaceMaterialProperties();
+        MapData.instance.Save();
+    }
+
     public void NewMapDetail(float value)
     {
         textureSettings.Detail = value;
@@ -525,17 +548,25 @@ public partial class Map : MonoBehaviour
         MapData.instance.Save();
     }
 
-    public void NewHeightScale(float value)
+    public void NewLandMasses(float value)
     {
-        textureSettings.heightScale = value;
+        textureSettings.Multiplier = (4.01f - value);
         MapData.instance.textureSettings = textureSettings;
         UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
     }
 
-    public void NewLandMasses(float value)
+    public void NewLayerStrength(float value)
     {
-        textureSettings.Multiplier = (4.01f - value);
+        textureSettings.LayerStrength = value;
+        MapData.instance.textureSettings = textureSettings;
+        UpdateSurfaceMaterialProperties();
+        MapData.instance.Save();
+    }
+
+    public void NewHeightExponent(float value)
+    {
+        textureSettings.HeightExponent = value;
         MapData.instance.textureSettings = textureSettings;
         UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
@@ -823,6 +854,7 @@ public partial class Map : MonoBehaviour
         gradientPanelTransform = null;
         erosionPanelTransform = null;
         inciseFlowPanelTransform = null;
+        noisePanelTransform = null;
 
         foreach (Transform canvasChildTransform in canvas.transform)
         {
@@ -833,6 +865,14 @@ public partial class Map : MonoBehaviour
             else if (canvasChildTransform.name == "World Menu Panel")
             {
                 setupPanelTransform = canvasChildTransform;
+
+                foreach (Transform setupPanelTransformChild in setupPanelTransform)
+                {
+                    if (setupPanelTransformChild.name == "Layer Properties Panel")
+                    {
+                        noisePanelTransform = setupPanelTransformChild;
+                    }
+                }
             }
             else if (canvasChildTransform.name == "Erosion Panel")
             {
@@ -885,13 +925,11 @@ public partial class Map : MonoBehaviour
             UpdateUIToggle(setupPanelTransform, "Toggle Keep Seed", AppData.instance.KeepSeedOnRegenerate);
             UpdateUIToggle(setupPanelTransform, "Toggle Auto Regenerate", AppData.instance.AutoRegenerate);
             UpdateUIToggle(setupPanelTransform, "Toggle Use Images", mapSettings.UseImages);
-            UpdateUIToggle(setupPanelTransform, "Toggle Regular Noise", !textureSettings.surfaceNoiseSettings.ridged);
-            UpdateUIToggle(setupPanelTransform, "Toggle Ridged Noise", textureSettings.surfaceNoiseSettings.ridged);
-            UpdateUISlider(setupPanelTransform, "Map Detail Slider", textureSettings.Detail);
-            UpdateUISlider(setupPanelTransform, "Map Scaling Slider", textureSettings.Scale);
-            UpdateUISlider(setupPanelTransform, "Smoothness Slider", textureSettings.Persistence);
-            UpdateUISlider(setupPanelTransform, "Height Range Slider", textureSettings.heightScale);
-            UpdateUISlider(setupPanelTransform, "Landmasses Slider", 4.01f - textureSettings.Multiplier);
+
+            if (textureSettings.SelectedLayer == 1)
+                SelectButton(setupPanelTransform, "Button Layer 1");
+            else
+                SelectButton(setupPanelTransform, "Button Layer 2");
 
             UpdateUIGradientSlider(gradientPanelTransform, textureSettings.landColorStages, textureSettings.land1Color, textureSettings.oceanStages, textureSettings.oceanColors);
 
@@ -900,6 +938,8 @@ public partial class Map : MonoBehaviour
             UpdateUIInputField(gradientPanelTransform, "Ice Range 1 Text Box", textureSettings.iceTemperatureThreshold1.ToString());
             UpdateUIInputField(gradientPanelTransform, "Ice Range 2 Text Box", textureSettings.iceTemperatureThreshold2.ToString());
         }
+
+        UpdateNoiseLayerFields();
 
         if (gradientPanelTransform != null)
         {
@@ -943,6 +983,22 @@ public partial class Map : MonoBehaviour
             UpdateUISlider(inciseFlowPanelTransform, "River Brush Size Slider", inciseFlowSettings.brushSize);
             UpdateUISlider(inciseFlowPanelTransform, "River Brush Exponent Slider", inciseFlowSettings.brushExponent);
             UpdateUIColorPanel(inciseFlowPanelTransform, "River Color Panel", inciseFlowSettings.riverColor);
+        }
+    }
+
+    private void UpdateNoiseLayerFields()
+    {
+        if (noisePanelTransform != null)
+        {
+            UpdateUIToggle(noisePanelTransform, "Toggle Regular Noise", !textureSettings.Ridged);
+            UpdateUIToggle(noisePanelTransform, "Toggle Ridged Noise", textureSettings.Ridged);
+            UpdateUISlider(noisePanelTransform, "Layer Strength Slider", textureSettings.LayerStrength);
+            UpdateUISlider(noisePanelTransform, "Map Detail Slider", textureSettings.Detail);
+            UpdateUISlider(noisePanelTransform, "Map Scaling Slider", textureSettings.Scale);
+            UpdateUISlider(noisePanelTransform, "Smoothness Slider", textureSettings.Persistence);
+            UpdateUISlider(noisePanelTransform, "Landmasses Slider", 4.01f - textureSettings.Multiplier);
+            UpdateUISlider(noisePanelTransform, "Height Exponent Slider", textureSettings.HeightExponent);
+            UpdateUISlider(noisePanelTransform, "Height Range Slider", textureSettings.HeightScale);
         }
     }
 
@@ -1136,6 +1192,30 @@ public partial class Map : MonoBehaviour
         }
     }
 
+    void ShowErodingTerrainPanel()
+    {
+        Canvas canvas = cam.GetComponentInChildren<Canvas>();
+        Component childComponent = canvas.GetChildWithName("Eroding Terrain Panel");
+        if (childComponent == null || !(childComponent is RectTransform))
+            return;
+
+        RectTransform rectTransform = childComponent as RectTransform;
+        Vector3 newPosition = new Vector3(0, 0, rectTransform.localPosition.z);
+        rectTransform.localPosition = newPosition;
+    }
+
+    void HideErodingTerrainPanel()
+    {
+        Canvas canvas = cam.GetComponentInChildren<Canvas>();
+        Component childComponent = canvas.GetChildWithName("Eroding Terrain Panel");
+        if (childComponent == null || !(childComponent is RectTransform))
+            return;
+
+        RectTransform rectTransform = childComponent as RectTransform;
+        Vector3 newPosition = new Vector3(0, -1680, rectTransform.localPosition.z);
+        rectTransform.localPosition = newPosition;
+    }
+
     void ShowPlottingRiversPanel()
     {
         Canvas canvas = cam.GetComponentInChildren<Canvas>();
@@ -1195,6 +1275,22 @@ public partial class Map : MonoBehaviour
             (AppData.instance.RecentWorlds.Count > 0 ? 10 : 0) +
             AppData.instance.RecentWorlds.Count * 10);
         rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x, prevAnchoredPosition.y);
+    }
+
+    void SelectButton(Transform panelTransform, string buttonName)
+    {
+        foreach (Transform transform in panelTransform)
+        {
+            if (transform.name == buttonName)
+            {
+                ButtonExclusiveToggle button = transform.GetComponent<ButtonExclusiveToggle>();
+                if (button == null)
+                    return;
+
+                button.OnClick();
+                return;
+            }
+        }
     }
 
     void ActivateComponent(Transform transform, string name, bool active = true)

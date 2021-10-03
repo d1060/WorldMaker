@@ -71,7 +71,7 @@ Material:
     m_Floats:
     - _BumpScale: 1
     - _ColorStep1: 0.01
-    - _ColorStep2: 0.26784435
+    - _ColorStep2: 0.1
     - _ColorStep3: 0.6
     - _ColorStep4: 0.8
     - _ColorStep5: 0.95
@@ -81,16 +81,19 @@ Material:
     - _ColorSteps: 6
     - _Cutoff: 0.5
     - _DesertThreshold1: 10
-    - _DesertThreshold2: 15
+    - _DesertThreshold2: 20
     - _DetailNormalMapScale: 1
     - _DrawType: 0
     - _DstBlend: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.793
     - _GlossyReflections: 1
-    - _HeightRange: 0.33772627
-    - _HighHumidityLightnessPercentage: 0.691
-    - _HumiditySeed: 520164
+    - _HeightExponent: 1
+    - _HeightExponent2: 1
+    - _HeightRange: 0.35
+    - _HeightRange2: 0.35
+    - _HighHumidityLightnessPercentage: 0.549
+    - _HumiditySeed: 148852
     - _IceTemperatureThreshold1: 0
     - _IceTemperatureThreshold2: -20
     - _IsEroded: 0
@@ -98,12 +101,16 @@ Material:
     - _IsHeightmapSet: 0
     - _IsLandmaskSet: 0
     - _IsMainmapSet: 0
-    - _Lacunarity: 1.651429
+    - _Lacunarity: 1.77
+    - _Lacunarity2: 1.69
     - _LandGlossiness: 0.219
     - _LandMetallic: 0
+    - _LayerStrength: 1
+    - _LayerStrength2: 1
     - _Metallic: 0
     - _Mode: 0
-    - _Multiplier: 2.2768974
+    - _Multiplier: 3
+    - _Multiplier2: 0.79
     - _NormalScale: 50
     - _OcclusionStrength: 1
     - _OceanColorStep1: 0
@@ -111,20 +118,27 @@ Material:
     - _OceanColorStep3: 1
     - _OceanColorStep4: 1
     - _OceanColorSteps: 3
-    - _Octaves: 23
+    - _Octaves: 20
+    - _Octaves2: 14
     - _Parallax: 0.02
-    - _Persistence: 0.66681373
-    - _RidgedNoise: 1
-    - _Seed: 282859
+    - _Persistence: 0.7
+    - _Persistence2: 0.7
+    - _RidgedNoise: 0
+    - _RidgedNoise2: 1
+    - _Seed: 755785
+    - _Seed2: 44827
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _TemperatureSeed: 664260
+    - _TemperatureSeed: 793041
     - _UVSec: 0
-    - _WaterLevel: 0.38715586
-    - _XOffset: 0.47400188
-    - _YOffset: 0.5737374
-    - _ZOffset: 0.050538227
+    - _WaterLevel: 0.7
+    - _XOffset: 0.8457127
+    - _XOffset2: 0.21052966
+    - _YOffset: 0.061913423
+    - _YOffset2: 0.46282122
+    - _ZOffset: 0.65686876
+    - _ZOffset2: 0.58175844
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}

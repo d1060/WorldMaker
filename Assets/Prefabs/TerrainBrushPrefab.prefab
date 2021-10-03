@@ -97,5 +97,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   numberOfDivisions: 100
   radius: 50
+  strength: 1
   thickness: 1
   map: {fileID: 0}

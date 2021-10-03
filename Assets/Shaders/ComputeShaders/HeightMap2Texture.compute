@@ -1,0 +1,30 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+int mapWidth;
+int mapHeight;
+float erosionNoiseMerge;
+RWStructuredBuffer<float> originalHeightMap;
+RWStructuredBuffer<float> erodedHeightMap;
+RWStructuredBuffer<float> mergedHeightMap;
+RWTexture2D<float4> result;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < (uint)mapWidth && id.y < (uint)mapHeight)
+    {
+        int index = id.x + id.y * mapWidth;
+        float erodedHeight = erodedHeightMap[index];
+        float originalHeight = originalHeightMap[index];
+        float mergedHeight = erodedHeight;
+        if (erosionNoiseMerge >= 1)
+            mergedHeight = originalHeight;
+        else if (erosionNoiseMerge > 0)
+            mergedHeight = erodedHeight * (1 - erosionNoiseMerge) + originalHeight * erosionNoiseMerge;
+        mergedHeightMap[index] = mergedHeight;
+        result[float2(id.x, id.y)] = float4(mergedHeight, mergedHeight, mergedHeight, 1);
+    }
+}

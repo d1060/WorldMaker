@@ -8,14 +8,29 @@ Shader "Noise/PlanetarySurface"
         _ZOffset("Z Offset", Range(0, 1)) = 0
         _TemperatureSeed("Temperature Seed", Int) = 345
         _HumiditySeed("Humidity Seed", Int) = 987
-        _Multiplier("Noise Multiplier", Range(0.5, 4)) = 1
+        _Multiplier("Noise Multiplier", Range(0.5, 5)) = 1
         _Octaves("Number of Octaves", Range(1, 30)) = 10
         _Lacunarity("Lacunarity", Range(1, 2)) = 1.5
         _Persistence("Persistance", Range(0, 1)) = 0.7
+        _LayerStrength("Layer Strength", Range(0, 1)) = 1
+        _HeightExponent("Height Exponent", Range(0, 5)) = 1
         _WaterLevel("Water Level", Range(0, 1)) = 0.66
         _HeightRange("Height Range", Range(0, 1)) = 0.35
         _RidgedNoise("Ridged Noise", Int) = 0
         [Enum(SphereShaderDrawType)] _DrawType("Draw Type", Float) = 0
+
+        _Seed2("Land Seed 2", Int) = 2343
+        _XOffset2("X Offset 2", Range(0, 1)) = 0
+        _YOffset2("Y Offset 2", Range(0, 1)) = 0
+        _ZOffset2("Z Offset 2", Range(0, 1)) = 0
+        _Multiplier2("Noise Multiplier 2", Range(0.5, 5)) = 1
+        _Octaves2("Number of Octaves 2", Range(1, 30)) = 10
+        _Lacunarity2("Lacunarity 2", Range(1, 2)) = 1.5
+        _Persistence2("Persistance 2", Range(0, 1)) = 0.7
+        _LayerStrength2("Layer Strength 2", Range(0, 1)) = 1
+        _HeightExponent2("Height Exponent 2", Range(0, 5)) = 1
+        _RidgedNoise2("Ridged Noise 2", Int) = 0
+        _HeightRange2("Height Range 2", Range(0, 1)) = 0.35
 
         //_Color ("Color", Color) = (1,1,1,1)
         _MainTex("Heightmap", 2D) = "white" {}
@@ -116,6 +131,20 @@ Shader "Noise/PlanetarySurface"
         int _Octaves;
         float _Lacunarity;
         float _Persistence;
+        float _LayerStrength;
+        float _HeightExponent;
+        int _Seed2;
+        float _XOffset2;
+        float _YOffset2;
+        float _ZOffset2;
+        float _Multiplier2;
+        int _Octaves2;
+        float _Lacunarity2;
+        float _Persistence2;
+        float _LayerStrength2;
+        float _HeightExponent2;
+        int _RidgedNoise2;
+        float _HeightRange2;
         //fixed4 _Color;
 
         float _WaterLevel;
@@ -172,6 +201,7 @@ Shader "Noise/PlanetarySurface"
         {
             float height = 0;
             float3 offset = float3(_XOffset, _YOffset, _ZOffset);
+            float3 offset2 = float3(_XOffset2, _YOffset2, _ZOffset2);
 
             if (_IsHeightmapSet > 0 || _IsEroded > 0)
             {
@@ -181,7 +211,8 @@ Shader "Noise/PlanetarySurface"
             }
             else
             {
-                height = sphereNoise(IN.uv_MainTex, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise > 0);
+                height = sphereHeight(IN.uv_MainTex, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise, _HeightExponent, _LayerStrength,
+                                                    offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2, _HeightExponent2, _LayerStrength2);
             }
 
             bool isAboveWater = false;
@@ -271,8 +302,8 @@ Shader "Noise/PlanetarySurface"
                     }
                     else
                     {
-                        prevLongitudeHeight = sphereNoise(prevLongitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise > 0);
-                        prevLatitudeHeight = sphereNoise(prevLatitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise > 0);
+                        prevLongitudeHeight = sphereHeight(prevLongitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise > 0, _HeightExponent, _LayerStrength, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2 > 0, _HeightExponent2, _LayerStrength2);
+                        prevLatitudeHeight = sphereHeight(prevLatitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise > 0, _HeightExponent, _LayerStrength, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2 > 0, _HeightExponent2, _LayerStrength2);
                     }
 
                     if (_DrawType == 4) // Drawing a Normal mask.
