@@ -172,7 +172,7 @@ Material:
     - _AlphaToMask: 0
     - _AlphaToMaskInspectorValue: 0
     - _Anisotropy: 0
-    - _AtmosphericFalloff: 2.35
+    - _AtmosphericFalloff: 2.89
     - _BlendMode: 0
     - _BumpScale: 1
     - _CLIP_THRESHOLD: 0
@@ -218,10 +218,10 @@ Material:
     - _GLOW: 9
     - _GLOW_POWER: 30
     - _GlossMapScale: 1
-    - _Glossiness: 1
+    - _Glossiness: 0
     - _GlossyReflections: 1
-    - _GlowIntensity: 4.01
-    - _GlowPower: 3.1
+    - _GlowIntensity: 3.66
+    - _GlowPower: 3.2
     - _HeightAmplitude: 0.02
     - _HeightCenter: 0.5
     - _HeightMapParametrization: 0
@@ -301,7 +301,7 @@ Material:
     m_Colors:
     - _ATMOSPHERE_COLOR: {r: 0.5, g: 1, b: 1, a: 1}
     - _ATMOSPHERIC_COLOR: {r: 0, g: 1, b: 1, a: 0}
-    - _AtmosphericColor: {r: 0.3820755, g: 1, b: 0.98823965, a: 1}
+    - _AtmosphericColor: {r: 0, g: 0.91027117, b: 1, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BaseColorMap_MipInfo: {r: 0, g: 0, b: 0, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 0}

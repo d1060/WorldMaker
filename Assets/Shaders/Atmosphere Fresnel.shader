@@ -6,8 +6,8 @@ Shader "Custom/Atmosphere Fresnel"
         _AtmosphericFalloff("Atmospheric Falloff", Range(0,5)) = 0.5
         _GlowPower("Glow Power", Range(0,50)) = 0.5
         _GlowIntensity("Glow Intensity", Range(0,10)) = 0.5
-        _Glossiness ("Smoothness", Range(0,1)) = 0.5
-        _Metallic ("Metallic", Range(0,1)) = 0.0
+        //_Glossiness ("Smoothness", Range(0,1)) = 0.5
+        //_Metallic ("Metallic", Range(0,1)) = 0.0
     }
     SubShader
     {
@@ -16,7 +16,7 @@ Shader "Custom/Atmosphere Fresnel"
 
         CGPROGRAM
         // Physically based Standard lighting model, and enable shadows on all light types
-        #pragma surface surf Standard fullforwardshadows alpha
+        #pragma surface surf StandardSpecular fullforwardshadows alpha
 
         // Use shader model 3.0 target, to get nicer looking lighting
         #pragma target 3.0
@@ -31,8 +31,8 @@ Shader "Custom/Atmosphere Fresnel"
         float4 _AtmosphericColor;
         half _AtmosphericFalloff;
         half _GlowPower;
-        half _Glossiness;
-        half _Metallic;
+        //half _Glossiness;
+        //half _Metallic;
         half _GlowIntensity;
         fixed4 _Color;
 
@@ -43,7 +43,7 @@ Shader "Custom/Atmosphere Fresnel"
             // put more per-instance properties here
         UNITY_INSTANCING_BUFFER_END(Props)
 
-        void surf (Input IN, inout SurfaceOutputStandard o)
+        void surf (Input IN, inout SurfaceOutputStandardSpecular o)
         {
             float3 cameraVector = _WorldSpaceCameraPos - IN.worldPos;
             cameraVector = normalize(cameraVector);
@@ -67,8 +67,11 @@ Shader "Custom/Atmosphere Fresnel"
             atmosphereColor.a *= exteriorDot;
 
             o.Albedo = atmosphereColor;
-            o.Metallic = _Metallic;
-            o.Smoothness = _Glossiness;
+            //o.Metallic = _Metallic;
+            //o.Smoothness = _Glossiness;
+            //o.Metallic = 0;
+            o.Smoothness = 0;
+            o.Specular = falloff;
             o.Alpha = falloff;
         }
         ENDCG
