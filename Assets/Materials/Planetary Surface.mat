@@ -89,9 +89,9 @@ Material:
     - _Glossiness: 0.793
     - _GlossyReflections: 1
     - _HeightExponent: 1
-    - _HeightExponent2: 1
-    - _HeightRange: 0.35
-    - _HeightRange2: 0.35
+    - _HeightExponent2: 5
+    - _HeightRange: 0.24967952
+    - _HeightRange2: 0.23143989
     - _HighHumidityLightnessPercentage: 0.549
     - _HumiditySeed: 148852
     - _IceTemperatureThreshold1: 0
@@ -109,8 +109,8 @@ Material:
     - _LayerStrength2: 1
     - _Metallic: 0
     - _Mode: 0
-    - _Multiplier: 3
-    - _Multiplier2: 0.79
+    - _Multiplier: 1.5444422
+    - _Multiplier2: 0.89916587
     - _NormalScale: 50
     - _OcclusionStrength: 1
     - _OceanColorStep1: 0
@@ -132,7 +132,7 @@ Material:
     - _SrcBlend: 1
     - _TemperatureSeed: 793041
     - _UVSec: 0
-    - _WaterLevel: 0.7
+    - _WaterLevel: 0.6361592
     - _XOffset: 0.8457127
     - _XOffset2: 0.21052966
     - _YOffset: 0.061913423

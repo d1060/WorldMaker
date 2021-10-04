@@ -12,6 +12,7 @@ public class MapWaypoint : Pathfinding.Node
     GameObject pathGameObject;
     GameObject lengthLabelGameObject;
     float height = 0;
+    float heightInfluence = 1000;
 
     public Vector3 Position { get { return position;  } set { position = value; } }
     public Vector3 GameObjectPosition { get { return gameObject == null ? Vector3.zero : gameObject.transform.localPosition; } }
@@ -152,7 +153,7 @@ public class MapWaypoint : Pathfinding.Node
         if (geospherePoint == null)
             return null;
 
-        if (neighbors == null)
+        if (neighbors == null || neighbors.Count == 0)
         {
             neighbors = new List<Pathfinding.Node>();
             foreach (int pointIndex in geospherePoint.Neighbors)
@@ -197,7 +198,7 @@ public class MapWaypoint : Pathfinding.Node
             float geoSphereDistance = (targetMapWaypoint.geospherePoint.AsVector3() - geospherePoint.AsVector3()).magnitude;
             float heightFactor = targetMapWaypoint.Height / height;
             if (heightFactor > 1)
-                geoSphereDistance *= heightFactor * 50;
+                geoSphereDistance *= heightFactor * heightInfluence;
             else
                 geoSphereDistance *= heightFactor;
 

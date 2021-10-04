@@ -105,7 +105,6 @@ public class WaypointController : MonoBehaviour
                     transform.forward = new Vector3(0, 0, 1);
 
                     currentDistance = -cameraController.transform.position.z;
-                    //height = GetObjectHeightInFlatMap(transform.position);
                     globePoint = map.MapToGlobePoint(transform.position);
                 }
                 else
@@ -118,12 +117,9 @@ public class WaypointController : MonoBehaviour
                         currentDistance = cameraController.MinCameraDistance;
                     else if (currentDistance > cameraController.MaxCameraDistance)
                         currentDistance = cameraController.MaxCameraDistance;
-                    //globePoint = map.MapToGlobePoint(transform.position);
                     globePoint = hitPoint;
-                    //height = GetObjectHeightInGlobe(hitPoint);
                 }
-                //if (height < map.WaterLevel && !map.GetUseImages())
-                //    height = map.WaterLevel;
+                height = GetObjectHeightInUnityGlobe(globePoint);
 
                 if (lastDistance != currentDistance)
                 {
@@ -319,10 +315,7 @@ public class WaypointController : MonoBehaviour
     public float GetObjectHeightInUnityGlobe(Vector3 globePosition)
     {
         Vector2 polar = globePosition.CartesianToPolarRatio(1);
-
-        float x = ((polar.x - 0.5f) * map.MapWidth) + map.transform.position.x;
-        float y = ((polar.y - 0.5f) * map.MapHeight) + map.transform.position.y;
-        //float height = map.GetHeight(polar);
+        float height = map.HeightAtCoordinatesUntilWaterLevel(polar);
         return height;
     }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -42,5 +43,44 @@ public class GeoSphereFace
         this.p2index = p2index;
         this.p3index = p3index;
     }
-}
 
+    public void WriteBinary(BinaryWriter writer)
+    {
+        p1.WriteBinary(writer);
+        p2.WriteBinary(writer);
+        p3.WriteBinary(writer);
+        writer.Write(Neighbors.Count);
+        foreach (int neighborId in Neighbors)
+        {
+            writer.Write(neighborId);
+        }
+        writer.Write(Indexes.Count);
+        foreach (int indexId in Indexes)
+        {
+            writer.Write(indexId);
+        }
+    }
+
+    public void ReadBinary(BinaryReader reader)
+    {
+        p1 = p1.ReadBinary(reader);
+        p2 = p2.ReadBinary(reader);
+        p3 = p3.ReadBinary(reader);
+        Center = (p1 + p2 + p3) / 3;
+        Center = Center.Round();
+        int neighborsCount = reader.ReadInt32();
+        Neighbors = new List<int>();
+        for (int i = 0; i < neighborsCount; i++)
+        {
+            int neighborId = reader.ReadInt32();
+            Neighbors.Add(neighborId);
+        }
+        int indexCount = reader.ReadInt32();
+        Indexes = new List<int>();
+        for (int i = 0; i < indexCount; i++)
+        {
+            int indexId = reader.ReadInt32();
+            Indexes.Add(indexId);
+        }
+    }
+}

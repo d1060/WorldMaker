@@ -84,7 +84,7 @@ public partial class Map : MonoBehaviour
             erosionSettings = MapData.instance.erosionSettings;
             inciseFlowSettings = MapData.instance.inciseFlowSettings;
         }
-        GranuralizedGeoSphere.instance.Init(30);
+        GranuralizedGeoSphere.instance.Init(50);
     }
 
     // Start is called before the first frame update
@@ -580,5 +580,42 @@ public partial class Map : MonoBehaviour
         float z = GetFlatMapZ(x, y);
 
         return new Vector3(x, y, z);
+    }
+
+    public float HeightAtCoordinates(Vector2 polarRatioCoordinates)
+    {
+        GenerateHeightMap();
+
+        int nextX = (int)polarRatioCoordinates.x + 1;
+        if (nextX >= textureSettings.textureWidth) nextX -= textureSettings.textureWidth;
+        int nextY = (int)polarRatioCoordinates.y + 1;
+        if (nextY >= textureSettings.textureHeight) nextY = textureSettings.textureHeight - 1;
+
+        int indexDL = (int)polarRatioCoordinates.x + (int)polarRatioCoordinates.y * textureSettings.textureWidth;
+        int indexDR = nextX + (int)polarRatioCoordinates.y * textureSettings.textureWidth;
+        int indexUL = (int)polarRatioCoordinates.x + nextY * textureSettings.textureWidth;
+        int indexUR = nextX + nextY * textureSettings.textureWidth;
+
+        float heightDL = erodedHeightMap[indexDL];
+        float heightDR = erodedHeightMap[indexDR];
+        float heightUL = erodedHeightMap[indexUL];
+        float heightUR = erodedHeightMap[indexUR];
+
+        float xDelta = polarRatioCoordinates.x - (int)polarRatioCoordinates.x;
+        float yDelta = polarRatioCoordinates.y - (int)polarRatioCoordinates.y;
+
+        float heightXdelta0 = (heightDR - heightDL) * xDelta + heightDL;
+        float heightXdelta1 = (heightUR - heightUL) * xDelta + heightUL;
+
+        float height = (heightXdelta1 - heightXdelta0) * yDelta + heightXdelta0;
+        return height;
+    }
+
+    public float HeightAtCoordinatesUntilWaterLevel(Vector2 polarRatioCoordinates)
+    {
+        float height = HeightAtCoordinates(polarRatioCoordinates);
+        if (height < textureSettings.waterLevel)
+            return textureSettings.waterLevel;
+        return height;
     }
 }

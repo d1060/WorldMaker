@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,5 +28,21 @@ public static partial class ExtensionMethods
     {
         if (!l.Contains(val))
             l.Add(val);
+    }
+
+    public static void WriteBinary(this Vector3 vector, BinaryWriter writer)
+    {
+        writer.Write(vector.x);
+        writer.Write(vector.y);
+        writer.Write(vector.z);
+    }
+
+    public static Vector3 ReadBinary(this Vector3 vector, BinaryReader reader)
+    {
+        float x = reader.ReadSingle();
+        float y = reader.ReadSingle();
+        float z = reader.ReadSingle();
+        vector.Set(x, y, z);
+        return vector;
     }
 }

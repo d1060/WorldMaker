@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -34,5 +35,33 @@ public class GeoSpherePoint
     {
         int myHash = unchecked(x.GetHashCode() * 523 + y.GetHashCode() * 541 + z.GetHashCode() * 547);
         return myHash;
+    }
+
+    public void WriteBinary(BinaryWriter writer)
+    {
+        writer.Write(index);
+        writer.Write(x);
+        writer.Write(y);
+        writer.Write(z);
+        writer.Write(Neighbors.Count);
+        foreach (int neighborId in Neighbors)
+        {
+            writer.Write(neighborId);
+        }
+    }
+
+    public void ReadBinary(BinaryReader reader)
+    {
+        index = reader.ReadInt32();
+        x = reader.ReadSingle();
+        y = reader.ReadSingle();
+        z = reader.ReadSingle();
+        int neighborsCount = reader.ReadInt32();
+        Neighbors = new List<int>();
+        for (int i = 0; i < neighborsCount; i++)
+        {
+            int neighborId = reader.ReadInt32();
+            Neighbors.Add(neighborId);
+        }
     }
 }

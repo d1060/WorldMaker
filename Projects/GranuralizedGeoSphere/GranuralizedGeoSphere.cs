@@ -14,6 +14,7 @@ public class GranuralizedGeoSphere
     public List<GeoSpherePoint> Points;
 
     static public readonly string baseFile = "WorldGen.SpherePoints.json";
+    static public readonly string baseFileBinary = "WorldGen.SpherePoints.dat";
     List<int> indexesOfIndexesBorderLeft = new List<int>();
     List<int> indexesOfIndexesBorderRight = new List<int>();
     Dictionary<Duo<int, int>, List<Vector3>> sidesCache = new Dictionary<Duo<int, int>, List<Vector3>>();
@@ -60,19 +61,26 @@ public class GranuralizedGeoSphere
             indexesOfIndexesBorderRight.Add(indexesOfIndexesBorderRight[indexesOfIndexesBorderRight.Count - 1] + i + 1);
         }
 
-        string filePath = Path.Combine(Application.streamingAssetsPath, baseFile);
+        bool forceSave = false;
+        //string filePath = Path.Combine(Application.streamingAssetsPath, baseFile);
+        string filePath = Path.Combine(Application.streamingAssetsPath, baseFileBinary);
         if (File.Exists(filePath))
         {
             // Loads a saved Geosphere.
-            Load();
+            if (!LoadBinary())
+            {
+                forceSave = true;
+            }
+            //Load();
         }
 
-        if (!File.Exists(filePath) || BaseFaces.Count == 0 || Divisions != divisions)
+        if (forceSave || !File.Exists(filePath) || BaseFaces.Count == 0 || Divisions != divisions)
         {
             // Calculates the Geosphere right now, and save.
             Divisions = divisions;
             Build();
-            Save();
+            SaveBinary();
+            //Save();
         }
     }
 
@@ -399,39 +407,99 @@ public class GranuralizedGeoSphere
         return faces;
     }
 
-    void Save()
+    //void Save()
+    //{
+    //    try
+    //    {
+    //        string json = JsonUtility.ToJson(this, false);
+    //        string filePath = Path.Combine(Application.streamingAssetsPath, baseFile);
+    //        System.IO.File.WriteAllText(filePath, json);
+    //    }
+    //    catch (Exception e)
+    //    {
+    //        Log.Write("Error saving " + baseFile + ": " + e.Message + "\n" + e.StackTrace);
+    //    }
+    //}
+
+    void SaveBinary()
     {
         try
         {
-            string json = JsonUtility.ToJson(this, false);
-            string filePath = Path.Combine(Application.streamingAssetsPath, baseFile);
-            System.IO.File.WriteAllText(filePath, json);
-        }
-        catch (Exception e)
-        {
-            Log.Write("Error saving " + baseFile + ": " + e.Message + "\n" + e.StackTrace);
-        }
-    }
-
-    void Load()
-    {
-        string filePath = Path.Combine(Application.streamingAssetsPath, baseFile);
-
-        try
-        {
-            if (File.Exists(filePath))
+            string filePath = Path.Combine(Application.streamingAssetsPath, baseFileBinary);
+            using (BinaryWriter writer = new BinaryWriter(File.Open(filePath, FileMode.Create)))
             {
-                string json = System.IO.File.ReadAllText(filePath);
-                GranuralizedGeoSphere ggs = JsonUtility.FromJson<GranuralizedGeoSphere>(json);
-                Divisions = ggs.Divisions;
-                BaseFaces = ggs.BaseFaces;
-                Points = ggs.Points;
+                writer.Write(Divisions);
+                writer.Write(BaseFaces.Count);
+                foreach (GeoSphereFace geoSphereFace in BaseFaces)
+                {
+                    geoSphereFace.WriteBinary(writer);
+                }
+                writer.Write(Points.Count);
+                foreach (GeoSpherePoint geoSpherePoint in Points)
+                {
+                    geoSpherePoint.WriteBinary(writer);
+                }
             }
         }
         catch (Exception e)
         {
-            Log.Write("Error loading " + baseFile + ": " + e.Message + "\n" + e.StackTrace);
+            Log.Write("Error binary saving " + baseFileBinary + ": " + e.Message + "\n" + e.StackTrace);
         }
+    }
+
+    //void Load()
+    //{
+    //    string filePath = Path.Combine(Application.streamingAssetsPath, baseFile);
+
+    //    try
+    //    {
+    //        if (File.Exists(filePath))
+    //        {
+    //            string json = System.IO.File.ReadAllText(filePath);
+    //            GranuralizedGeoSphere ggs = JsonUtility.FromJson<GranuralizedGeoSphere>(json);
+    //            Divisions = ggs.Divisions;
+    //            BaseFaces = ggs.BaseFaces;
+    //            Points = ggs.Points;
+    //        }
+    //    }
+    //    catch (Exception e)
+    //    {
+    //        Log.Write("Error loading " + baseFile + ": " + e.Message + "\n" + e.StackTrace);
+    //    }
+    //}
+
+    bool LoadBinary()
+    {
+        try
+        {
+            string filePath = Path.Combine(Application.streamingAssetsPath, baseFileBinary);
+            using (BinaryReader reader = new BinaryReader(File.Open(filePath, FileMode.Open)))
+            {
+                Divisions = reader.ReadInt32();
+                int facesCount = reader.ReadInt32();
+                BaseFaces = new List<GeoSphereFace>();
+                for (int i = 0; i < facesCount; i++)
+                {
+                    GeoSphereFace geoSphereFace = new GeoSphereFace();
+                    geoSphereFace.ReadBinary(reader);
+                    BaseFaces.Add(geoSphereFace);
+                }
+                int pointsCount = reader.ReadInt32();
+                Points = new List<GeoSpherePoint>();
+                for (int i = 0; i < pointsCount; i++)
+                {
+                    GeoSpherePoint geoSpherePoint = new GeoSpherePoint();
+                    geoSpherePoint.ReadBinary(reader);
+                    Points.Add(geoSpherePoint);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Write("Error binary loading " + baseFileBinary + ": " + e.Message + "\n" + e.StackTrace);
+            return false;
+        }
+        return true;
     }
 
     public GeoSpherePoint GetClosestPointTo(Vector3 point)

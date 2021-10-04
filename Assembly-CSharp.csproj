@@ -67,6 +67,7 @@
     <Compile Include="Assets\Scripts\Geosphere\Geosphere.cs" />
     <Compile Include="Assets\Scripts\Map\Waypoint.cs" />
     <Compile Include="Assets\Scripts\Map\MapWaypoint.cs" />
+    <Compile Include="Assets\Scripts\Menu\ButtonExclusiveToggle.cs" />
     <Compile Include="Assets\Scripts\Math\Line3d.cs" />
     <Compile Include="Assets\Scripts\Math\Utils.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorPickerTester.cs" />
@@ -124,7 +125,6 @@
     <Compile Include="Assets\Scripts\NameGenerator\NameGeneratorSyllabes.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorImage.cs" />
     <Compile Include="Assets\Scripts\Erosion\ErosionSettings.cs" />
-    <Compile Include="Assets\Scripts\Menu\ButtonExclusiveToggle.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
