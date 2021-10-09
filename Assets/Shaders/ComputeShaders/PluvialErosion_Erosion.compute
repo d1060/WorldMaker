@@ -1,0 +1,91 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+int mapWidth;
+int mapHeight;
+float minTiltAngle = 0.01;
+float sedimentCapacity = 1;
+float sedimentDissolvingConstant = 1;
+float sedimentDepositionConstant = 1;
+RWStructuredBuffer<float> sedimentMap;
+RWStructuredBuffer<float> heightMap;
+RWStructuredBuffer<float2> velocityMap;
+
+#include "Assets/Shaders/ComputeShaders/interpolate.cginc"
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
+
+    #include "Assets/Shaders/ComputeShaders/indexes.cginc"
+
+    // Erosion and Deposition
+    float neighborHeight = interpolate(heightMap, float2(id.x + velocityMap[index].x, id.y + velocityMap[index].y));
+    float heightDelta = heightMap[index] - neighborHeight;
+
+    if (heightDelta < minTiltAngle && heightDelta > -minTiltAngle)
+    {
+        if (heightDelta >= 0)
+            heightDelta = minTiltAngle;
+        else
+            heightDelta = -minTiltAngle;
+    }
+
+    float velocity = sqrt(velocityMap[index].x * velocityMap[index].x + velocityMap[index].y * velocityMap[index].y);
+
+    float sedimentTransportCapacity = sedimentCapacity * heightDelta * velocity;
+    float currentSediment = sedimentMap[index];
+
+    float newHeight = heightMap[index];
+    float sediment = currentSediment;
+    float sedimentChange = 0;
+
+    if (heightDelta < 0)
+    {
+        // Going uphill
+        sedimentChange = -heightDelta;
+        if (sedimentChange > -sedimentTransportCapacity)
+            sedimentChange = -sedimentTransportCapacity;
+        if (sedimentChange > currentSediment)
+            sedimentChange = currentSediment;
+
+        newHeight = heightMap[index] + sedimentChange;
+        sediment = currentSediment - sedimentChange;
+    }
+    else if (sedimentTransportCapacity > currentSediment)
+    {
+        sedimentChange = sedimentDissolvingConstant * (sedimentTransportCapacity - currentSediment);
+        if (sedimentChange > heightDelta)
+            sedimentChange = heightDelta;
+        if (heightMap[index] - sedimentChange < 0)
+            sedimentChange = heightMap[index];
+
+        newHeight = heightMap[index] - sedimentChange;
+        sediment = currentSediment + sedimentChange;
+    }
+    else if (sedimentTransportCapacity < currentSediment)
+    {
+        sedimentChange = sedimentDepositionConstant * (currentSediment - sedimentTransportCapacity);
+        if (sedimentChange > heightDelta)
+            sedimentChange = heightDelta;
+
+        if (heightMap[index] + sedimentChange > neighborHeight)
+            sedimentChange = neighborHeight - heightMap[index];
+        if (sedimentChange < 0)
+            sedimentChange = 0;
+        if (sedimentChange > currentSediment)
+            sedimentChange = currentSediment;
+
+        newHeight = heightMap[index] + sedimentChange;
+        sediment = currentSediment - sedimentChange;
+    }
+
+    if (newHeight < 0) newHeight = 0;
+    if (newHeight > 1) newHeight = 1;
+    if (sediment < 0) sediment = 0;
+
+    heightMap[index] = newHeight;
+    sedimentMap[index] = sediment;
+}

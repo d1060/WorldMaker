@@ -142,6 +142,11 @@ public partial class Map : MonoBehaviour
             StartCoroutine(PerformInciseFlow());
         }
 
+        //if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.V))
+        //{
+        //    StartCoroutine(PerformPluvialErosion());
+        //}
+
         if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.U))
         {
             UndoErosion();

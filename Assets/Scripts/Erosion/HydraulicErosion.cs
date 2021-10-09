@@ -8,7 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TerrainErosion
+public class HydraulicErosion
 {
     public int mapWidth = 512;
     public int mapHeight = 256;
@@ -16,18 +16,18 @@ public class TerrainErosion
     public ErosionSettings erosionSettings;
 
     #region Singleton
-    static TerrainErosion myInstance = null;
+    static HydraulicErosion myInstance = null;
 
-    TerrainErosion()
+    HydraulicErosion()
     {
     }
 
-    public static TerrainErosion instance
+    public static HydraulicErosion instance
     {
         get
         {
             if (myInstance == null)
-                myInstance = new TerrainErosion();
+                myInstance = new HydraulicErosion();
             return myInstance;
         }
     }

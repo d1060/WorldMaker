@@ -480,6 +480,31 @@ public partial class Map : MonoBehaviour
         MapData.instance.Save();
     }
 
+    public void SetFBMNoiseType(bool fbmNoise)
+    {
+        textureSettings.DomainWarping = !fbmNoise;
+        if (!cyclicalNoiseTypeUpdate)
+        {
+            cyclicalNoiseTypeUpdate = true;
+            UpdateUIToggle(noisePanelTransform, "Toggle Domain Warping Noise", textureSettings.DomainWarping);
+            cyclicalNoiseTypeUpdate = false;
+        }
+        UpdateSurfaceMaterialProperties();
+        MapData.instance.Save();
+    }
+
+    public void SetDomainWarpingNoiseType(bool domainWarping)
+    {
+        textureSettings.DomainWarping = domainWarping;
+        if (!cyclicalNoiseTypeUpdate)
+        {
+            cyclicalNoiseTypeUpdate = true;
+            UpdateUIToggle(noisePanelTransform, "Toggle FBM Noise", !textureSettings.DomainWarping);
+            cyclicalNoiseTypeUpdate = false;
+        }
+        UpdateSurfaceMaterialProperties();
+        MapData.instance.Save();
+    }
     public void SetTextureHeight(string value)
     {
         if (value != null && value.Length > 0 && !updatingFieldCyclically)
@@ -550,7 +575,7 @@ public partial class Map : MonoBehaviour
 
     public void NewLandMasses(float value)
     {
-        textureSettings.Multiplier = (4.01f - value);
+        textureSettings.Multiplier = value;
         MapData.instance.textureSettings = textureSettings;
         UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
@@ -992,11 +1017,13 @@ public partial class Map : MonoBehaviour
         {
             UpdateUIToggle(noisePanelTransform, "Toggle Regular Noise", !textureSettings.Ridged);
             UpdateUIToggle(noisePanelTransform, "Toggle Ridged Noise", textureSettings.Ridged);
+            UpdateUIToggle(noisePanelTransform, "Toggle FBM Noise", !textureSettings.DomainWarping);
+            UpdateUIToggle(noisePanelTransform, "Toggle Domain Warping Noise", textureSettings.DomainWarping);
             UpdateUISlider(noisePanelTransform, "Layer Strength Slider", textureSettings.LayerStrength);
             UpdateUISlider(noisePanelTransform, "Map Detail Slider", textureSettings.Detail);
             UpdateUISlider(noisePanelTransform, "Map Scaling Slider", textureSettings.Scale);
             UpdateUISlider(noisePanelTransform, "Smoothness Slider", textureSettings.Persistence);
-            UpdateUISlider(noisePanelTransform, "Landmasses Slider", 4.01f - textureSettings.Multiplier);
+            UpdateUISlider(noisePanelTransform, "Landmasses Slider", textureSettings.Multiplier);
             UpdateUISlider(noisePanelTransform, "Height Exponent Slider", textureSettings.HeightExponent);
             UpdateUISlider(noisePanelTransform, "Height Range Slider", textureSettings.HeightScale);
         }
@@ -1204,10 +1231,65 @@ public partial class Map : MonoBehaviour
         rectTransform.localPosition = newPosition;
     }
 
+    void ShowPluvialErodingPanel()
+    {
+        Canvas canvas = cam.GetComponentInChildren<Canvas>();
+        Component childComponent = canvas.GetChildWithName("Pluvial Eroding Panel");
+        if (childComponent == null || !(childComponent is RectTransform))
+            return;
+
+        RectTransform rectTransform = childComponent as RectTransform;
+        Vector3 newPosition = new Vector3(0, 0, rectTransform.localPosition.z);
+        rectTransform.localPosition = newPosition;
+    }
+
+    void SetupPluvialErodingPanel(int numPasses)
+    {
+        Canvas canvas = cam.GetComponentInChildren<Canvas>();
+        Transform panelComponent = canvas.GetChildTransformNamed("Pluvial Eroding Panel");
+        if (panelComponent == null || !(panelComponent is RectTransform))
+            return;
+
+        Transform sliderComponent = panelComponent.GetChildTransformNamed("Erosion Step Slider");
+        Slider slider = sliderComponent.GetComponent<Slider>();
+        if (slider != null)
+        {
+            slider.maxValue = numPasses;
+            slider.value = 0;
+        }
+    }
+
+    void UpdatePluvialErodingPanel(int pass)
+    {
+        Canvas canvas = cam.GetComponentInChildren<Canvas>();
+        Transform panelComponent = canvas.GetChildTransformNamed("Pluvial Eroding Panel");
+        if (panelComponent == null || !(panelComponent is RectTransform))
+            return;
+
+        Transform sliderComponent = panelComponent.GetChildTransformNamed("Erosion Step Slider");
+        Slider slider = sliderComponent.GetComponent<Slider>();
+        if (slider != null)
+        {
+            slider.value = pass;
+        }
+    }
+
     void HideErodingTerrainPanel()
     {
         Canvas canvas = cam.GetComponentInChildren<Canvas>();
         Component childComponent = canvas.GetChildWithName("Eroding Terrain Panel");
+        if (childComponent == null || !(childComponent is RectTransform))
+            return;
+
+        RectTransform rectTransform = childComponent as RectTransform;
+        Vector3 newPosition = new Vector3(0, -1680, rectTransform.localPosition.z);
+        rectTransform.localPosition = newPosition;
+    }
+
+    void HidePluvialErodingPanel()
+    {
+        Canvas canvas = cam.GetComponentInChildren<Canvas>();
+        Component childComponent = canvas.GetChildWithName("Pluvial Eroding Panel");
         if (childComponent == null || !(childComponent is RectTransform))
             return;
 

@@ -87,9 +87,13 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         posY += dirY;
 
         // Stop simulating droplet if it's not moving or has flowed over edge of map
-        if ((dirX == 0 && dirY == 0) || posX < 0 || posX > mapWidth || posY < 0 || posY > mapHeight) {
+        if ((dirX == 0 && dirY == 0) || posY < 0 || posY > mapHeight) {
             break;
         }
+        if (posX < 0)
+            posX += mapWidth;
+        if (posX >= mapWidth)
+            posX -= mapWidth;
 
         // Find the droplet's new height and calculate the deltaHeight
         float newHeight = CalculateHeightAndGradient(posX, posY).z;

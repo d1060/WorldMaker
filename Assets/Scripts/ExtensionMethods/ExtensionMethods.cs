@@ -409,6 +409,20 @@ public static partial class ExtensionMethods
         }
     }
 
+    public static Transform GetChildTransformNamed(this Component obj, string name)
+    {
+        Transform trans = obj.transform;
+        Transform childTrans = trans.Find(name);
+        if (childTrans != null)
+        {
+            return childTrans;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
     public static List<Transform> GetAllChildrenNamed(this Transform transform, string name)
     {
         List<Transform> children = new List<Transform>();

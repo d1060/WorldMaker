@@ -23,6 +23,7 @@ public class NoiseSettings
     public float heightExponent = 1;
     public Vector3 noiseOffset;
     public bool ridged = false;
+    public bool domainWarping = false;
     [Range(0, 1)]
     public float heightScale = 0.35f;
 }

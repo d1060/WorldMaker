@@ -2,35 +2,38 @@ Shader "Noise/PlanetarySurface"
 {
     Properties
     {
+        _TemperatureSeed("Temperature Seed", Int) = 345
+        _HumiditySeed("Humidity Seed", Int) = 987
+        _WaterLevel("Water Level", Range(0, 1)) = 0.66
+        [Enum(SphereShaderDrawType)] _DrawType("Draw Type", Float) = 0
+
         _Seed("Land Seed", Int) = 2343
         _XOffset("X Offset", Range(0, 1)) = 0
         _YOffset("Y Offset", Range(0, 1)) = 0
         _ZOffset("Z Offset", Range(0, 1)) = 0
-        _TemperatureSeed("Temperature Seed", Int) = 345
-        _HumiditySeed("Humidity Seed", Int) = 987
-        _Multiplier("Noise Multiplier", Range(0.5, 5)) = 1
+        _Multiplier("Noise Multiplier", Range(0.5, 10)) = 1
         _Octaves("Number of Octaves", Range(1, 30)) = 10
         _Lacunarity("Lacunarity", Range(1, 2)) = 1.5
         _Persistence("Persistance", Range(0, 1)) = 0.7
         _LayerStrength("Layer Strength", Range(0, 1)) = 1
-        _HeightExponent("Height Exponent", Range(0, 5)) = 1
-        _WaterLevel("Water Level", Range(0, 1)) = 0.66
+        _HeightExponent("Height Exponent", Range(0, 10)) = 1
         _HeightRange("Height Range", Range(0, 1)) = 0.35
         _RidgedNoise("Ridged Noise", Int) = 0
-        [Enum(SphereShaderDrawType)] _DrawType("Draw Type", Float) = 0
+        _DomainWarping("Domain Warping", Int) = 0
 
         _Seed2("Land Seed 2", Int) = 2343
         _XOffset2("X Offset 2", Range(0, 1)) = 0
         _YOffset2("Y Offset 2", Range(0, 1)) = 0
         _ZOffset2("Z Offset 2", Range(0, 1)) = 0
-        _Multiplier2("Noise Multiplier 2", Range(0.5, 5)) = 1
+        _Multiplier2("Noise Multiplier 2", Range(0.5, 10)) = 1
         _Octaves2("Number of Octaves 2", Range(1, 30)) = 10
         _Lacunarity2("Lacunarity 2", Range(1, 2)) = 1.5
         _Persistence2("Persistance 2", Range(0, 1)) = 0.7
         _LayerStrength2("Layer Strength 2", Range(0, 1)) = 1
-        _HeightExponent2("Height Exponent 2", Range(0, 5)) = 1
+        _HeightExponent2("Height Exponent 2", Range(0, 10)) = 1
         _RidgedNoise2("Ridged Noise 2", Int) = 0
         _HeightRange2("Height Range 2", Range(0, 1)) = 0.35
+        _DomainWarping2("Domain Warping2", Int) = 0
 
         //_Color ("Color", Color) = (1,1,1,1)
         _MainTex("Heightmap", 2D) = "white" {}
@@ -189,6 +192,8 @@ Shader "Noise/PlanetarySurface"
         float _YOffset;
         float _ZOffset;
         int _RidgedNoise;
+        int _DomainWarping;
+        int _DomainWarping2;
 
         // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
         // See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
@@ -211,8 +216,8 @@ Shader "Noise/PlanetarySurface"
             }
             else
             {
-                height = sphereHeight(IN.uv_MainTex, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise, _HeightExponent, _LayerStrength,
-                                                    offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2, _HeightExponent2, _LayerStrength2);
+                height = sphereHeight(IN.uv_MainTex, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping,
+                                                    offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2);
             }
 
             bool isAboveWater = false;
@@ -250,7 +255,7 @@ Shader "Noise/PlanetarySurface"
             else
             {
                 // Temperature
-                float temperature = sphereNoise(IN.uv_MainTex, offset, _TemperatureSeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, 0);
+                float temperature = sphereNoise(IN.uv_MainTex, offset, _TemperatureSeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, 0, 0);
 
                 temperature *= 20; // From 0 to 20
 
@@ -273,11 +278,26 @@ Shader "Noise/PlanetarySurface"
                 latitudeTemperature -= 15; // From -15 to 25
                 temperature += latitudeTemperature; // -15 to 45
 
+                // Humidity
+                float humidity = sphereNoise(IN.uv_MainTex, offset, _HumiditySeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, 0, 0);
+
                 if (_DrawType == 3) // Drawing a Temperature mask.
                 {
                     o.Metallic = 0;
                     o.Smoothness = 0;
                     o.Albedo = temperatureColor(temperature);
+                }
+                else if (_DrawType == 5) // Drawing a Humidity mask.
+                {
+                    o.Metallic = 0;
+                    o.Smoothness = 0;
+
+                    if (!isAboveWater)
+                        o.Albedo = float4(0, 0, 0.5, 1);
+                    else
+                    {
+                        o.Albedo = humidityColor(humidity);
+                    }
                 }
                 else
                 {
@@ -302,8 +322,8 @@ Shader "Noise/PlanetarySurface"
                     }
                     else
                     {
-                        prevLongitudeHeight = sphereHeight(prevLongitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise > 0, _HeightExponent, _LayerStrength, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2 > 0, _HeightExponent2, _LayerStrength2);
-                        prevLatitudeHeight = sphereHeight(prevLatitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise > 0, _HeightExponent, _LayerStrength, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2 > 0, _HeightExponent2, _LayerStrength2);
+                        prevLongitudeHeight = sphereHeight(prevLongitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise > 0, _HeightExponent, _LayerStrength, _DomainWarping > 0, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2 > 0, _HeightExponent2, _LayerStrength2, _DomainWarping2 > 0);
+                        prevLatitudeHeight = sphereHeight(prevLatitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise > 0, _HeightExponent, _LayerStrength, _DomainWarping > 0, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2 > 0, _HeightExponent2, _LayerStrength2, _DomainWarping2 > 0);
                     }
 
                     if (_DrawType == 4) // Drawing a Normal mask.
@@ -330,9 +350,6 @@ Shader "Noise/PlanetarySurface"
                     }
                     else // Drawing the main map.
                     {
-                        // Humidity
-                        float humidity = sphereNoise(IN.uv_MainTex, offset, _HumiditySeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, 0);
-
                         // Get Land Color
                         float4 color = float4(0, 0, 0, 1);
                         int isflowColor = 0;

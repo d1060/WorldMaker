@@ -139,7 +139,7 @@ float3 UvToSphere(float2 coords)
     return spherePoint;
 }
 
-float sphereNoise(float2 coords, float3 offset, int seed, float multiplier, int octaves, float lacunarity, float persistence, float range, int ridged)
+float sphereNoise(float2 coords, float3 offset, int seed, float multiplier, int octaves, float lacunarity, float persistence, float range, int ridged, int domainWarping)
 {
     //Vector2 polar = new Vector2(longitude, latitude);
     //simplexSeed = seed;
@@ -147,13 +147,29 @@ float sphereNoise(float2 coords, float3 offset, int seed, float multiplier, int 
     sphereCoords /= multiplier;
     sphereCoords += (1.1 / multiplier) + (offset * 2);
 
+    float3 sphereCoordsOffset1 = float3(offset.y, offset.z, offset.x);
+    float3 sphereCoordsOffset2 = float3(offset.z * 1.5, offset.x * 1.5, offset.y * 1.5);
+    float3 sphereCoordsOffset3 = float3(offset.x * 1.25, offset.z * 1.25, offset.y * 1.25);
+
     float maxValue = 0;
     float amplitude = 1;
     float val = 0;
     for (int n = 0; n < octaves; n++)
     {
-        float noiseValue = simplexNoise(sphereCoords, seed) / SQRT_3_4; // 3D Simplex Noise ranges from -Sqrt(3/4) to +Sqrt(3/4)
-        
+        float noiseValue = 0;
+        if (domainWarping > 0)
+        {
+            float3 qCoords = float3(
+                simplexNoise(sphereCoords + sphereCoordsOffset1, seed) / SQRT_3_4,
+                simplexNoise(sphereCoords + sphereCoordsOffset2, seed) / SQRT_3_4,
+                simplexNoise(sphereCoords + sphereCoordsOffset3, seed) / SQRT_3_4
+                );
+
+            noiseValue = simplexNoise(sphereCoords + 2 * qCoords, seed) / SQRT_3_4; // 3D Simplex Noise ranges from -Sqrt(3/4) to +Sqrt(3/4)
+        }
+        else
+            noiseValue = simplexNoise(sphereCoords, seed) / SQRT_3_4; // 3D Simplex Noise ranges from -Sqrt(3/4) to +Sqrt(3/4)
+
         if (ridged)
         {
             noiseValue *= range;
@@ -178,19 +194,19 @@ float sphereNoise(float2 coords, float3 offset, int seed, float multiplier, int 
     return val;
 }
 
-float sphereHeight(float2 coords, float3 offset, int seed, float multiplier, int octaves, float lacunarity, float persistence, float range, int ridged, float heightExponent, float layerStrength,
-                                  float3 offset2, int seed2, float multiplier2, int octaves2, float lacunarity2, float persistence2, float range2, int ridged2, float heightExponent2, float layerStrength2 )
+float sphereHeight(float2 coords, float3 offset, int seed, float multiplier, int octaves, float lacunarity, float persistence, float range, int ridged, float heightExponent, float layerStrength, int domainWarping,
+                                  float3 offset2, int seed2, float multiplier2, int octaves2, float lacunarity2, float persistence2, float range2, int ridged2, float heightExponent2, float layerStrength2, int domainWarping2 )
 {
     float height = 0;
     if (layerStrength > 0)
     {
-        float height1 = sphereNoise(coords, offset, seed, multiplier, octaves, lacunarity, persistence, range, ridged);
+        float height1 = sphereNoise(coords, offset, seed, multiplier, octaves, lacunarity, persistence, range, ridged, domainWarping);
         height1 = pow(abs(height1), heightExponent);
         height += height1 * layerStrength;
     }
     if (layerStrength2 > 0)
     {
-        float height2 = sphereNoise(coords, offset2, seed2, multiplier2, octaves2, lacunarity2, persistence2, range2, ridged2);
+        float height2 = sphereNoise(coords, offset2, seed2, multiplier2, octaves2, lacunarity2, persistence2, range2, ridged2, domainWarping2);
         height2 = pow(abs(height2), heightExponent2);
         height += height2 * layerStrength2;
     }

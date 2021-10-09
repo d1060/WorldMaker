@@ -1,0 +1,63 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+int mapWidth;
+int mapHeight;
+float waterScale = 0.01;
+float waterFixedAmount = 0.01;
+float gravity = 4;
+
+RWStructuredBuffer<float> riverSourcesMap;
+RWStructuredBuffer<float> humidityMap;
+RWStructuredBuffer<float> heightMap;
+RWStructuredBuffer<float4> outflowMap; // x == left, y == right, z == top, w = bottom
+RWStructuredBuffer<float> waterHeightMap;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
+
+    #include "Assets/Shaders/ComputeShaders/indexes.cginc"
+   
+    float height = heightMap[index];
+    float waterHeight = waterHeightMap[index];
+
+    // Update water Height.
+    float d1 = waterScale * (humidityMap[index] + riverSourcesMap[index] ) + waterFixedAmount + waterHeightMap[index];
+    //float d1 = humidityScale + waterHeightMap[index];
+
+    // Calculate outflow.
+    float outflowLeft = gravity * (height + waterHeight - heightMap[indexLeft] - waterHeightMap[indexLeft]);
+    float outflowRight = gravity * (height + waterHeight - heightMap[indexRight] - waterHeightMap[indexRight]);
+    float outflowTop = gravity * (height + waterHeight - heightMap[indexTop] - waterHeightMap[indexTop]);
+    float outflowBottom = gravity * (height + waterHeight - heightMap[indexBottom] - waterHeightMap[indexBottom]);
+
+    outflowLeft += outflowMap[index].x;
+    outflowRight += outflowMap[index].y;
+    outflowTop += outflowMap[index].z;
+    outflowBottom += outflowMap[index].w;
+
+    if (outflowLeft < 0) outflowLeft = 0;
+    if (outflowRight < 0) outflowRight = 0;
+    if (outflowTop < 0) outflowTop = 0;
+    if (outflowBottom < 0) outflowBottom = 0;
+
+    float scalingFactor = d1 / (outflowLeft + outflowRight + outflowTop + outflowBottom);
+    if (scalingFactor > 1) scalingFactor = 1;
+
+    outflowLeft *= scalingFactor;
+    outflowRight *= scalingFactor;
+    outflowTop *= scalingFactor;
+    outflowBottom *= scalingFactor;
+
+    if (outflowLeft > 1) outflowLeft = 1;
+    if (outflowRight > 1) outflowRight = 1;
+    if (outflowTop > 1) outflowTop = 1;
+    if (outflowBottom > 1) outflowBottom = 1;
+
+    float4 totalOutflow = float4(outflowLeft, outflowRight, outflowTop, outflowBottom);
+    outflowMap[index] = totalOutflow;
+    waterHeightMap[index] = d1;
+}

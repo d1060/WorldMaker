@@ -127,6 +127,9 @@ float4 colorAtElevation(float height, float waterLevel, float temperature, float
 #define RED fixed4(1, 0, 0, 1)
 #define DEEP_RED fixed4(0.5, 0, 0, 1)
 
+#define DARK_BLUE fixed4(0, 0, 0.5, 1)
+#define SAND fixed4(0.77, 1, 0.57, 1)
+
 float4 temperatureColor(float temperature)
 {
     if (temperature < -15)
@@ -143,5 +146,21 @@ float4 temperatureColor(float temperature)
         return interpolateColor((temperature - 33) / 12, DEEP_RED, RED);
     else
         return DEEP_RED;
+}
+
+float4 humidityColor(float humidity)
+{
+    if (humidity < 0)
+        return SAND;
+    else if (humidity < 0.25)
+        return interpolateColor(humidity / 0.25, YELLOW, SAND);
+    else if (humidity < 0.5)
+        return interpolateColor((humidity - 0.25) / 0.25, LIGHT_BLUE, YELLOW);
+    else if (humidity < 0.75)
+        return interpolateColor((humidity - 0.5) / 0.25, DEEP_BLUE, LIGHT_BLUE);
+    else if (humidity < 1)
+        return interpolateColor((humidity - 0.75) / 0.25, DARK_BLUE, DEEP_BLUE);
+    else
+        return DARK_BLUE;
 }
 #endif

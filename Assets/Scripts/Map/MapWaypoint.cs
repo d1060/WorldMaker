@@ -147,7 +147,6 @@ public class MapWaypoint : Pathfinding.Node
     }
 
     #region AStar
-    // AStar coordinates are a granulation of world coordinates to 0.1 units of length. 
     public override List<Pathfinding.Node> GetNeighbours()
     {
         if (geospherePoint == null)

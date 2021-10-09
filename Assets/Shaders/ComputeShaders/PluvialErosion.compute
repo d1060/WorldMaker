@@ -1,0 +1,222 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+int mapWidth;
+int mapHeight;
+RWStructuredBuffer<float> riverSourcesMap;
+RWStructuredBuffer<float> heightMap;
+RWStructuredBuffer<float> waterHeightMap;
+RWStructuredBuffer<float> sedimentMap;
+RWStructuredBuffer<float> humidityMap;
+RWStructuredBuffer<float4> outflowMap; // x == left, y == right, z == top, w = bottom
+RWStructuredBuffer<float2> velocityMap;
+
+float humidityScale = 0.01;
+float riverSourceScale = 0.1;
+float gravity = 4;
+float sedimentCapacity = 1;
+float minTiltAngle = 0.01;
+float sedimentDissolvingConstant = 1;
+float sedimentDepositionConstant = 1;
+float waterEvaporationRetention = 0.75;
+
+// Notations:
+// - terrain height b
+// - water height d
+// - suspended sediment amount s
+// - the outflow flux f = (f L, f R, f T, f B)
+// - velocity vector ~v = (u, v)
+
+float interpolate(RWStructuredBuffer<float> map, float2 coordinates)
+{
+    int leftX = floor(coordinates.x);
+    int rightX = ceil(coordinates.x);
+    int bottomY = floor(coordinates.y);
+    int topY = ceil(coordinates.y);
+
+    if (rightX >= mapWidth) rightX -= mapWidth;
+    if (rightX < 0) rightX += mapWidth;
+    if (leftX >= mapWidth) leftX -= mapWidth;
+    if (leftX < 0) leftX += mapWidth;
+    if (topY >= mapHeight) topY = mapHeight - 1;
+    if (topY < 0) topY = 0;
+    if (bottomY >= mapHeight) bottomY = mapHeight - 1;
+    if (bottomY < 0) bottomY = 0;
+
+    int indexBL = leftX + mapWidth * bottomY;
+    int indexBR = rightX + mapWidth * bottomY;
+    int indexTR = rightX + mapWidth * topY;
+    int indexTL = leftX + mapWidth * topY;
+
+    float valueBL = map[indexBL];
+    float valueBR = map[indexBR];
+    float valueTL = map[indexTL];
+    float valueTR = map[indexTR];
+
+    float deltaX = coordinates.x - leftX;
+    float deltaY = coordinates.y - bottomY;
+
+    float valueXdelta0 = (valueBR - valueBL) * deltaX + valueBL;
+    float valueXdelta1 = (valueTR - valueTL) * deltaX + valueTL;
+
+    float value = (valueXdelta1 - valueXdelta0) * deltaY + valueXdelta0;
+    return value;
+}
+
+[numthreads(8,8,1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
+
+    int index = id.x + mapWidth * id.y;
+    float height = heightMap[index];
+    float waterHeight = waterHeightMap[index];
+
+    // Update water Height.
+    //float d1 = humidityMap[index] * humidityScale + riverSourcesMap[index] * riverSourceScale + waterHeightMap[index];
+    float d1 = humidityScale + waterHeightMap[index];
+
+    // Calculate outflow.
+    int leftX = id.x - 1;
+    int rightX = id.x + 1;
+    int topY = id.y + 1;
+    int bottomY = id.y - 1;
+
+    if (leftX < 0) leftX += mapWidth;
+    if (rightX >= mapWidth) rightX -= mapWidth;
+    if (topY >= mapHeight) topY = mapHeight - 1;
+    if (bottomY < 0) bottomY = 0;
+
+    int indexLeft = leftX + mapWidth * id.y;
+    int indexRight = rightX + mapWidth * id.y;
+    int indexTop = id.x + mapWidth * topY;
+    int indexBottom = id.x + mapWidth * bottomY;
+
+    float outflowLeft = gravity * (height + waterHeight - heightMap[indexLeft] - waterHeightMap[indexLeft]);
+    float outflowRight = gravity * (height + waterHeight - heightMap[indexRight] - waterHeightMap[indexRight]);
+    float outflowTop = gravity * (height + waterHeight - heightMap[indexTop] - waterHeightMap[indexTop]);
+    float outflowBottom = gravity * (height + waterHeight - heightMap[indexBottom] - waterHeightMap[indexBottom]);
+
+    outflowLeft += outflowMap[index].x;
+    outflowRight += outflowMap[index].y;
+    outflowTop += outflowMap[index].z;
+    outflowBottom += outflowMap[index].w;
+
+    if (outflowLeft < 0) outflowLeft = 0;
+    if (outflowRight < 0) outflowRight = 0;
+    if (outflowTop < 0) outflowTop = 0;
+    if (outflowBottom < 0) outflowBottom = 0;
+
+    float scalingFactor = d1 / (outflowLeft + outflowRight + outflowTop + outflowBottom);
+    if (scalingFactor > 1) scalingFactor = 1;
+
+    outflowLeft *= scalingFactor;
+    outflowRight *= scalingFactor;
+    outflowTop *= scalingFactor;
+    outflowBottom *= scalingFactor;
+
+    if (outflowLeft > 1) outflowLeft = 1;
+    if (outflowRight > 1) outflowRight = 1;
+    if (outflowTop > 1) outflowTop = 1;
+    if (outflowBottom > 1) outflowBottom = 1;
+
+    float4 totalOutflow = float4(outflowLeft, outflowRight, outflowTop, outflowBottom);
+    outflowMap[index] = totalOutflow;
+
+    // Water Surface
+    float waterDelta = (outflowMap[indexLeft].y + outflowMap[indexRight].x + outflowMap[indexTop].w + outflowMap[indexBottom].z) - (outflowLeft + outflowRight + outflowTop + outflowBottom);
+    float d2 = d1 + waterDelta;
+    //if (d2 < 0)
+    //    d2 = 0;
+    waterHeightMap[index] = d2;
+
+    // Velocity Field
+    float horizontalVelocity = (outflowMap[indexLeft].y - outflowLeft + outflowRight - outflowMap[indexRight].x) / 2; // Horizontal speed is from left to right
+    float u = horizontalVelocity;
+    float verticalVelocity = (outflowMap[indexTop].w - outflowTop + outflowBottom - outflowMap[indexBottom].z) / 2; // Vertical speed is from top to bottom
+    float v = verticalVelocity;
+
+    velocityMap[index] = float2(u, v);
+    float velocity = sqrt(u * u + v * v);
+
+    // Erosion and Deposition
+    float neighborHeight = interpolate(heightMap, float2(id.x - u, id.y - v));
+    float heightDelta = height - neighborHeight;
+
+    if (heightDelta < minTiltAngle && heightDelta > -minTiltAngle)
+    {
+        if (heightDelta >= 0)
+            heightDelta = minTiltAngle;
+        else
+            heightDelta = -minTiltAngle;
+    }
+
+    float sedimentTransportCapacity = sedimentCapacity * heightDelta * velocity;
+    float currentSediment = sedimentMap[index];
+
+    float newHeight = height;
+    float sediment = currentSediment;
+
+    if (heightDelta < 0)
+    {
+        // Going uphill
+        float sedimentChange = -heightDelta;
+        if (sedimentChange > sedimentTransportCapacity)
+            sedimentChange = sedimentTransportCapacity;
+
+        newHeight = height + sedimentChange;
+        sediment = currentSediment - sedimentChange;
+    }
+    else if (sedimentTransportCapacity > currentSediment)
+    {
+        float sedimentChange = sedimentDissolvingConstant * (sedimentTransportCapacity - currentSediment);
+        if (sedimentChange > heightDelta)
+            sedimentChange = heightDelta;
+        if (height - sedimentChange < 0)
+            sedimentChange = height;
+
+        newHeight = height - sedimentChange;
+        sediment = currentSediment + sedimentChange;
+    }
+    else if (sedimentTransportCapacity < currentSediment)
+    {
+        float sedimentChange = sedimentDepositionConstant * (currentSediment - sedimentTransportCapacity);
+        if (sedimentChange > heightDelta)
+            sedimentChange = heightDelta;
+
+        float highestNeighborHeight = heightMap[indexLeft];
+        if (heightMap[indexRight] > highestNeighborHeight)
+            highestNeighborHeight = heightMap[indexRight];
+        if (heightMap[indexTop] > highestNeighborHeight)
+            highestNeighborHeight = heightMap[indexTop];
+        if (heightMap[indexBottom] > highestNeighborHeight)
+            highestNeighborHeight = heightMap[indexBottom];
+
+        if (height + sedimentChange > highestNeighborHeight)
+            sedimentChange = highestNeighborHeight - height;
+        if (sedimentChange < 0)
+            sedimentChange = 0;
+
+        newHeight = height + sedimentChange;
+        sediment = currentSediment - sedimentChange;
+    }
+
+    if (newHeight < 0) newHeight = 0;
+    if (newHeight > 1) newHeight = 1;
+    heightMap[index] = newHeight;
+
+    // Sediment Transportation
+    sedimentMap[index] = interpolate(sedimentMap, float2(id.x - u, id.y - v));
+
+    // Evaporation
+    //float evaporationConstant = humidityMap[index] * waterEvaporationRetention + waterEvaporationRetention;
+    float evaporationConstant = waterEvaporationRetention;
+    float newWaterHeight = d2 * evaporationConstant;
+
+    if (newWaterHeight < 0)
+        newWaterHeight = 0;
+    waterHeightMap[index] = newWaterHeight;
+}

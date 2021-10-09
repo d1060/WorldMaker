@@ -1,0 +1,32 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+int mapWidth;
+int mapHeight;
+float waterEvaporationRetention = 0.75;
+RWStructuredBuffer<float> sedimentMap;
+RWStructuredBuffer<float2> velocityMap;
+RWStructuredBuffer<float> waterHeightMap;
+
+#include "Assets/Shaders/ComputeShaders/interpolate.cginc"
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
+
+    #include "Assets/Shaders/ComputeShaders/indexes.cginc"
+
+    // Sediment Transportation
+    sedimentMap[index] = interpolate(sedimentMap, float2(id.x - velocityMap[index].x, id.y - velocityMap[index].y));
+
+    // Evaporation
+    //float evaporationConstant = humidityMap[index] * waterEvaporationRetention + waterEvaporationRetention;
+    float evaporationConstant = waterEvaporationRetention;
+    float newWaterHeight = waterHeightMap[index] * evaporationConstant;
+
+    if (newWaterHeight < 0)
+        newWaterHeight = 0;
+    waterHeightMap[index] = newWaterHeight;
+}

@@ -56,16 +56,16 @@ public class FlatMap : MonoBehaviour
 
         if (width > height)
         {
-            xDivisions = meshSubdivisions;
+            xDivisions = 3 * meshSubdivisions;
             yDivisions = (int)(((float)height / (float)width) * meshSubdivisions);
         }
         else
         {
             yDivisions = meshSubdivisions;
-            xDivisions = (int)(((float)width / (float)height) * meshSubdivisions);
+            xDivisions = 3 * ((int)(((float)width / (float)height) * meshSubdivisions));
         }
 
-        float xStep = (float)width / xDivisions;
+        float xStep = (float)3 * width / xDivisions;
         float yStep = (float)height / yDivisions;
 
         vertices = new Vector3[(xDivisions +1) * (yDivisions + 1)];
@@ -78,22 +78,22 @@ public class FlatMap : MonoBehaviour
         for (float y = 0; y <= height; y += yStep)
         {
             float v = y / height;
-            for (float x = 0; x <= width; x += xStep)
+            for (float x = -width; x <= 2 * width; x += xStep)
             {
                 Vector3 vertex = new Vector3(x - (width/2), y - (height/2), 0);
                 Vector3 normal = new Vector3(0, 0, -1);
-                float u = x / width;
+                float u = (x + width) / width;
                 Vector2 uv = new Vector2(u, v);
 
                 vertices[index] = vertex;
                 normals[index] = normal;
                 uvs[index] = uv;
 
-                if (x > 0 && y > 0)
+                if (x > -width && y > 0)
                 {
                     int lastXindex = index - 1;
-                    int lastYindex = index - (int)(width / xStep) - 1;
-                    int lastXYindex = index - (int)(width / xStep) - 2;
+                    int lastYindex = index - (int)(3 * width / xStep) - 1;
+                    int lastXYindex = index - (int)(3 * width / xStep) - 2;
 
                     triangles[trianglesIndex++] = index;
                     triangles[trianglesIndex++] = lastYindex;

@@ -284,7 +284,6 @@ public class InciseFlow
         if (lastY < 0) lastY = 0;
         if (nextY >= textureSettings.textureHeight) nextY = textureSettings.textureHeight - 1;
 
-
         Vector2i point1 = new Vector2i(lastX, point.y);
         Vector2i point2 = new Vector2i(nextX, point.y);
         Vector2i point3 = new Vector2i(point.x, lastY);

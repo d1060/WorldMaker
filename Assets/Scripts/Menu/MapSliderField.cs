@@ -77,6 +77,19 @@ public class MapSliderField : MonoBehaviour, ISelectHandler, IDeselectHandler, I
         }
         if (valueText != null)
         {
+            if (textFormat == null)
+            {
+                textFormat = "##0";
+                if (decimalDigits > 0)
+                {
+                    textFormat += ".";
+                    for (int i = 0; i < decimalDigits; i++)
+                    {
+                        textFormat += "#";
+                    }
+                }
+            }
+
             valueText.text = (slider.value * (isPercent ? 100 : 1)).ToString(textFormat);
             if (isPercent)
                 valueText.text += "%";

@@ -14,6 +14,7 @@ float xOffset;
 float yOffset;
 float zOffset;
 int ridgedNoise;
+int domainWarping;
 float heightExponent;
 float layerStrength;
 float xOffset2;
@@ -28,6 +29,7 @@ int ridgedNoise2;
 float heightExponent2;
 float layerStrength2;
 float heightRange2;
+int domainWarping2;
 
 #include "Assets/Shaders/Simplex.cginc"
 
@@ -45,8 +47,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         float3 offset2 = float3(xOffset2, yOffset2, zOffset2);
 
         //float height = sphereNoise(uv, offset, seed, multiplier, octaves, lacunarity, persistence, heightRange, ridgedNoise);
-        float height = sphereHeight(uv, offset, seed, multiplier, octaves, lacunarity, persistence, heightRange, ridgedNoise, heightExponent, layerStrength,
-            offset2, seed2, multiplier2, octaves2, lacunarity2, persistence2, heightRange2, ridgedNoise2, heightExponent2, layerStrength2);
+        float height = sphereHeight(uv, offset, seed, multiplier, octaves, lacunarity, persistence, heightRange, ridgedNoise, heightExponent, layerStrength, domainWarping,
+            offset2, seed2, multiplier2, octaves2, lacunarity2, persistence2, heightRange2, ridgedNoise2, heightExponent2, layerStrength2, domainWarping2);
 
         heightMap[mapIndex] = height;
     }

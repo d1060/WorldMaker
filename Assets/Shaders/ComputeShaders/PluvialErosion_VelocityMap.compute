@@ -1,0 +1,32 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+int mapWidth;
+int mapHeight;
+RWStructuredBuffer<float4> outflowMap; // x == left, y == right, z == top, w = bottom
+RWStructuredBuffer<float> waterHeightMap;
+RWStructuredBuffer<float2> velocityMap;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
+
+    #include "Assets/Shaders/ComputeShaders/indexes.cginc"
+
+    // Water Surface
+    float waterDelta = (outflowMap[indexLeft].y + outflowMap[indexRight].x + outflowMap[indexTop].w + outflowMap[indexBottom].z) - (outflowMap[index].x + outflowMap[index].y + outflowMap[index].z + outflowMap[index].w);
+    float d2 = waterHeightMap[index] + waterDelta;
+    //if (d2 < 0)
+    //    d2 = 0;
+    waterHeightMap[index] = d2;
+
+    // Velocity Field
+    float horizontalVelocity = (outflowMap[indexLeft].y - outflowMap[index].x + outflowMap[index].y - outflowMap[indexRight].x) / 2; // Horizontal speed is from left to right
+    float u = horizontalVelocity;
+    float verticalVelocity = (outflowMap[indexBottom].z - outflowMap[index].w + outflowMap[index].z - outflowMap[indexTop].w) / 2; // Vertical speed is from bottom to top
+    float v = verticalVelocity;
+
+    velocityMap[index] = float2(u, v);
+}
