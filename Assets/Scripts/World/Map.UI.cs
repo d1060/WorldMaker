@@ -17,8 +17,9 @@ public partial class Map : MonoBehaviour
     Transform gradientPanelTransform = null;
     Transform contextMenuPanelTransform = null;
     Transform erosionPanelTransform = null;
-    Transform inciseFlowPanelTransform = null;
+    Transform riversPanelTransform = null;
     Transform noisePanelTransform = null;
+    Transform inciseFlowPanelTransform = null;
     bool showTemperature = false;
     bool showGlobe = false;
     bool showBorders = false;
@@ -601,7 +602,7 @@ public partial class Map : MonoBehaviour
     {
         textureSettings.waterLevel = value;
         MapData.instance.textureSettings = textureSettings;
-        UpdateSurfaceMaterialProperties();
+        UpdateSurfaceMaterialProperties(false);
         MapData.instance.Save();
     }
 
@@ -702,9 +703,51 @@ public partial class Map : MonoBehaviour
     #endregion
 
     #region InciseFlow
+    public void NewFlowStrength(float value)
+    {
+        inciseFlowSettings.strength = value;
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        PerformInciseFlow();
+        MapData.instance.Save();
+    }
+
+    public void NewFlowExponent(string value)
+    {
+        double dValue = 0;
+        if (System.Double.TryParse(value, out dValue))
+        {
+            inciseFlowSettings.exponent = (float)dValue;
+            MapData.instance.inciseFlowSettings = inciseFlowSettings;
+            PerformInciseFlow();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewFlowAmount(string value)
+    {
+        double dValue = 0;
+        if (System.Double.TryParse(value, out dValue))
+        {
+            inciseFlowSettings.amount = (float)dValue;
+            MapData.instance.inciseFlowSettings = inciseFlowSettings;
+            PerformInciseFlow();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewFlowMinAmount(float value)
+    {
+        inciseFlowSettings.minAmount = value;
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        PerformInciseFlow();
+        MapData.instance.Save();
+    }
+    #endregion
+
+    #region PlotRivers
     public void SetNumRivers(string rivers)
     {
-        inciseFlowSettings.numIterations = rivers.ToInt();
+        plotRiversSettings.numIterations = rivers.ToInt();
         MapData.instance.Save();
     }
 
@@ -712,37 +755,37 @@ public partial class Map : MonoBehaviour
     {
         get
         {
-            return inciseFlowSettings.riverColor;
+            return plotRiversSettings.riverColor;
         }
 
         set
         {
-            inciseFlowSettings.riverColor = value;
+            plotRiversSettings.riverColor = value;
             MapData.instance.Save();
         }
     }
 
     public void SetStartingAlpha(float startingAlpha)
     {
-        inciseFlowSettings.startingAlpha = startingAlpha;
+        plotRiversSettings.startingAlpha = startingAlpha;
         MapData.instance.Save();
     }
 
     public void SetFlowHeightDelta(string flowHeightDelta)
     {
-        inciseFlowSettings.flowHeightDelta = flowHeightDelta.ToFloat();
+        plotRiversSettings.flowHeightDelta = flowHeightDelta.ToFloat();
         MapData.instance.Save();
     }
 
     public void SetRiverBrushSize(float brushSize)
     {
-        inciseFlowSettings.brushSize = brushSize;
+        plotRiversSettings.brushSize = brushSize;
         MapData.instance.Save();
     }
 
     public void SetRiverBrushExponent(float brushExponent)
     {
-        inciseFlowSettings.brushExponent = brushExponent;
+        plotRiversSettings.brushExponent = brushExponent;
         MapData.instance.Save();
     }
     #endregion
@@ -878,8 +921,9 @@ public partial class Map : MonoBehaviour
         worldNameTransform = null;
         gradientPanelTransform = null;
         erosionPanelTransform = null;
-        inciseFlowPanelTransform = null;
+        riversPanelTransform = null;
         noisePanelTransform = null;
+        inciseFlowPanelTransform = null;
 
         foreach (Transform canvasChildTransform in canvas.transform)
         {
@@ -904,6 +948,10 @@ public partial class Map : MonoBehaviour
                 erosionPanelTransform = canvasChildTransform;
             }
             else if (canvasChildTransform.name == "Rivers Panel")
+            {
+                riversPanelTransform = canvasChildTransform;
+            }
+            else if (canvasChildTransform.name == "Incise Flow Panel")
             {
                 inciseFlowPanelTransform = canvasChildTransform;
             }
@@ -1000,14 +1048,22 @@ public partial class Map : MonoBehaviour
             UpdateUISlider(erosionPanelTransform, "Inertia Slider", erosionSettings.inertia);
         }
 
+        if (riversPanelTransform != null)
+        {
+            UpdateUIInputField(riversPanelTransform, "Rivers Text Box", plotRiversSettings.numIterations.ToString());
+            UpdateUIInputField(riversPanelTransform, "River Erosion Text Box", plotRiversSettings.flowHeightDelta.ToString());
+            UpdateUISlider(riversPanelTransform, "Starting Alpha Slider", plotRiversSettings.startingAlpha);
+            UpdateUISlider(riversPanelTransform, "River Brush Size Slider", plotRiversSettings.brushSize);
+            UpdateUISlider(riversPanelTransform, "River Brush Exponent Slider", plotRiversSettings.brushExponent);
+            UpdateUIColorPanel(riversPanelTransform, "River Color Panel", plotRiversSettings.riverColor);
+        }
+
         if (inciseFlowPanelTransform != null)
         {
-            UpdateUIInputField(inciseFlowPanelTransform, "Rivers Text Box", inciseFlowSettings.numIterations.ToString());
-            UpdateUIInputField(inciseFlowPanelTransform, "River Erosion Text Box", inciseFlowSettings.flowHeightDelta.ToString());
-            UpdateUISlider(inciseFlowPanelTransform, "Starting Alpha Slider", inciseFlowSettings.startingAlpha);
-            UpdateUISlider(inciseFlowPanelTransform, "River Brush Size Slider", inciseFlowSettings.brushSize);
-            UpdateUISlider(inciseFlowPanelTransform, "River Brush Exponent Slider", inciseFlowSettings.brushExponent);
-            UpdateUIColorPanel(inciseFlowPanelTransform, "River Color Panel", inciseFlowSettings.riverColor);
+            UpdateUISlider(inciseFlowPanelTransform, "Flow Strength Slider", inciseFlowSettings.strength);
+            UpdateUIInputField(inciseFlowPanelTransform, "Flow Exponent Text Box", inciseFlowSettings.exponent.ToString());
+            UpdateUIInputField(inciseFlowPanelTransform, "Flow Amount Text Box", inciseFlowSettings.amount.ToString());
+            UpdateUISlider(inciseFlowPanelTransform, "Min Amount Slider", inciseFlowSettings.minAmount);
         }
     }
 
@@ -1274,6 +1330,23 @@ public partial class Map : MonoBehaviour
         }
     }
 
+    public void RunInciseFlowButton()
+    {
+        ApplyInciseFlow();
+    }
+
+    public void StartInciseFlowPreview()
+    {
+        PerformInciseFlow();
+    }
+
+    public void StopInciseFlowPreview()
+    {
+        inciseFlowMap = null;
+        HeightMap2Texture();
+        UpdateSurfaceMaterialHeightMap(true);
+    }
+
     void HideErodingTerrainPanel()
     {
         Canvas canvas = cam.GetComponentInChildren<Canvas>();
@@ -1298,6 +1371,22 @@ public partial class Map : MonoBehaviour
         rectTransform.localPosition = newPosition;
     }
 
+    void SetupPlottingRiversPanel(int numPasses)
+    {
+        Canvas canvas = cam.GetComponentInChildren<Canvas>();
+        Transform panelComponent = canvas.GetChildTransformNamed("Plotting Rivers Panel");
+        if (panelComponent == null || !(panelComponent is RectTransform))
+            return;
+
+        Transform sliderComponent = panelComponent.GetChildTransformNamed("Plotting Rivers Step Slider");
+        Slider slider = sliderComponent.GetComponent<Slider>();
+        if (slider != null)
+        {
+            slider.maxValue = numPasses;
+            slider.value = 0;
+        }
+    }
+
     void ShowPlottingRiversPanel()
     {
         Canvas canvas = cam.GetComponentInChildren<Canvas>();
@@ -1308,6 +1397,21 @@ public partial class Map : MonoBehaviour
         RectTransform rectTransform = childComponent as RectTransform;
         Vector3 newPosition = new Vector3(0, 0, rectTransform.localPosition.z);
         rectTransform.localPosition = newPosition;
+    }
+
+    void UpdatePlottingRiversPanel(int pass)
+    {
+        Canvas canvas = cam.GetComponentInChildren<Canvas>();
+        Transform panelComponent = canvas.GetChildTransformNamed("Plotting Rivers Panel");
+        if (panelComponent == null || !(panelComponent is RectTransform))
+            return;
+
+        Transform sliderComponent = panelComponent.GetChildTransformNamed("Plotting Rivers Step Slider");
+        Slider slider = sliderComponent.GetComponent<Slider>();
+        if (slider != null)
+        {
+            slider.value = pass;
+        }
     }
 
     void HidePlottingRiversPanel()
@@ -1455,7 +1559,7 @@ public partial class Map : MonoBehaviour
                             textureSettings = MapData.instance.textureSettings;
                             mapSettings = MapData.instance.mapSettings;
                             erosionSettings = MapData.instance.erosionSettings;
-                            inciseFlowSettings = MapData.instance.inciseFlowSettings;
+                            plotRiversSettings = MapData.instance.plotRiversSettings;
 
                             GenerateSeeds();
                             ReGenerateWorld(true);

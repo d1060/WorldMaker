@@ -15,6 +15,18 @@ public class HydraulicErosion
     public ComputeShader erosion;
     public ErosionSettings erosionSettings;
 
+    struct int2
+    {
+        int x;
+        int y;
+
+        public int2(int _x, int _y)
+        {
+            x = _x;
+            y = _y;
+        }
+    }
+
     #region Singleton
     static HydraulicErosion myInstance = null;
 
@@ -40,7 +52,7 @@ public class HydraulicErosion
         if (numThreads <= 0) numThreads = 1;
 
         // Create brush
-        List<int> brushIndexOffsets = new List<int>();
+        List<int2> brushIndexOffsets = new List<int2>();
         List<float> brushWeights = new List<float>();
 
         float weightSum = 0;
@@ -51,7 +63,7 @@ public class HydraulicErosion
                 float sqrDst = brushX * brushX + brushY * brushY;
                 if (sqrDst < erosionSettings.erosionBrushRadius * erosionSettings.erosionBrushRadius)
                 {
-                    brushIndexOffsets.Add(brushY * mapWidth + brushX);
+                    brushIndexOffsets.Add(new int2(brushX, brushY));
                     float brushWeight = 1 - Mathf.Sqrt(sqrDst) / erosionSettings.erosionBrushRadius;
                     weightSum += brushWeight;
                     brushWeights.Add(brushWeight);
@@ -64,7 +76,7 @@ public class HydraulicErosion
         }
 
         // Send brush data to compute shader
-        ComputeBuffer brushIndexBuffer = new ComputeBuffer(brushIndexOffsets.Count, sizeof(int));
+        ComputeBuffer brushIndexBuffer = new ComputeBuffer(brushIndexOffsets.Count, sizeof(int)*2);
         ComputeBuffer brushWeightBuffer = new ComputeBuffer(brushWeights.Count, sizeof(int));
         brushIndexBuffer.SetData(brushIndexOffsets);
         brushWeightBuffer.SetData(brushWeights);
@@ -93,7 +105,7 @@ public class HydraulicErosion
         // Settings
         erosion.SetInt("mapWidth", mapWidth);
         erosion.SetInt("mapHeight", mapHeight);
-        erosion.SetInt("brushLength", brushIndexOffsets.Count);
+        erosion.SetInt("brushLength", brushWeights.Count);
         erosion.SetInt("maxLifetime", erosionSettings.maxLifetime);
         erosion.SetFloat("inertia", erosionSettings.inertia);
         erosion.SetFloat("sedimentCapacityFactor", erosionSettings.sedimentCapacityFactor);
@@ -105,8 +117,11 @@ public class HydraulicErosion
         erosion.SetFloat("startSpeed", erosionSettings.startSpeed);
         erosion.SetFloat("startWater", erosionSettings.startWater);
 
+        int numThreadsX = Mathf.CeilToInt(mapWidth / 8f);
+        int numThreadsY = Mathf.CeilToInt(mapHeight / 8f);
+
         // Run compute shader
-        erosion.Dispatch(0, numThreads, 1, 1);
+        erosion.Dispatch(0, numThreadsX, numThreadsY, 1);
         mapBuffer.GetData(map);
 
         // Release buffers

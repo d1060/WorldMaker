@@ -98,7 +98,7 @@ Material:
     - _HumiditySeed: 148852
     - _IceTemperatureThreshold1: 0
     - _IceTemperatureThreshold2: -20
-    - _IsEroded: 0
+    - _IsEroded: 1
     - _IsFlowTexSet: 0
     - _IsHeightmapSet: 0
     - _IsLandmaskSet: 0
@@ -134,7 +134,7 @@ Material:
     - _SrcBlend: 1
     - _TemperatureSeed: 793041
     - _UVSec: 0
-    - _WaterLevel: 0.705313
+    - _WaterLevel: 0.71765417
     - _XOffset: 0.8457127
     - _XOffset2: 0.21052966
     - _YOffset: 0.061913423

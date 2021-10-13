@@ -8,6 +8,9 @@ float interpolate(RWStructuredBuffer<float> map, float2 coordinates)
     int bottomY = floor(coordinates.y);
     int topY = ceil(coordinates.y);
 
+    float deltaX = coordinates.x - leftX;
+    float deltaY = coordinates.y - bottomY;
+
     if (rightX >= mapWidth) rightX -= mapWidth;
     if (rightX < 0) rightX += mapWidth;
     if (leftX >= mapWidth) leftX -= mapWidth;
@@ -26,9 +29,6 @@ float interpolate(RWStructuredBuffer<float> map, float2 coordinates)
     float valueBR = map[indexBR];
     float valueTL = map[indexTL];
     float valueTR = map[indexTR];
-
-    float deltaX = coordinates.x - leftX;
-    float deltaY = coordinates.y - bottomY;
 
     float valueXdelta0 = (valueBR - valueBL) * deltaX + valueBL;
     float valueXdelta1 = (valueTR - valueTL) * deltaX + valueTL;

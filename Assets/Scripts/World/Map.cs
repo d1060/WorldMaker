@@ -15,6 +15,7 @@ public partial class Map : MonoBehaviour
     public float mapWidth = 400;
     public float mapHeight = 200;
     public TextureSettings textureSettings;
+    public InciseFlowSettings inciseFlowSettings;
     public TMP_InputField worldNameText;
     public GameObject debugText;
     public Camera cam;
@@ -22,7 +23,7 @@ public partial class Map : MonoBehaviour
     CameraController cameraController;
     public MapSettings mapSettings;
     public ErosionSettings erosionSettings;
-    public InciseFlowSettings inciseFlowSettings;
+    public PlotRiversSettings plotRiversSettings;
     Vector2 centerScreenWorldPosition = new Vector2(0,0);
     public Geosphere geoSphere;
     public Material planetSurfaceMaterial;
@@ -77,11 +78,13 @@ public partial class Map : MonoBehaviour
         MapData.instance.textureSettings = textureSettings;
         MapData.instance.erosionSettings = erosionSettings;
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        MapData.instance.plotRiversSettings = plotRiversSettings;
         if (MapData.instance.Load())
         {
             mapSettings = MapData.instance.mapSettings;
             textureSettings = MapData.instance.textureSettings;
             erosionSettings = MapData.instance.erosionSettings;
+            plotRiversSettings = MapData.instance.plotRiversSettings;
             inciseFlowSettings = MapData.instance.inciseFlowSettings;
         }
         GranuralizedGeoSphere.instance.Init(50);
@@ -139,7 +142,7 @@ public partial class Map : MonoBehaviour
 
         if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.P))
         {
-            StartCoroutine(PerformInciseFlow());
+            StartCoroutine(PerformPlotRivers());
         }
 
         //if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.V))
@@ -443,7 +446,7 @@ public partial class Map : MonoBehaviour
             textureSettings = MapData.instance.textureSettings;
             mapSettings = MapData.instance.mapSettings;
             erosionSettings = MapData.instance.erosionSettings;
-            inciseFlowSettings = MapData.instance.inciseFlowSettings;
+            plotRiversSettings = MapData.instance.plotRiversSettings;
 
             GenerateSeeds();
             ReGenerateWorld(true);

@@ -1,6 +1,11 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
+
+[Serializable]
+public class MainMenuShiftEvent : UnityEvent { }
 
 public class MainMenu : MonoBehaviour
 {
@@ -15,6 +20,8 @@ public class MainMenu : MonoBehaviour
     Vector3 currentPosition;
     float currentShift = 0;
     float shiftStep = 0.1f;
+    public MainMenuShiftEvent ShiftIn;
+    public MainMenuShiftEvent ShiftOut;
 
     // Start is called before the first frame update
     void Start()
@@ -49,9 +56,17 @@ public class MainMenu : MonoBehaviour
         if (shifting)
         {
             if (shifted)
+            {
+                if (currentShift == 1)
+                    ShiftOut?.Invoke();
                 ShiftMenuOut();
+            }
             else
+            {
+                if (currentShift == 0)
+                    ShiftIn?.Invoke();
                 ShiftMenuIn();
+            }
         }
     }
 

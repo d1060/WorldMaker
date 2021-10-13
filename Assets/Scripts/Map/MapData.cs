@@ -14,6 +14,7 @@ public class MapData
     public TextureSettings textureSettings;
     public MapSettings mapSettings;
     public ErosionSettings erosionSettings;
+    public PlotRiversSettings plotRiversSettings;
     public InciseFlowSettings inciseFlowSettings;
 
     #region Singleton
@@ -69,6 +70,7 @@ public class MapData
                 textureSettings = md.textureSettings;
                 mapSettings = md.mapSettings;
                 erosionSettings = md.erosionSettings;
+                plotRiversSettings = md.plotRiversSettings;
                 inciseFlowSettings = md.inciseFlowSettings;
                 return true;
             }

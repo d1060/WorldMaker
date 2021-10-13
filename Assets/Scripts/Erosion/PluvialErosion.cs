@@ -33,6 +33,7 @@ public class PluvialErosion
     public float sedimentDissolvingConstant = 1;
     public float sedimentDepositionConstant = 1;
     public float waterEvaporationRetention = 0.75f;
+    public float maxErosionDepth = 0.1f;
     public int mapWidth;
     public int mapHeight;
     public float waterLevel;
@@ -99,6 +100,7 @@ public class PluvialErosion
 
     public void ErodeStep(ref float[] heightMap, ref float[] humidityMap)
     {
+        // Calculates outflow.
         for (int x = 0; x < mapWidth; x++)
         {
             for (int y = 0; y < mapHeight; y++)
@@ -107,12 +109,6 @@ public class PluvialErosion
                 float height = heightMap[index];
                 float waterHeight = waterHeightMap[index];
 
-                // Update water Height.
-                float d1 = waterScale * (humidityMap[index] + riverSourcesMap[index]) + waterFixedAmount + waterHeightMap[index];
-                //float d1 = humidityMap[index] * humidityScale + riverSourcesMap[index] * riverSourceScale + waterHeightMap[index];
-                //float d1 = humidityScale + waterHeightMap[index];
-
-                // Calculate outflow.
                 int leftX = x - 1;
                 int rightX = x + 1;
                 int topY = y + 1;
@@ -128,56 +124,93 @@ public class PluvialErosion
                 int indexTop = x + mapWidth * topY;
                 int indexBottom = x + mapWidth * bottomY;
 
-                float outflowLeft = gravity * (height + waterHeight - heightMap[indexLeft] - waterHeightMap[indexLeft]);
-                float outflowRight = gravity * (height + waterHeight - heightMap[indexRight] - waterHeightMap[indexRight]);
-                float outflowTop = gravity * (height + waterHeight - heightMap[indexTop] - waterHeightMap[indexTop]);
-                float outflowBottom = gravity * (height + waterHeight - heightMap[indexBottom] - waterHeightMap[indexBottom]);
+                // Update water Height.
+                float d1 = waterScale * (humidityMap[index] + riverSourcesMap[index]) + waterFixedAmount + waterHeightMap[index];
 
-                outflowLeft += outflowMap[index].x;
-                outflowRight += outflowMap[index].y;
-                outflowTop += outflowMap[index].z;
-                outflowBottom += outflowMap[index].w;
+                float outflowLeft = outflowMap[index].x + gravity * (height + waterHeight - heightMap[indexLeft] - waterHeightMap[indexLeft]);
+                float outflowRight = outflowMap[index].y + gravity * (height + waterHeight - heightMap[indexRight] - waterHeightMap[indexRight]);
+                float outflowTop = outflowMap[index].z + gravity * (height + waterHeight - heightMap[indexTop] - waterHeightMap[indexTop]);
+                float outflowBottom = outflowMap[index].w + gravity * (height + waterHeight - heightMap[indexBottom] - waterHeightMap[indexBottom]);
 
                 if (outflowLeft < 0) outflowLeft = 0;
                 if (outflowRight < 0) outflowRight = 0;
                 if (outflowTop < 0) outflowTop = 0;
                 if (outflowBottom < 0) outflowBottom = 0;
 
-                float scalingFactor = d1 / (outflowLeft + outflowRight + outflowTop + outflowBottom);
-                if (scalingFactor > 1) scalingFactor = 1;
+                float totalOutflow = outflowLeft + outflowRight + outflowTop + outflowBottom;
+                if (totalOutflow > d1)
+                {
+                    // Total outflow will never be greater than the water height.
+                    float scalingFactor = d1 / totalOutflow;
+                    outflowLeft *= scalingFactor;
+                    outflowRight *= scalingFactor;
+                    outflowTop *= scalingFactor;
+                    outflowBottom *= scalingFactor;
+                }
 
-                outflowLeft *= scalingFactor;
-                outflowRight *= scalingFactor;
-                outflowTop *= scalingFactor;
-                outflowBottom *= scalingFactor;
+                float4 outflow = new float4(outflowLeft, outflowRight, outflowTop, outflowBottom);
+                outflowMap[index] = outflow;
+                waterHeightMap[index] = d1;
+            }
+        }
 
-                if (outflowLeft > 1) outflowLeft = 1;
-                if (outflowRight > 1) outflowRight = 1;
-                if (outflowTop > 1) outflowTop = 1;
-                if (outflowBottom > 1) outflowBottom = 1;
+        // Calculates water change
+        for (int x = 0; x < mapWidth; x++)
+        {
+            for (int y = 0; y < mapHeight; y++)
+            {
+                int index = x + mapWidth * y;
 
-                float4 totalOutflow = new float4(outflowLeft, outflowRight, outflowTop, outflowBottom);
-                outflowMap[index] = totalOutflow;
+                int leftX = x - 1;
+                int rightX = x + 1;
+                int topY = y + 1;
+                int bottomY = y - 1;
+
+                if (leftX < 0) leftX += mapWidth;
+                if (rightX >= mapWidth) rightX %= mapWidth;
+                if (topY >= mapHeight) topY = mapHeight - 1;
+                if (bottomY < 0) bottomY = 0;
+
+                int indexLeft = leftX + mapWidth * y;
+                int indexRight = rightX + mapWidth * y;
+                int indexTop = x + mapWidth * topY;
+                int indexBottom = x + mapWidth * bottomY;
 
                 // Water Surface
-                float waterDelta = (outflowMap[indexLeft].y + outflowMap[indexRight].x + outflowMap[indexTop].w + outflowMap[indexBottom].z) - (outflowLeft + outflowRight + outflowTop + outflowBottom);
-                float d2 = d1 + waterDelta;
-                //if (d2 < 0)
-                //    d2 = 0;
+                float waterDelta = (outflowMap[indexLeft].y + outflowMap[indexRight].x + outflowMap[indexTop].w + outflowMap[indexBottom].z) - (outflowMap[index].x + outflowMap[index].y + outflowMap[index].z + outflowMap[index].w);
+                float d2 = waterHeightMap[index] + waterDelta;
+                if (d2 < 0) d2 = 0;
                 waterHeightMap[index] = d2;
 
                 // Velocity Field
-                float horizontalVelocity = (outflowMap[indexLeft].y - outflowLeft + outflowRight - outflowMap[indexRight].x) / 2; // Horizontal speed is from left to right
+                float horizontalVelocity = (outflowMap[indexLeft].y - outflowMap[index].x + outflowMap[index].y - outflowMap[indexRight].x) / 2; // Horizontal speed is from left to right
                 float u = horizontalVelocity;
-                float verticalVelocity = (outflowMap[indexBottom].z - outflowBottom + outflowTop - outflowMap[indexTop].w) / 2; // Vertical speed is from bottom to top
+                float verticalVelocity = (outflowMap[indexBottom].z - outflowMap[index].w + outflowMap[index].z - outflowMap[indexTop].w) / 2; // Vertical speed is from bottom to top
                 float v = verticalVelocity;
 
-                velocityMap[index] = new float2(u, v);
                 float velocity = Mathf.Sqrt(u * u + v * v);
+                if (velocity > 1)
+                {
+                    u /= velocity;
+                    v /= velocity;
+                }
 
-                // Erosion and Deposition
-                float neighborHeight = interpolate(ref heightMap, new float2(x + u, y + v));
+                velocityMap[index] = new float2(u, v);
+            }
+        }
+
+        // Calculates Erosion and Deposition
+        for (int x = 0; x < mapWidth; x++)
+        {
+            for (int y = 0; y < mapHeight; y++)
+            {
+                int index = x + mapWidth * y;
+
+                float height = heightMap[index];
+                float waterHeight = waterHeightMap[index];
+                float neighborHeight = interpolate(ref heightMap, new float2(x + velocityMap[index].x, y + velocityMap[index].y));
                 float heightDelta = height - neighborHeight; // If HeightDelta > 0, we are going DOWNHILL. If HeightDelta < 0, we are going UPHILL.
+                float velocity = Mathf.Sqrt(velocityMap[index].x * velocityMap[index].x + velocityMap[index].y * velocityMap[index].y);
 
                 if (heightDelta < minTiltAngle && heightDelta > -minTiltAngle)
                 {
@@ -188,25 +221,41 @@ public class PluvialErosion
                 }
 
                 float sedimentTransportCapacity = sedimentCapacity * heightDelta * velocity;
-                float currentSediment = sedimentMap[index];
 
+                // Ramp-up function based on water depth
+                float lMax = 0;
+                if (waterHeight >= maxErosionDepth)
+                {
+                    lMax = 1;
+                }
+                else if (waterHeight < maxErosionDepth && waterHeight > 0)
+                {
+                    lMax = 1 - (maxErosionDepth - waterHeight) / maxErosionDepth;
+                }
+                sedimentTransportCapacity *= lMax;
+
+                float currentSediment = sedimentMap[index];
                 float newHeight = height;
                 float sediment = currentSediment;
                 float sedimentChange = 0;
+                float newWaterHeight = waterHeight;
 
-                if (heightDelta < 0)
-                {
-                    // Going uphill
-                    sedimentChange = -heightDelta;
-                    if (sedimentChange > -sedimentTransportCapacity)
-                        sedimentChange = -sedimentTransportCapacity;
-                    if (sedimentChange > currentSediment)
-                        sedimentChange = currentSediment;
+                //if (heightDelta < 0)
+                //{
+                //    // Going uphill
+                //    sedimentChange = -heightDelta;
+                //    if (sedimentChange > -sedimentTransportCapacity)
+                //        sedimentChange = -sedimentTransportCapacity;
+                //    if (sedimentChange > currentSediment)
+                //        sedimentChange = currentSediment;
 
-                    newHeight = height + sedimentChange;
-                    sediment = currentSediment - sedimentChange;
-                }
-                else if (sedimentTransportCapacity > currentSediment)
+                //    newHeight = height + sedimentChange;
+                //    sediment = currentSediment - sedimentChange;
+                //}
+                //else 
+
+                // Dissolves soil in water.
+                if (sedimentTransportCapacity > currentSediment)
                 {
                     sedimentChange = sedimentDissolvingConstant * (sedimentTransportCapacity - currentSediment);
                     if (sedimentChange > heightDelta)
@@ -214,49 +263,54 @@ public class PluvialErosion
                     if (height - sedimentChange < 0)
                         sedimentChange = height;
 
-                    newHeight = height - sedimentChange;
-                    sediment = currentSediment + sedimentChange;
+                    newHeight -= sedimentChange;
+                    sediment += sedimentChange;
+                    newWaterHeight += sedimentChange;
                 }
+                // Deposits soil in ground.
                 else if (sedimentTransportCapacity < currentSediment)
                 {
                     sedimentChange = sedimentDepositionConstant * (currentSediment - sedimentTransportCapacity);
                     if (sedimentChange > heightDelta)
                         sedimentChange = heightDelta;
 
-                    if (height + sedimentChange > neighborHeight)
-                        sedimentChange = neighborHeight - height;
+                    //if (height + sedimentChange > neighborHeight)
+                    //    sedimentChange = neighborHeight - height;
                     if (sedimentChange < 0)
                         sedimentChange = 0;
                     if (sedimentChange > currentSediment)
                         sedimentChange = currentSediment;
+                    if (sedimentChange > waterHeight)
+                        sedimentChange = waterHeight;
 
-                    newHeight = height + sedimentChange;
-                    sediment = currentSediment - sedimentChange;
+                    newHeight += sedimentChange;
+                    sediment -= sedimentChange;
+                    newWaterHeight -= sedimentChange;
                 }
 
                 if (newHeight < 0) newHeight = 0;
                 if (newHeight > 1) newHeight = 1;
                 if (sediment < 0) sediment = 0;
 
-                if (heightMap[indexLeft] > heightMap[index] &&
-                    heightMap[indexRight] > heightMap[index] &&
-                    heightMap[indexTop] > heightMap[index] &&
-                    heightMap[indexBottom] > heightMap[index] &&
-                    newHeight < heightMap[index])
-                {
-                    int a = 0;
-                }
-
                 heightMap[index] = newHeight;
                 sedimentMap[index] = sediment;
+                waterHeightMap[index] = newWaterHeight;
+            }
+        }
+
+        for (int x = 0; x < mapWidth; x++)
+        {
+            for (int y = 0; y < mapHeight; y++)
+            {
+                int index = x + mapWidth * y;
 
                 // Sediment Transportation
-                sedimentMap[index] = interpolate(ref sedimentMap, new float2(x - u, y - v));
+                sedimentMap[index] = interpolate(ref sedimentMap, new float2(x - velocityMap[index].x, y - velocityMap[index].y));
 
                 // Evaporation
                 //float evaporationConstant = humidityMap[index] * waterEvaporationRetention + waterEvaporationRetention;
                 float evaporationConstant = waterEvaporationRetention;
-                float newWaterHeight = d2 * evaporationConstant;
+                float newWaterHeight = waterHeightMap[index] * evaporationConstant;
 
                 if (newWaterHeight < 0)
                     newWaterHeight = 0;
@@ -272,10 +326,17 @@ public class PluvialErosion
         int bottomY = Mathf.FloorToInt(coordinates.y);
         int topY = Mathf.CeilToInt(coordinates.y);
 
-        if (rightX >= mapWidth) rightX %= mapWidth;
-        if (rightX < 0) rightX += mapWidth;
-        if (leftX >= mapWidth) leftX %= mapWidth;
-        if (leftX < 0) leftX += mapWidth;
+        float deltaX = coordinates.x - leftX;
+        float deltaY = coordinates.y - bottomY;
+
+        if (rightX >= mapWidth)
+            rightX -= mapWidth;
+        if (rightX < 0)
+            rightX += mapWidth;
+        if (leftX >= mapWidth)
+            leftX -= mapWidth;
+        if (leftX < 0) 
+            leftX += mapWidth;
         if (topY >= mapHeight) topY = mapHeight - 1;
         if (topY < 0) topY = 0;
         if (bottomY >= mapHeight) bottomY = mapHeight - 1;
@@ -290,9 +351,6 @@ public class PluvialErosion
         float valueBR = map[indexBR];
         float valueTL = map[indexTL];
         float valueTR = map[indexTR];
-
-        float deltaX = coordinates.x - leftX;
-        float deltaY = coordinates.y - bottomY;
 
         float valueXdelta0 = (valueBR - valueBL) * deltaX + valueBL;
         float valueXdelta1 = (valueTR - valueTL) * deltaX + valueTL;

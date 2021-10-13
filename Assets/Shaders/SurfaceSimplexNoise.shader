@@ -109,11 +109,11 @@ Shader "Noise/PlanetarySurface"
         sampler2D_float _MainTex;
         int _IsHeightmapSet;
         int _IsEroded;
-        sampler2D _MainMap;
+        sampler2D_float _MainMap;
         int _IsMainmapSet;
-        sampler2D _LandMask;
+        sampler2D_float _LandMask;
         int _IsLandmaskSet;
-        sampler2D _FlowTex;
+        sampler2D_float _FlowTex;
         int _IsFlowTexSet;
 
         struct Input
@@ -220,17 +220,7 @@ Shader "Noise/PlanetarySurface"
                                                     offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2);
             }
 
-            bool isAboveWater = false;
-            if (_IsLandmaskSet > 0)
-            {
-                //float4 c = pow(tex2D(_LandMask, IN.uv_MainTex), 1/2.2);
-                float4 c = tex2D(_LandMask, IN.uv_MainTex);
-                isAboveWater = (c.r + c.g + c.b) / 3 < 0.5;
-            }
-            else
-            {
-                isAboveWater = height > _WaterLevel;
-            }
+            bool isAboveWater = height > _WaterLevel;
 
             if (_DrawType == 1) // Drawing a Heightmap.
             {
@@ -358,7 +348,7 @@ Shader "Noise/PlanetarySurface"
                         if (_IsFlowTexSet)
                         {
                             flowColor = tex2D(_FlowTex, IN.uv_MainTex);
-                            if (flowColor.r != 0 || flowColor.g != 0 || flowColor.b != 0)
+                            if ((flowColor.r != 0 || flowColor.g != 0 || flowColor.b != 0) && isAboveWater)
                             {
                                 if (flowColor.a >= 1)
                                 {
@@ -384,7 +374,7 @@ Shader "Noise/PlanetarySurface"
                                     _ColorStep1, _Color1, _ColorStep2, _Color2, _ColorStep3, _Color3, _ColorStep4, _Color4, _ColorStep5, _Color5, _ColorStep6, _Color6, _ColorStep7, _Color7, _ColorStep8, _Color8,
                                     _OceanColorStep1, _OceanColor1, _OceanColorStep2, _OceanColor2, _OceanColorStep3, _OceanColor3, _OceanColorStep4, _OceanColor4);
 
-                                if (flowColor.a > 0)
+                                if (flowColor.a > 0 && isAboveWater)
                                 {
                                     color = color * (1 - flowColor.a) + flowColor * flowColor.a;
                                     color.a = 1;

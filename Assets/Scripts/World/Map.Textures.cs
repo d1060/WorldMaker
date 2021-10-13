@@ -419,7 +419,12 @@ public partial class Map : MonoBehaviour
         if (erodedHeightMap == null || originalHeightMap == null || mergedHeightMap == null)
             return;
 
-        if (heightmap2TextureShader != null)
+        if (inciseFlowMap == null || inciseFlowMap.Length < originalHeightMap.Length)
+            inciseFlowMap = new float[originalHeightMap.Length];
+
+        bool useCpu = false;
+
+        if (heightmap2TextureShader != null && !useCpu)
         {
             ComputeBuffer mapBuffer = new ComputeBuffer(originalHeightMap.Length, sizeof(float));
             mapBuffer.SetData(originalHeightMap);
@@ -429,11 +434,15 @@ public partial class Map : MonoBehaviour
             mapBufferEroded.SetData(erodedHeightMap);
             heightmap2TextureShader.SetBuffer(0, "erodedHeightMap", mapBufferEroded);
 
+            ComputeBuffer inciseFlowMapBuffer = new ComputeBuffer(erodedHeightMap.Length, sizeof(float));
+            inciseFlowMapBuffer.SetData(inciseFlowMap);
+            heightmap2TextureShader.SetBuffer(0, "inciseFlowMap", inciseFlowMapBuffer);
+
             ComputeBuffer mapBufferMerged = new ComputeBuffer(mergedHeightMap.Length, sizeof(float));
             mapBufferMerged.SetData(mergedHeightMap);
             heightmap2TextureShader.SetBuffer(0, "mergedHeightMap", mapBufferMerged);
 
-            RenderTexture rTexture = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGB32);
+            RenderTexture rTexture = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
             rTexture.enableRandomWrite = true;
             rTexture.Create();
             RenderTexture prevActive = RenderTexture.active;
@@ -447,7 +456,7 @@ public partial class Map : MonoBehaviour
 
             RenderTexture.active = rTexture;
 
-            heightmap = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight);
+            heightmap = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
             heightmap.ReadPixels(new Rect(0, 0, rTexture.width, rTexture.height), 0, 0);
             heightmap.Apply();
             //heightmap.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "heightmap.png"));
@@ -456,6 +465,7 @@ public partial class Map : MonoBehaviour
             mapBuffer.Release();
             mapBufferEroded.Release();
             mapBufferMerged.Release();
+            inciseFlowMapBuffer.Release();
             RenderTexture.active = prevActive;
             rTexture.Release();
         }
@@ -467,7 +477,9 @@ public partial class Map : MonoBehaviour
                 for (int x = 0; x < textureSettings.textureWidth; x++)
                 {
                     int index = x + y * textureSettings.textureWidth;
-                    float erodedHeight = erodedHeightMap[index];
+                    float erodedHeight = erodedHeightMap[index] - inciseFlowMap[index];
+                    if (erodedHeight < 0) erodedHeight = 0;
+
                     float originalHeight = originalHeightMap[index];
                     float mergedHeight = erodedHeight;
                     if (textureSettings.erosionNoiseMerge >= 1)
@@ -479,7 +491,7 @@ public partial class Map : MonoBehaviour
                     colors[index] = color;
                 }
             }
-            heightmap = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight);
+            heightmap = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
             heightmap.SetPixels(colors);
             heightmap.Apply();
         }
@@ -490,7 +502,7 @@ public partial class Map : MonoBehaviour
         StartCoroutine(PerformErosionCycle());
     }
 
-    public IEnumerator PerformErosionCycle()
+    IEnumerator PerformErosionCycle()
     {
         ShowErodingTerrainPanel();
         yield return null;
@@ -515,27 +527,27 @@ public partial class Map : MonoBehaviour
         originalHeightMap = null;
         mergedHeightMap = null;
         flowTexture = null;
+        inciseFlowMap = null;
 
         planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
         planetSurfaceMaterial.SetInt("_IsEroded", 0);
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
     }
 
-    public ComputeShader inciseFlow;
     Texture2D flowTexture;
-    public void RunInciseFlowFromButton()
+    public void RunPlotRiversFromButton()
     {
-        StartCoroutine(PerformInciseFlow());
+        StartCoroutine(PerformPlotRivers());
     }
 
-    public IEnumerator PerformInciseFlow()
+    IEnumerator PerformPlotRivers()
     {
+        SetupPlottingRiversPanel(plotRiversSettings.numIterations);
         ShowPlottingRiversPanel();
         yield return null;
         GenerateHeightMap();
-        InciseFlow.instance.textureSettings = textureSettings;
-        InciseFlow.instance.inciseFlowSettings = inciseFlowSettings;
-        InciseFlow.instance.inciseFlow = inciseFlow;
+        PlotRivers.instance.textureSettings = textureSettings;
+        PlotRivers.instance.plotRiversSettings = plotRiversSettings;
         if (flowTexture == null)
         {
             flowTexture = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight);
@@ -543,7 +555,21 @@ public partial class Map : MonoBehaviour
             flowTexture.SetPixels(colors);
             flowTexture.Apply();
         }
-        InciseFlow.instance.Run(ref erodedHeightMap, ref flowTexture);
+
+        PlotRivers.instance.Init(ref erodedHeightMap, ref flowTexture);
+        int updateStep = plotRiversSettings.numIterations / 100;
+        for (int i = 0; i < plotRiversSettings.numIterations; i++)
+        {
+            PlotRivers.instance.RunStep(ref erodedHeightMap, ref flowTexture, i);
+            if (i % updateStep == 0)
+            {
+                UpdatePlottingRiversPanel(i + 1);
+                yield return null;
+            }
+        }
+        PlotRivers.instance.Finalize(ref flowTexture);
+
+        //PlotRivers.instance.Run(ref erodedHeightMap, ref flowTexture);
         //flowTexture.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "flowMap.png"));
         HeightMap2Texture();
         planetSurfaceMaterial.SetTexture("_MainTex", heightmap);
@@ -568,166 +594,91 @@ public partial class Map : MonoBehaviour
         float velocityVertical;
     }
 
-    public ComputeShader pluvialErosionOutflow;
-    public ComputeShader pluvialErosionVelocitymap;
-    public ComputeShader pluvialErosionErosion;
-    public ComputeShader pluvialErosionSediment;
-    public IEnumerator PerformPluvialErosion()
+    public ComputeShader inciseFlowFlowMap;
+    public ComputeShader inciseFlowErosion;
+
+    float[] inciseFlowMap;
+    public void PerformInciseFlow()
     {
         bool useCPU = false;
 
-        ShowPluvialErodingPanel();
-        yield return null;
-
         GenerateHeightMap();
-        GenerateHumiditytMap();
-
-        int numPasses = 1000;
-        int numRiverSources = 100;
-
-        SetupPluvialErodingPanel(numPasses);
+        inciseFlowMap = new float[erodedHeightMap.Length];
 
         if (useCPU)
         {
-            PluvialErosion.instance.numPasses = numPasses;
-            PluvialErosion.instance.numRiverSources = numRiverSources;
-            PluvialErosion.instance.waterScale = 0.1f;
-            PluvialErosion.instance.waterFixedAmount = 0.1f;
-            PluvialErosion.instance.gravity = 1;
-            PluvialErosion.instance.sedimentCapacity = 0.01f;
-            PluvialErosion.instance.minTiltAngle = 0.0001f;
-            PluvialErosion.instance.sedimentDissolvingConstant = 0.5f;
-            PluvialErosion.instance.sedimentDepositionConstant = 0.5f;
-            PluvialErosion.instance.waterEvaporationRetention = 0.95f;
-            PluvialErosion.instance.mapWidth = textureSettings.textureWidth;
-            PluvialErosion.instance.mapHeight = textureSettings.textureHeight;
-            PluvialErosion.instance.waterLevel = textureSettings.waterLevel;
-            PluvialErosion.instance.map = this;
-            PluvialErosion.instance.Init(ref erodedHeightMap, ref humidityMap);
-            for (int i = 0; i < numPasses; i++)
-            {
-                PluvialErosion.instance.ErodeStep(ref erodedHeightMap, ref humidityMap);
+            InciseFlow.instance.mapWidth = textureSettings.textureWidth;
+            InciseFlow.instance.mapHeight = textureSettings.textureHeight;
+            InciseFlow.instance.logBase = inciseFlowSettings.exponent;
+            InciseFlow.instance.amount = inciseFlowSettings.amount;
+            InciseFlow.instance.minAmount = inciseFlowSettings.minAmount;
+            InciseFlow.instance.strength = inciseFlowSettings.strength;
+            InciseFlow.instance.heightFactor = 0.05f;
 
-                HeightMap2Texture();
-                UpdateSurfaceMaterialHeightMap(true);
-                UpdatePluvialErodingPanel(i + 1);
-                yield return null;
-            }
+            InciseFlow.instance.Run(ref erodedHeightMap, ref inciseFlowMap);
         }
         else
         {
-            if (pluvialErosionOutflow != null && pluvialErosionVelocitymap != null && pluvialErosionErosion != null)
+            float[] flowMap = new float[textureSettings.textureWidth * textureSettings.textureHeight];
+
+            ComputeBuffer flowMapBuffer = new ComputeBuffer(flowMap.Length, sizeof(float));
+            flowMapBuffer.SetData(flowMap);
+
+            ComputeBuffer heightMapBuffer = new ComputeBuffer(erodedHeightMap.Length, sizeof(float));
+            heightMapBuffer.SetData(erodedHeightMap);
+
+            ComputeBuffer inciseFlowMapBuffer = new ComputeBuffer(inciseFlowMap.Length, sizeof(float));
+            inciseFlowMapBuffer.SetData(inciseFlowMap);
+
+            int numThreadsX = Mathf.CeilToInt(textureSettings.textureWidth / 8f);
+            int numThreadsY = Mathf.CeilToInt(textureSettings.textureHeight / 8f);
+
+            inciseFlowFlowMap.SetInt("mapWidth", textureSettings.textureWidth);
+            inciseFlowFlowMap.SetInt("mapHeight", textureSettings.textureHeight);
+            inciseFlowFlowMap.SetFloat("amount", inciseFlowSettings.amount);
+            inciseFlowFlowMap.SetBuffer(0, "heightMap", heightMapBuffer);
+            inciseFlowFlowMap.SetBuffer(0, "flowMap", flowMapBuffer);
+            inciseFlowFlowMap.Dispatch(0, numThreadsX, numThreadsY, 1);
+
+            inciseFlowErosion.SetInt("mapWidth", textureSettings.textureWidth);
+            inciseFlowErosion.SetInt("mapHeight", textureSettings.textureHeight);
+            inciseFlowErosion.SetFloat("logBase", inciseFlowSettings.exponent);
+            inciseFlowErosion.SetFloat("heightFactor", 0.05f);
+            inciseFlowErosion.SetFloat("strength", inciseFlowSettings.strength);
+            inciseFlowErosion.SetFloat("minAmount", inciseFlowSettings.minAmount);
+            inciseFlowErosion.SetBuffer(0, "heightMap", heightMapBuffer);
+            inciseFlowErosion.SetBuffer(0, "flowMap", flowMapBuffer);
+            inciseFlowErosion.SetBuffer(0, "inciseFlowMap", inciseFlowMapBuffer);
+            inciseFlowErosion.Dispatch(0, numThreadsX, numThreadsY, 1);
+
+            inciseFlowMapBuffer.GetData(inciseFlowMap);
+            flowMapBuffer.GetData(flowMap);
+
+            heightMapBuffer.Release();
+            flowMapBuffer.Release();
+            inciseFlowMapBuffer.Release();
+
+        }
+        HeightMap2Texture();
+        UpdateSurfaceMaterialHeightMap(true);
+    }
+
+    public void ApplyInciseFlow()
+    {
+        for (int y = 0; y < textureSettings.textureHeight; y++)
+        {
+            for (int x = 0; x < textureSettings.textureWidth; x++)
             {
-                float[] riverSourcesMap = new float[textureSettings.textureWidth * textureSettings.textureHeight];
-                float[] waterHeightMap = new float[textureSettings.textureWidth * textureSettings.textureHeight];
-                float[] sedimentMap = new float[textureSettings.textureWidth * textureSettings.textureHeight];
-                float4[] outflowMap = new float4[textureSettings.textureWidth * textureSettings.textureHeight];
-                float2[] velocityMap = new float2[textureSettings.textureWidth * textureSettings.textureHeight];
-                System.Random random = new System.Random();
-
-                for (int i = 0; i < numRiverSources; i++)
-                {
-                    int randomX = random.Next(textureSettings.textureWidth);
-                    int randomY = random.Next(textureSettings.textureHeight);
-                    int index = randomY * textureSettings.textureWidth + randomX;
-                    float height = erodedHeightMap[index];
-                    if (height <= textureSettings.waterLevel)
-                    {
-                        i--;
-                        continue;
-                    }
-                    float riverSourceStrength = (float)(random.NextDouble() * humidityMap[index]);
-                    riverSourcesMap[index] = riverSourceStrength;
-                }
-
-                ComputeBuffer riverSourcesBuffer = new ComputeBuffer(riverSourcesMap.Length, sizeof(float));
-                ComputeBuffer heightMapBuffer = new ComputeBuffer(erodedHeightMap.Length, sizeof(float));
-                ComputeBuffer waterHeightBuffer = new ComputeBuffer(waterHeightMap.Length, sizeof(float));
-                ComputeBuffer sedimentBuffer = new ComputeBuffer(sedimentMap.Length, sizeof(float));
-                ComputeBuffer humidityBuffer = new ComputeBuffer(humidityMap.Length, sizeof(float));
-                ComputeBuffer outflowBuffer = new ComputeBuffer(outflowMap.Length, sizeof(float) * 4);
-                ComputeBuffer velocityBuffer = new ComputeBuffer(velocityMap.Length, sizeof(float) * 2);
-
-                riverSourcesBuffer.SetData(riverSourcesMap);
-                heightMapBuffer.SetData(erodedHeightMap);
-                waterHeightBuffer.SetData(waterHeightMap);
-                sedimentBuffer.SetData(sedimentMap);
-                humidityBuffer.SetData(humidityMap);
-                outflowBuffer.SetData(outflowMap);
-                velocityBuffer.SetData(velocityMap);
-
-                pluvialErosionOutflow.SetInt("mapWidth", textureSettings.textureWidth);
-                pluvialErosionOutflow.SetInt("mapHeight", textureSettings.textureHeight);
-                pluvialErosionOutflow.SetFloat("waterScale", 0.2f);
-                pluvialErosionOutflow.SetFloat("waterFixedAmount", 0.2f);
-                pluvialErosionOutflow.SetFloat("gravity", 1f);
-                pluvialErosionOutflow.SetBuffer(0, "riverSourcesMap", riverSourcesBuffer);
-                pluvialErosionOutflow.SetBuffer(0, "humidityMap", humidityBuffer);
-                pluvialErosionOutflow.SetBuffer(0, "heightMap", heightMapBuffer);
-                pluvialErosionOutflow.SetBuffer(0, "waterHeightMap", waterHeightBuffer);
-                pluvialErosionOutflow.SetBuffer(0, "outflowMap", outflowBuffer);
-
-                pluvialErosionVelocitymap.SetInt("mapWidth", textureSettings.textureWidth);
-                pluvialErosionVelocitymap.SetInt("mapHeight", textureSettings.textureHeight);
-                pluvialErosionVelocitymap.SetBuffer(0, "outflowMap", outflowBuffer);
-                pluvialErosionVelocitymap.SetBuffer(0, "waterHeightMap", waterHeightBuffer);
-                pluvialErosionVelocitymap.SetBuffer(0, "velocityMap", velocityBuffer);
-
-                pluvialErosionErosion.SetInt("mapWidth", textureSettings.textureWidth);
-                pluvialErosionErosion.SetInt("mapHeight", textureSettings.textureHeight);
-                pluvialErosionErosion.SetFloat("minTiltAngle", 0.0001f);
-                pluvialErosionErosion.SetFloat("sedimentCapacity", 0.1f);
-                pluvialErosionErosion.SetFloat("sedimentDissolvingConstant", 0.5f);
-                pluvialErosionErosion.SetFloat("sedimentDepositionConstant", 0.5f);
-                pluvialErosionErosion.SetBuffer(0, "sedimentMap", sedimentBuffer);
-                pluvialErosionErosion.SetBuffer(0, "heightMap", heightMapBuffer);
-                pluvialErosionErosion.SetBuffer(0, "velocityMap", velocityBuffer);
-
-                pluvialErosionSediment.SetInt("mapWidth", textureSettings.textureWidth);
-                pluvialErosionSediment.SetInt("mapHeight", textureSettings.textureHeight);
-                pluvialErosionSediment.SetFloat("waterEvaporationRetention", 0.95f);
-                pluvialErosionSediment.SetBuffer(0, "sedimentMap", sedimentBuffer);
-                pluvialErosionSediment.SetBuffer(0, "velocityMap", velocityBuffer);
-                pluvialErosionSediment.SetBuffer(0, "waterHeightMap", waterHeightBuffer);
-
-                int numThreadsX = Mathf.CeilToInt(textureSettings.textureWidth / 8f);
-                int numThreadsY = Mathf.CeilToInt(textureSettings.textureHeight / 8f);
-
-                for (int i = 0; i < numPasses; i++)
-                {
-                    pluvialErosionOutflow.Dispatch(0, numThreadsX, numThreadsY, 1);
-                    pluvialErosionVelocitymap.Dispatch(0, numThreadsX, numThreadsY, 1);
-                    pluvialErosionErosion.Dispatch(0, numThreadsX, numThreadsY, 1);
-                    pluvialErosionSediment.Dispatch(0, numThreadsX, numThreadsY, 1);
-
-                    heightMapBuffer.GetData(erodedHeightMap);
-
-                    HeightMap2Texture();
-                    UpdateSurfaceMaterialHeightMap(true);
-                    UpdatePluvialErodingPanel(i + 1);
-                    yield return null;
-                }
-
-                heightMapBuffer.GetData(erodedHeightMap);
-                waterHeightBuffer.GetData(waterHeightMap);
-                sedimentBuffer.GetData(sedimentMap);
-                humidityBuffer.GetData(humidityMap);
-                outflowBuffer.GetData(outflowMap);
-                velocityBuffer.GetData(velocityMap);
-
-                // Release buffers
-                riverSourcesBuffer.Release();
-                heightMapBuffer.Release();
-                waterHeightBuffer.Release();
-                sedimentBuffer.Release();
-                humidityBuffer.Release();
-                outflowBuffer.Release();
-                velocityBuffer.Release();
+                int index = x + y * textureSettings.textureWidth;
+                erodedHeightMap[index] -= inciseFlowMap[index];
+                if (erodedHeightMap[index] < 0)
+                    erodedHeightMap[index] = 0;
+                inciseFlowMap[index] = 0;
             }
         }
-
-        HidePluvialErodingPanel();
-        yield return null;
+        inciseFlowMap = null;
+        HeightMap2Texture();
+        UpdateSurfaceMaterialHeightMap(true);
     }
 
     public void AlterTerrain(Vector2 coordinates, float radius, float elevationDelta)
@@ -793,5 +744,172 @@ public partial class Map : MonoBehaviour
         HeightMap2Texture();
         planetSurfaceMaterial.SetTexture("_MainTex", heightmap);
         planetSurfaceMaterial.SetInt("_IsEroded", 1);
+    }
+
+    public ComputeShader pluvialErosionOutflow;
+    public ComputeShader pluvialErosionVelocitymap;
+    public ComputeShader pluvialErosionErosion;
+    public ComputeShader pluvialErosionSediment;
+
+    IEnumerator PerformPluvialErosion()
+    {
+        bool useCPU = false;
+        int numPasses = 100;
+        int numRiverSources = 100;
+
+        SetupPluvialErodingPanel(numPasses);
+        ShowPluvialErodingPanel();
+        yield return null;
+
+        GenerateHeightMap();
+        inciseFlowMap = new float[erodedHeightMap.Length];
+        GenerateHumiditytMap();
+
+        if (useCPU)
+        {
+            PluvialErosion.instance.numPasses = numPasses;
+            PluvialErosion.instance.numRiverSources = numRiverSources;
+            PluvialErosion.instance.waterScale = 0.1f;
+            PluvialErosion.instance.waterFixedAmount = 0.1f;
+            PluvialErosion.instance.gravity = 10;
+            PluvialErosion.instance.sedimentCapacity = 10000f;
+            PluvialErosion.instance.minTiltAngle = 0.001f;
+            PluvialErosion.instance.sedimentDissolvingConstant = 1f;
+            PluvialErosion.instance.sedimentDepositionConstant = 1f;
+            PluvialErosion.instance.waterEvaporationRetention = 0.95f;
+            PluvialErosion.instance.maxErosionDepth = 0.1f;
+            PluvialErosion.instance.mapWidth = textureSettings.textureWidth;
+            PluvialErosion.instance.mapHeight = textureSettings.textureHeight;
+            PluvialErosion.instance.waterLevel = textureSettings.waterLevel;
+            PluvialErosion.instance.map = this;
+            PluvialErosion.instance.Init(ref erodedHeightMap, ref humidityMap);
+            for (int i = 0; i < numPasses; i++)
+            {
+                PluvialErosion.instance.ErodeStep(ref erodedHeightMap, ref humidityMap);
+
+                HeightMap2Texture();
+                UpdateSurfaceMaterialHeightMap(true);
+                UpdatePluvialErodingPanel(i + 1);
+                yield return null;
+            }
+        }
+        else
+        {
+            if (pluvialErosionOutflow != null && pluvialErosionVelocitymap != null && pluvialErosionErosion != null)
+            {
+                float[] riverSourcesMap = new float[textureSettings.textureWidth * textureSettings.textureHeight];
+                float[] waterHeightMap = new float[textureSettings.textureWidth * textureSettings.textureHeight];
+                float[] sedimentMap = new float[textureSettings.textureWidth * textureSettings.textureHeight];
+                float4[] outflowMap = new float4[textureSettings.textureWidth * textureSettings.textureHeight];
+                float2[] velocityMap = new float2[textureSettings.textureWidth * textureSettings.textureHeight];
+                System.Random random = new System.Random();
+
+                for (int i = 0; i < numRiverSources; i++)
+                {
+                    int randomX = random.Next(textureSettings.textureWidth);
+                    int randomY = random.Next(textureSettings.textureHeight);
+                    int index = randomY * textureSettings.textureWidth + randomX;
+                    float height = erodedHeightMap[index];
+                    if (height <= textureSettings.waterLevel)
+                    {
+                        i--;
+                        continue;
+                    }
+                    float riverSourceStrength = (float)(random.NextDouble());
+                    riverSourcesMap[index] = riverSourceStrength;
+                }
+
+                ComputeBuffer riverSourcesBuffer = new ComputeBuffer(riverSourcesMap.Length, sizeof(float));
+                ComputeBuffer heightMapBuffer = new ComputeBuffer(erodedHeightMap.Length, sizeof(float));
+                ComputeBuffer waterHeightBuffer = new ComputeBuffer(waterHeightMap.Length, sizeof(float));
+                ComputeBuffer sedimentBuffer = new ComputeBuffer(sedimentMap.Length, sizeof(float));
+                ComputeBuffer humidityBuffer = new ComputeBuffer(humidityMap.Length, sizeof(float));
+                ComputeBuffer outflowBuffer = new ComputeBuffer(outflowMap.Length, sizeof(float) * 4);
+                ComputeBuffer velocityBuffer = new ComputeBuffer(velocityMap.Length, sizeof(float) * 2);
+
+                riverSourcesBuffer.SetData(riverSourcesMap);
+                heightMapBuffer.SetData(erodedHeightMap);
+                waterHeightBuffer.SetData(waterHeightMap);
+                sedimentBuffer.SetData(sedimentMap);
+                humidityBuffer.SetData(humidityMap);
+                outflowBuffer.SetData(outflowMap);
+                velocityBuffer.SetData(velocityMap);
+
+                pluvialErosionOutflow.SetInt("mapWidth", textureSettings.textureWidth);
+                pluvialErosionOutflow.SetInt("mapHeight", textureSettings.textureHeight);
+                pluvialErosionOutflow.SetFloat("waterScale", 0.5f);
+                pluvialErosionOutflow.SetFloat("waterFixedAmount", 0.1f);
+                pluvialErosionOutflow.SetFloat("gravity", 200f);
+                pluvialErosionOutflow.SetBuffer(0, "riverSourcesMap", riverSourcesBuffer);
+                pluvialErosionOutflow.SetBuffer(0, "humidityMap", humidityBuffer);
+                pluvialErosionOutflow.SetBuffer(0, "heightMap", heightMapBuffer);
+                pluvialErosionOutflow.SetBuffer(0, "waterHeightMap", waterHeightBuffer);
+                pluvialErosionOutflow.SetBuffer(0, "outflowMap", outflowBuffer);
+
+                pluvialErosionVelocitymap.SetInt("mapWidth", textureSettings.textureWidth);
+                pluvialErosionVelocitymap.SetInt("mapHeight", textureSettings.textureHeight);
+                pluvialErosionVelocitymap.SetBuffer(0, "outflowMap", outflowBuffer);
+                pluvialErosionVelocitymap.SetBuffer(0, "waterHeightMap", waterHeightBuffer);
+                pluvialErosionVelocitymap.SetBuffer(0, "velocityMap", velocityBuffer);
+
+                pluvialErosionErosion.SetInt("mapWidth", textureSettings.textureWidth);
+                pluvialErosionErosion.SetInt("mapHeight", textureSettings.textureHeight);
+                pluvialErosionErosion.SetFloat("minTiltAngle", 0.001f);
+                pluvialErosionErosion.SetFloat("sedimentCapacity", 10f);
+                pluvialErosionErosion.SetFloat("maxErosionDepth", 1f);
+                pluvialErosionErosion.SetFloat("sedimentDissolvingConstant", 0.5f);
+                pluvialErosionErosion.SetFloat("sedimentDepositionConstant", 1f);
+                pluvialErosionErosion.SetBuffer(0, "sedimentMap", sedimentBuffer);
+                pluvialErosionErosion.SetBuffer(0, "heightMap", heightMapBuffer);
+                pluvialErosionErosion.SetBuffer(0, "velocityMap", velocityBuffer);
+                pluvialErosionErosion.SetBuffer(0, "waterHeightMap", waterHeightBuffer);
+
+                pluvialErosionSediment.SetInt("mapWidth", textureSettings.textureWidth);
+                pluvialErosionSediment.SetInt("mapHeight", textureSettings.textureHeight);
+                pluvialErosionSediment.SetFloat("waterEvaporationRetention", 0.85f);
+                pluvialErosionSediment.SetBuffer(0, "sedimentMap", sedimentBuffer);
+                pluvialErosionSediment.SetBuffer(0, "velocityMap", velocityBuffer);
+                pluvialErosionSediment.SetBuffer(0, "waterHeightMap", waterHeightBuffer);
+
+                int numThreadsX = Mathf.CeilToInt(textureSettings.textureWidth / 8f);
+                int numThreadsY = Mathf.CeilToInt(textureSettings.textureHeight / 8f);
+
+                for (int i = 0; i < numPasses; i++)
+                {
+                    pluvialErosionOutflow.Dispatch(0, numThreadsX, numThreadsY, 1);
+                    pluvialErosionVelocitymap.Dispatch(0, numThreadsX, numThreadsY, 1);
+                    pluvialErosionErosion.Dispatch(0, numThreadsX, numThreadsY, 1);
+                    pluvialErosionSediment.Dispatch(0, numThreadsX, numThreadsY, 1);
+
+                    heightMapBuffer.GetData(erodedHeightMap);
+
+                    HeightMap2Texture();
+                    UpdateSurfaceMaterialHeightMap(true);
+                    UpdatePluvialErodingPanel(i + 1);
+                    yield return null;
+                }
+
+                heightMapBuffer.GetData(erodedHeightMap);
+                waterHeightBuffer.GetData(waterHeightMap);
+                sedimentBuffer.GetData(sedimentMap);
+                humidityBuffer.GetData(humidityMap);
+                outflowBuffer.GetData(outflowMap);
+                velocityBuffer.GetData(velocityMap);
+
+                // Release buffers
+                riverSourcesBuffer.Release();
+                heightMapBuffer.Release();
+                waterHeightBuffer.Release();
+                sedimentBuffer.Release();
+                humidityBuffer.Release();
+                outflowBuffer.Release();
+                velocityBuffer.Release();
+            }
+        }
+        HeightMap2Texture();
+        UpdateSurfaceMaterialHeightMap(true);
+
+        HidePluvialErodingPanel();
+        yield return null;
     }
 }

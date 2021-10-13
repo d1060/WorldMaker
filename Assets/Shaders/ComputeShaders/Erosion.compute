@@ -8,7 +8,7 @@
 
 RWStructuredBuffer<float> map;
 StructuredBuffer<int> randomIndices;
-StructuredBuffer<int> brushIndices;
+StructuredBuffer<int2> brushIndices;
 StructuredBuffer<float> brushWeights;
 
 int mapWidth;
@@ -37,11 +37,22 @@ float3 CalculateHeightAndGradient(float posX, float posY) {
     float y = posY - coordY;
 
     // Calculate heights of the four nodes of the droplet's cell
-    int nodeIndexNW = coordY * mapWidth + coordX;
-    float heightNW = map[nodeIndexNW];
-    float heightNE = map[nodeIndexNW + 1];
-    float heightSW = map[nodeIndexNW + mapWidth];
-    float heightSE = map[nodeIndexNW + mapWidth + 1];
+    int indexNW = coordY * mapWidth + coordX;
+
+    int eastX = coordX + 1;
+    if (eastX >= mapWidth) eastX -= mapWidth;
+
+    int southY = coordY + 1;
+    if (southY >= mapHeight) southY = mapHeight - 1;
+
+    int indexNE = coordY * mapWidth + eastX;
+    int indexSW = southY * mapWidth + coordX;
+    int indexSE = southY * mapWidth + eastX;
+
+    float heightNW = map[indexNW];
+    float heightNE = map[indexNE];
+    float heightSW = map[indexSW];
+    float heightSE = map[indexSE];
 
     // Calculate droplet's direction of flow with bilinear interpolation of height difference along the edges
     float gradientX = (heightNE - heightNW) * (1 - y) + (heightSE - heightSW) * y;
@@ -53,12 +64,14 @@ float3 CalculateHeightAndGradient(float posX, float posY) {
     return float3(gradientX, gradientY, height);
 }
 
-[numthreads(1024, 1, 1)]
+[numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    int index = randomIndices[id.x];
-    float posX = float(index) % mapWidth;
-    float posY = float(index) / mapWidth;
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
+
+    float posX = id.x;
+    float posY = id.y;
     float dirX = 0;
     float dirY = 0;
     float speed = startSpeed;
@@ -69,6 +82,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         int nodeX = (int)posX;
         int nodeY = (int)posY;
         int dropletIndex = nodeY * mapWidth + nodeX;
+
         // Calculate droplet's offset inside the cell (0,0) = at NW node, (1,1) = at SE node
         float cellOffsetX = posX - nodeX;
         float cellOffsetY = posY - nodeY;
@@ -79,6 +93,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         // Update the droplet's direction and position (move position 1 unit regardless of speed)
         dirX = (dirX * inertia - heightAndGradient.x * (1 - inertia));
         dirY = (dirY * inertia - heightAndGradient.y * (1 - inertia));
+
         // Normalize direction
         float len = max(0.01, sqrt(dirX * dirX + dirY * dirY));
         dirX /= len;
@@ -103,25 +118,49 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         float sedimentCapacity = max(-deltaHeight * speed * water * sedimentCapacityFactor, minSedimentCapacity);
 
         // If carrying more sediment than capacity, or if flowing uphill:
-        if (sediment > sedimentCapacity || deltaHeight > 0) {
+        if (sediment > sedimentCapacity || deltaHeight > 0)
+        {
             // If moving uphill (deltaHeight > 0) try fill up to the current height, otherwise deposit a fraction of the excess sediment
             float amountToDeposit = (deltaHeight > 0) ? min(deltaHeight, sediment) : (sediment - sedimentCapacity) * depositSpeed;
             sediment -= amountToDeposit;
 
             // Add the sediment to the four nodes of the current cell using bilinear interpolation
             // Deposition is not distributed over a radius (like erosion) so that it can fill small pits
+            int eastX = nodeX + 1;
+            if (eastX >= mapWidth) eastX -= mapWidth;
+
+            int southY = nodeY + 1;
+            if (southY >= mapHeight) southY = mapHeight - 1;
+
+            int indexNE = nodeY * mapWidth + eastX;
+            int indexSW = southY * mapWidth + nodeX;
+            int indexSE = southY * mapWidth + eastX;
+
             map[dropletIndex] += amountToDeposit * (1 - cellOffsetX) * (1 - cellOffsetY);
-            map[dropletIndex + 1] += amountToDeposit * cellOffsetX * (1 - cellOffsetY);
-            map[dropletIndex + mapWidth] += amountToDeposit * (1 - cellOffsetX) * cellOffsetY;
-            map[dropletIndex + mapWidth + 1] += amountToDeposit * cellOffsetX * cellOffsetY;
+            map[indexNE] += amountToDeposit * cellOffsetX * (1 - cellOffsetY);
+            map[indexSW] += amountToDeposit * (1 - cellOffsetX) * cellOffsetY;
+            map[indexSE] += amountToDeposit * cellOffsetX * cellOffsetY;
         }
-        else {
+        else
+        {
             // Erode a fraction of the droplet's current carry capacity.
             // Clamp the erosion to the change in height so that it doesn't dig a hole in the terrain behind the droplet
             float amountToErode = min((sedimentCapacity - sediment) * erodeSpeed, -deltaHeight);
 
-            for (int i = 0; i < brushLength; i++) {
-                int erodeIndex = dropletIndex + brushIndices[i];
+            for (int i = 0; i < brushLength; i++)
+            {
+                int brushX = brushIndices[i].x;
+                int brushY = brushIndices[i].y;
+
+                int erodeX = nodeX + brushX;
+                int erodeY = nodeY + brushY;
+
+                if (erodeX < 0) erodeX += mapWidth;
+                if (erodeX >= mapWidth) erodeX -= mapWidth;
+                if (erodeY < 0) erodeY = 0;
+                if (erodeY >= mapWidth) erodeY = mapWidth - 1;
+
+                int erodeIndex = erodeY * mapWidth + erodeX;
                 if (erodeIndex > 0 && erodeIndex < mapWidth * mapHeight)
                 {
                     float weightedErodeAmount = amountToErode * brushWeights[i];
@@ -136,5 +175,4 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         speed = sqrt(max(0, speed * speed + deltaHeight * gravity));
         water *= (1 - evaporateSpeed);
     }
-
 }

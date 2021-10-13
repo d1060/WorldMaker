@@ -4,11 +4,11 @@ using UnityEngine;
 using System;
 
 [Serializable]
-public class InciseFlowSettings
+public class PlotRiversSettings
 {
     public int numIterations = 1024;
     public Color riverColor = new Color(0, 0, 1, 1);
-    public float heightWeight = 500;
+    public float heightWeight = 1000;
     [Range(0, 1)]
     public float startingAlpha = 0.5f;
     public float alphaStep = (2 / 255f);
@@ -22,7 +22,7 @@ public class InciseFlowSettings
     {
         numIterations = 1024;
         riverColor = new Color(0, 0, 1, 1);
-        heightWeight = 500;
+        heightWeight = 1000;
         startingAlpha = 0.5f;
         alphaStep = (2 / 255f);
         flowHeightDelta = 0.01f;

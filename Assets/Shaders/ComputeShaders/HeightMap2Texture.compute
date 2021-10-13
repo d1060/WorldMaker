@@ -9,6 +9,7 @@ float erosionNoiseMerge;
 RWStructuredBuffer<float> originalHeightMap;
 RWStructuredBuffer<float> erodedHeightMap;
 RWStructuredBuffer<float> mergedHeightMap;
+RWStructuredBuffer<float> inciseFlowMap;
 RWTexture2D<float4> result;
 
 [numthreads(8,8,1)]
@@ -17,7 +18,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     if (id.x < (uint)mapWidth && id.y < (uint)mapHeight)
     {
         int index = id.x + id.y * mapWidth;
-        float erodedHeight = erodedHeightMap[index];
+        float erodedHeight = erodedHeightMap[index] - inciseFlowMap[index];
+        if (erodedHeight < 0) erodedHeight = 0;
+
         float originalHeight = originalHeightMap[index];
         float mergedHeight = erodedHeight;
         if (erosionNoiseMerge >= 1)

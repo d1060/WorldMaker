@@ -1,0 +1,156 @@
+#pragma kernel CSMain
+
+// Creates a flow map which points to the next cell with the lowest height that is lower than the current height.
+
+int mapWidth;
+int mapHeight;
+float amount = 1;
+RWStructuredBuffer<float> heightMap;
+RWStructuredBuffer<float> flowMap;
+
+#define DOWN_LEFT 1
+#define DOWN 2
+#define DOWN_RIGHT 3
+#define RIGHT 4
+#define UP_RIGHT 5
+#define UP 6
+#define UP_LEFT 7
+#define LEFT 8
+#define NO_DIRECTION 0
+
+float diagonalHeight(float diagonalHeight, float thisHeight)
+{
+    float actualHeight = (diagonalHeight - thisHeight) / 1.41421356 + thisHeight;
+    return actualHeight;
+}
+
+int2 FindNextCell(int x, int y)
+{
+    int nextX = 0;
+    int nextY = 0;
+
+    int index = x + mapWidth * y;
+
+    int leftX = x - 1;
+    int rightX = x + 1;
+    int topY = y - 1;
+    int bottomY = y + 1;
+
+    if (leftX < 0) leftX += mapWidth;
+    if (rightX >= mapWidth) rightX -= mapWidth;
+    if (bottomY >= mapHeight) bottomY = mapHeight - 1;
+    if (topY < 0) topY = 0;
+
+    int indexL = leftX + mapWidth * y;
+    int indexR = rightX + mapWidth * y;
+    int indexU = x + mapWidth * topY;
+    int indexD = x + mapWidth * bottomY;
+    int indexDL = leftX + mapWidth * bottomY;
+    int indexDR = rightX + mapWidth * bottomY;
+    int indexUL = leftX + mapWidth * topY;
+    int indexUR = rightX + mapWidth * topY;
+
+    float height = heightMap[index];
+    float heightDL = diagonalHeight(heightMap[indexDL], height);
+    float heightD = heightMap[indexD];
+    float heightDR = diagonalHeight(heightMap[indexDR], height);
+    float heightR = heightMap[indexR];
+    float heightUR = diagonalHeight(heightMap[indexUR], height);
+    float heightU = heightMap[indexU];
+    float heightUL = diagonalHeight(heightMap[indexUL], height);
+    float heightL = heightMap[indexL];
+
+    int nextIndex = -1;
+
+    if (heightDL < height && heightDL < heightD && heightDL < heightDR && heightDL < heightR && heightDL < heightUR && heightDL < heightU && heightDL < heightUL && heightDL < heightL)
+    {
+        //DL is the lowest.
+        nextX = leftX;
+        nextY = bottomY;
+        nextIndex = indexDL;
+    }
+    else if (heightD < height && heightD < heightDR && heightD < heightR && heightD < heightUR && heightD < heightU && heightD < heightUL && heightD < heightL && heightD < heightDL)
+    {
+        //D is the lowest.
+        nextX = x;
+        nextY = bottomY;
+        nextIndex = indexD;
+    }
+    else if (heightDR < height && heightDR < heightR && heightDR < heightUR && heightDR < heightU && heightDR < heightUL && heightDR < heightL && heightDR < heightDL && heightDR < heightD)
+    {
+        //DR is the lowest.
+        nextX = rightX;
+        nextY = bottomY;
+        nextIndex = indexDR;
+    }
+    else if (heightR < height && heightR < heightUR && heightR < heightU && heightR < heightUL && heightR < heightL && heightR < heightDL && heightR < heightD && heightR < heightDR)
+    {
+        //R is the lowest.
+        nextX = rightX;
+        nextY = y;
+        nextIndex = indexR;
+    }
+    else if (heightUR < height && heightUR < heightU && heightUR < heightUL && heightUR < heightL && heightUR < heightDL && heightUR < heightD && heightUR < heightDR && heightUR < heightR)
+    {
+        //UR is the lowest.
+        nextX = rightX;
+        nextY = topY;
+        nextIndex = indexUR;
+    }
+    else if (heightU < height && heightU < heightUL && heightU < heightL && heightU < heightDL && heightU < heightD && heightU < heightDR && heightU < heightR && heightU < heightUR)
+    {
+        //U is the lowest.
+        nextX = x;
+        nextY = topY;
+        nextIndex = indexU;
+    }
+    else if (heightUL < height && heightUL < heightL && heightUL < heightDL && heightUL < heightD && heightUL < heightDR && heightUL < heightR && heightUL < heightUR && heightUL < heightU)
+    {
+        //UL is the lowest.
+        nextX = leftX;
+        nextY = topY;
+        nextIndex = indexUL;
+    }
+    else if (heightL < height && heightL < heightDL && heightL < heightD && heightL < heightDR && heightL < heightR && heightL < heightUR && heightL < heightU && heightL < heightUL)
+    {
+        //L is the lowest.
+        nextX = leftX;
+        nextY = y;
+        nextIndex = indexL;
+    }
+    else
+    {
+        nextX = -1;
+        nextY = -1;
+    }
+
+    if (nextIndex != -1)
+    {
+        flowMap[nextIndex] += amount;
+    }
+
+    return int2(nextX, nextY);
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
+
+    int index = id.x + id.y * mapWidth;
+    int currentX = id.x;
+    int currentY = id.y;
+
+    flowMap[index] = amount > 1 ? amount : 1;
+    int nextX = 0;
+    int nextY = 0;
+    int2 next = int2(nextX, nextY);
+
+    while (next.x != -1 && next.y != -1)
+    {
+        next = FindNextCell(currentX, currentY);
+        currentX = next.x;
+        currentY = next.y;
+    }
+}

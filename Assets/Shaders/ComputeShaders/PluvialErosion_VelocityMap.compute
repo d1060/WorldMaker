@@ -16,17 +16,22 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     #include "Assets/Shaders/ComputeShaders/indexes.cginc"
 
     // Water Surface
-    float waterDelta = (outflowMap[indexLeft].y + outflowMap[indexRight].x + outflowMap[indexTop].w + outflowMap[indexBottom].z) - (outflowMap[index].x + outflowMap[index].y + outflowMap[index].z + outflowMap[index].w);
+    float waterDelta = (outflowMap[indexL].y + outflowMap[indexR].x + outflowMap[indexU].w + outflowMap[indexD].z) - (outflowMap[index].x + outflowMap[index].y + outflowMap[index].z + outflowMap[index].w);
     float d2 = waterHeightMap[index] + waterDelta;
-    //if (d2 < 0)
-    //    d2 = 0;
+    if (d2 < 0) d2 = 0;
     waterHeightMap[index] = d2;
 
     // Velocity Field
-    float horizontalVelocity = (outflowMap[indexLeft].y - outflowMap[index].x + outflowMap[index].y - outflowMap[indexRight].x) / 2; // Horizontal speed is from left to right
+    float horizontalVelocity = (outflowMap[indexL].y - outflowMap[index].x + outflowMap[index].y - outflowMap[indexR].x) / 2; // Horizontal speed is from left to right
     float u = horizontalVelocity;
-    float verticalVelocity = (outflowMap[indexBottom].z - outflowMap[index].w + outflowMap[index].z - outflowMap[indexTop].w) / 2; // Vertical speed is from bottom to top
+    float verticalVelocity = (outflowMap[indexD].z - outflowMap[index].w + outflowMap[index].z - outflowMap[indexU].w) / 2; // Vertical speed is from bottom to top
     float v = verticalVelocity;
 
+    //float velocity = sqrt(u * u + v * v);
+    //if (velocity > 1)
+    //{
+    //    u /= velocity;
+    //    v /= velocity;
+    //}
     velocityMap[index] = float2(u, v);
 }

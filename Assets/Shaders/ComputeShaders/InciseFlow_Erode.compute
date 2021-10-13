@@ -1,0 +1,49 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+int mapWidth;
+int mapHeight;
+float logBase = 2;
+float heightFactor = 3;
+float strength = 1;
+float minAmount = 0;
+RWStructuredBuffer<float> heightMap;
+RWStructuredBuffer<float> flowMap;
+RWStructuredBuffer<float> inciseFlowMap;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
+
+    int index = id.x + id.y * mapWidth;
+
+    float flowValue = flowMap[index];// + 1;
+    if (flowValue < 1) flowValue = 1;
+    if (logBase <= 1) logBase = 1.1;
+
+    float erodeValue = (log(flowValue) / log(logBase)) * heightFactor;
+    if (erodeValue < minAmount)
+        erodeValue = 0;
+    else
+        erodeValue -= minAmount;
+
+    erodeValue *= strength;
+
+    if (erodeValue > heightMap[index])
+    {
+        inciseFlowMap[index] = heightMap[index];
+        //heightMap[index] = 0;
+    }
+    else if (erodeValue > heightFactor)
+    {
+        inciseFlowMap[index] = heightFactor;
+        //heightMap[index] -= heightFactor;
+    }
+    else
+    {
+        inciseFlowMap[index] = erodeValue;
+        //heightMap[index] -= erodeValue;
+    }
+}

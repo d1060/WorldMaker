@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -53,9 +53,6 @@
     <UnityVersion>2021.1.20f1</UnityVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Analyzer Include="C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\IDE\Extensions\Microsoft\Visual Studio Tools for Unity\Analyzers\Microsoft.Unity.Analyzers.dll" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorSliderImage.cs" />
     <Compile Include="Assets\Scripts\Menu\MainMenu.cs" />
     <Compile Include="Assets\StandaloneFileBrowser\StandaloneFileBrowserWindows.cs" />
@@ -83,12 +80,12 @@
     <Compile Include="Assets\Scripts\Menu\Tooltip.cs" />
     <Compile Include="Assets\Scripts\Math\TangentSolver.cs" />
     <Compile Include="Assets\Scripts\Geosphere\GeoSphereBaseFaces.cs" />
-    <Compile Include="Assets\Scripts\Erosion\InciseFlow.cs" />
+    <Compile Include="Assets\Scripts\Erosion\PlotRivers.cs" />
     <Compile Include="Assets\Scripts\Menu\GradientSliderHandle.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\Events\HSVChangedEvent.cs" />
     <Compile Include="Assets\Scripts\Texture\NoiseSettings.cs" />
     <Compile Include="Assets\Scripts\Math\Vector2i.cs" />
-    <Compile Include="Assets\Scripts\Erosion\InciseFlowSettings.cs" />
+    <Compile Include="Assets\Scripts\Erosion\PlotRiversSettings.cs" />
     <Compile Include="Assets\Scripts\World\BrushController.cs" />
     <Compile Include="Assets\Scripts\Map\WaypointSize.cs" />
     <Compile Include="Assets\Scripts\Menu\WaterLevelSlider.cs" />
@@ -124,11 +121,13 @@
     <Compile Include="Assets\Scripts\World\FlatMap.cs" />
     <Compile Include="Assets\Scripts\ExtensionMethods\ExtensionMethods.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\HexColorField.cs" />
+    <Compile Include="Assets\Scripts\Erosion\InciseFlow.cs" />
     <Compile Include="Assets\Scripts\Map\PathSmoother.cs" />
     <Compile Include="Assets\Scripts\Geosphere\Clouds.cs" />
     <Compile Include="Assets\Scripts\NameGenerator\NameGeneratorSyllabes.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorImage.cs" />
     <Compile Include="Assets\Scripts\Erosion\ErosionSettings.cs" />
+    <Compile Include="Assets\Scripts\Texture\InciseFlowSettings.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
@@ -136,7 +135,6 @@
     <None Include="Assets\Libraries\Log.dll" />
     <None Include="Assets\Shaders\ComputeShaders\Heightmap.compute" />
     <None Include="Assets\Shaders\ComputeShaders\PluvialErosion_Erosion.compute" />
-    <None Include="Assets\Shaders\ComputeShaders\InciseFlow.compute" />
     <None Include="Assets\Shaders\TerrainBrush.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />
     <None Include="Assets\Shaders\ComputeShaders\PluvialErosion_VelocityMap.compute" />
@@ -166,6 +164,7 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Surface.cginc" />
     <None Include="Assets\Shaders\ComputeShaders\HeightMap2Texture.compute" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Following Characters.txt" />
+    <None Include="Assets\Shaders\ComputeShaders\InciseFlow_Erode.compute" />
     <None Include="Assets\Shaders\Atmosphere Fresnel.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Masking.shader" />
     <None Include="Assets\Libraries\ImageTools.dll" />
@@ -173,6 +172,7 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Mobile.shader" />
     <None Include="Assets\TextMesh Pro\Fonts\LiberationSans - OFL.txt" />
+    <None Include="Assets\Shaders\ComputeShaders\InciseFlow_FlowMap.compute" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Sprite.shader" />
     <None Include="Assets\Shaders\Sphere.cginc" />

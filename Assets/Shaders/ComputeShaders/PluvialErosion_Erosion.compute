@@ -5,11 +5,13 @@ int mapWidth;
 int mapHeight;
 float minTiltAngle = 0.01;
 float sedimentCapacity = 1;
+float maxErosionDepth = 0.1;
 float sedimentDissolvingConstant = 1;
 float sedimentDepositionConstant = 1;
 RWStructuredBuffer<float> sedimentMap;
 RWStructuredBuffer<float> heightMap;
 RWStructuredBuffer<float2> velocityMap;
+RWStructuredBuffer<float> waterHeightMap;
 
 #include "Assets/Shaders/ComputeShaders/interpolate.cginc"
 
@@ -21,9 +23,17 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     #include "Assets/Shaders/ComputeShaders/indexes.cginc"
 
-    // Erosion and Deposition
+    float height = heightMap[index];
+    float waterHeight = waterHeightMap[index];
+    float velocity = sqrt(velocityMap[index].x * velocityMap[index].x + velocityMap[index].y * velocityMap[index].y);
+    //if (velocity > 1)
+    //{
+    //    velocityMap[index].x /= velocity;
+    //    velocityMap[index].y /= velocity;
+    //    velocity = 1;
+    //}
     float neighborHeight = interpolate(heightMap, float2(id.x + velocityMap[index].x, id.y + velocityMap[index].y));
-    float heightDelta = heightMap[index] - neighborHeight;
+    float heightDelta = height - neighborHeight; // If HeightDelta > 0, we are going DOWNHILL. If HeightDelta < 0, we are going UPHILL.
 
     if (heightDelta < minTiltAngle && heightDelta > -minTiltAngle)
     {
@@ -33,53 +43,62 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             heightDelta = -minTiltAngle;
     }
 
-    float velocity = sqrt(velocityMap[index].x * velocityMap[index].x + velocityMap[index].y * velocityMap[index].y);
-
     float sedimentTransportCapacity = sedimentCapacity * heightDelta * velocity;
-    float currentSediment = sedimentMap[index];
 
-    float newHeight = heightMap[index];
+    // Ramp-up function based on water depth
+    float lMax = 0;
+    if (waterHeight >= maxErosionDepth)
+    {
+        lMax = 1;
+    }
+    else if (waterHeight < maxErosionDepth && waterHeight > 0)
+    {
+        lMax = 1 - (maxErosionDepth - waterHeight) / maxErosionDepth;
+    }
+    sedimentTransportCapacity *= lMax;
+
+    float currentSediment = sedimentMap[index];
+    float newHeight = height;
     float sediment = currentSediment;
     float sedimentChange = 0;
+    float newWaterHeight = waterHeight;
 
-    if (heightDelta < 0)
+    // Deposits soil in ground.
+    if (sedimentTransportCapacity < currentSediment || heightDelta < 0)
     {
-        // Going uphill
-        sedimentChange = -heightDelta;
-        if (sedimentChange > -sedimentTransportCapacity)
-            sedimentChange = -sedimentTransportCapacity;
+        if (sedimentTransportCapacity < currentSediment)
+            sedimentChange = sedimentDepositionConstant * (currentSediment - sedimentTransportCapacity);
+        else 
+            sedimentChange = sedimentDepositionConstant * (sedimentTransportCapacity - currentSediment);
+
+        if (heightDelta >= 0 && sedimentChange > heightDelta)
+            sedimentChange = heightDelta;
+        else if (heightDelta < 0 && sedimentChange > -heightDelta)
+            sedimentChange = -heightDelta;
+
+        if (sedimentChange < 0)
+            sedimentChange = 0;
         if (sedimentChange > currentSediment)
             sedimentChange = currentSediment;
+        if (sedimentChange > waterHeight)
+            sedimentChange = waterHeight;
 
-        newHeight = heightMap[index] + sedimentChange;
-        sediment = currentSediment - sedimentChange;
+        newHeight += sedimentChange;
+        sediment -= sedimentChange;
+        newWaterHeight -= sedimentChange;
     }
+    // Dissolves soil in water.
     else if (sedimentTransportCapacity > currentSediment)
     {
         sedimentChange = sedimentDissolvingConstant * (sedimentTransportCapacity - currentSediment);
         if (sedimentChange > heightDelta)
             sedimentChange = heightDelta;
-        if (heightMap[index] - sedimentChange < 0)
-            sedimentChange = heightMap[index];
+        if (height - sedimentChange < 0)
+            sedimentChange = height;
 
-        newHeight = heightMap[index] - sedimentChange;
-        sediment = currentSediment + sedimentChange;
-    }
-    else if (sedimentTransportCapacity < currentSediment)
-    {
-        sedimentChange = sedimentDepositionConstant * (currentSediment - sedimentTransportCapacity);
-        if (sedimentChange > heightDelta)
-            sedimentChange = heightDelta;
-
-        if (heightMap[index] + sedimentChange > neighborHeight)
-            sedimentChange = neighborHeight - heightMap[index];
-        if (sedimentChange < 0)
-            sedimentChange = 0;
-        if (sedimentChange > currentSediment)
-            sedimentChange = currentSediment;
-
-        newHeight = heightMap[index] + sedimentChange;
-        sediment = currentSediment - sedimentChange;
+        newHeight -= sedimentChange;
+        sediment += sedimentChange;
+        newWaterHeight += sedimentChange;
     }
 
     if (newHeight < 0) newHeight = 0;
@@ -88,4 +107,5 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     heightMap[index] = newHeight;
     sedimentMap[index] = sediment;
+    waterHeightMap[index] = newWaterHeight;
 }
