@@ -707,8 +707,11 @@ public partial class Map : MonoBehaviour
     {
         inciseFlowSettings.strength = value;
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
-        PerformInciseFlow();
-        MapData.instance.Save();
+        if (!firstUpdate)
+        {
+            PerformInciseFlow();
+            MapData.instance.Save();
+        }
     }
 
     public void NewFlowExponent(string value)
@@ -718,8 +721,11 @@ public partial class Map : MonoBehaviour
         {
             inciseFlowSettings.exponent = (float)dValue;
             MapData.instance.inciseFlowSettings = inciseFlowSettings;
-            PerformInciseFlow();
-            MapData.instance.Save();
+            if (!firstUpdate)
+            {
+                PerformInciseFlow();
+                MapData.instance.Save();
+            }
         }
     }
 
@@ -730,8 +736,11 @@ public partial class Map : MonoBehaviour
         {
             inciseFlowSettings.amount = (float)dValue;
             MapData.instance.inciseFlowSettings = inciseFlowSettings;
-            PerformInciseFlow();
-            MapData.instance.Save();
+            if (!firstUpdate)
+            {
+                PerformInciseFlow();
+                MapData.instance.Save();
+            }
         }
     }
 
@@ -739,8 +748,44 @@ public partial class Map : MonoBehaviour
     {
         inciseFlowSettings.minAmount = value;
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
-        PerformInciseFlow();
-        MapData.instance.Save();
+        if (!firstUpdate)
+        {
+            PerformInciseFlow();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewFlowInertia(float value)
+    {
+        inciseFlowSettings.inertia = value;
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
+        {
+            PerformInciseFlow();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewFlowChiselStrength(float value)
+    {
+        inciseFlowSettings.chiselStrength = value;
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
+        {
+            PerformInciseFlow();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewFlowHeightInfluence(float value)
+    {
+        inciseFlowSettings.heightInfluence = value;
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
+        {
+            PerformInciseFlow();
+            MapData.instance.Save();
+        }
     }
     #endregion
 
@@ -1064,6 +1109,9 @@ public partial class Map : MonoBehaviour
             UpdateUIInputField(inciseFlowPanelTransform, "Flow Exponent Text Box", inciseFlowSettings.exponent.ToString());
             UpdateUIInputField(inciseFlowPanelTransform, "Flow Amount Text Box", inciseFlowSettings.amount.ToString());
             UpdateUISlider(inciseFlowPanelTransform, "Min Amount Slider", inciseFlowSettings.minAmount);
+            UpdateUISlider(inciseFlowPanelTransform, "Flow Inertia Slider", inciseFlowSettings.inertia);
+            UpdateUISlider(inciseFlowPanelTransform, "Flow Curve Strength Slider", inciseFlowSettings.chiselStrength);
+            UpdateUISlider(inciseFlowPanelTransform, "Flow Height Influence Slider", inciseFlowSettings.heightInfluence);
         }
     }
 

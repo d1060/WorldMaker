@@ -25,6 +25,65 @@ class InciseFlow
     }
     #endregion
 
+    struct int2
+    {
+        public int x;
+        public int y;
+
+        public int2 (int _x, int _y)
+        {
+            x = _x;
+            y = _y;
+        }
+
+        public static int2 operator +(int2 i, int2 u)
+        {
+            return new int2(i.x + u.x, i.y + u.y);
+        }
+
+        public override string ToString()
+        {
+            return x.ToString() + ":" + y.ToString();
+        }
+    }
+
+    struct float2
+    {
+        public float x;
+        public float y;
+
+        public float2 (float _x, float _y)
+        {
+            x = _x;
+            y = _y;
+        }
+
+        public static float2 operator +(float2 i, float2 u)
+        {
+            return new float2(i.x + u.x, i.y + u.y);
+        }
+
+        public static float2 operator *(float2 i, float u)
+        {
+            return new float2(i.x * u, i.y * u);
+        }
+
+        public static float2 operator /(float2 i, float u)
+        {
+            return new float2(i.x / u, i.y / u);
+        }
+
+        public static float2 operator *(float2 i, double u)
+        {
+            return new float2((float)(i.x * u), (float)(i.y * u));
+        }
+
+        public override string ToString()
+        {
+            return x.ToString() + ":" + y.ToString();
+        }
+    }
+
     public int mapWidth;
     public int mapHeight;
     public float logBase = 2;
@@ -32,9 +91,14 @@ class InciseFlow
     public float heightFactor = 0.1f;
     public float minAmount = 0;
     public float strength = 1;
+    public int maxPathDepth = 512;
+    public float inertia = 1;
     float[] flowMap;
+    public float[] heightMap;
+    public float[] fillBasinsHeightMap;
+    public float[] inciseFlowMap;
 
-    public void Run(ref float[] heightMap, ref float[] inciseFlowMap)
+    public void Run()
     {
         flowMap = new float[heightMap.Length];
 
@@ -43,17 +107,27 @@ class InciseFlow
         {
             for (int y = 0; y < mapHeight; y++)
             {
-                int index = x + y * mapWidth;
-                int currentX = x;
-                int currentY = y;
+                int2 id = new int2(x, y);
 
-                flowMap[index] = amount;
-                int nextX = -1;
-                int nextY = -1;
-                while (FindNextCell(currentX, currentY, ref heightMap, ref flowMap, ref nextX, ref nextY))
+                int index = id.x + id.y * mapWidth;
+                int currentX = id.x;
+                int currentY = id.y;
+
+                flowMap[index] = amount > 1 ? amount : 1;
+                int nextX = 0;
+                int nextY = 0;
+                int2 next = new int2(nextX, nextY);
+
+                int count = 0;
+                float2 gradient = new float2(0, 0);
+                while (count < 256 && count < maxPathDepth && next.x != -1 && next.y != -1)
                 {
-                    currentX = nextX;
-                    currentY = nextY;
+                    float2 newGradient = new float2(0, 0);
+                    next = FindNextCell(currentX, currentY, gradient, out newGradient);
+                    gradient = newGradient;
+                    currentX = next.x;
+                    currentY = next.y;
+                    count++;
                 }
             }
         }
@@ -85,7 +159,7 @@ class InciseFlow
         }
     }
 
-    bool FindNextCell(int x, int y, ref float[] heightMap, ref float[] flowMap, ref int nextX, ref int nextY)
+    int2 FindNextCell(int x, int y, float2 prevGradient, out float2 newGradient)
     {
         int index = x + mapWidth * y;
 
@@ -108,87 +182,106 @@ class InciseFlow
         int indexUL = leftX + mapWidth * topY;
         int indexUR = rightX + mapWidth * topY;
 
-        float height = heightMap[index];
-        float heightDL = diagonalHeight(heightMap[indexDL], height);
-        float heightD = heightMap[indexD];
-        float heightDR = diagonalHeight(heightMap[indexDR], height);
-        float heightR = heightMap[indexR];
-        float heightUR = diagonalHeight(heightMap[indexUR], height);
-        float heightU = heightMap[indexU];
-        float heightUL = diagonalHeight(heightMap[indexUL], height);
-        float heightL = heightMap[indexL];
+        float height = fillBasinsHeightMap[index];
+        float heightDL = diagonalHeight(fillBasinsHeightMap[indexDL], height);
+        float heightD = fillBasinsHeightMap[indexD];
+        float heightDR = diagonalHeight(fillBasinsHeightMap[indexDR], height);
+        float heightR = fillBasinsHeightMap[indexR];
+        float heightUR = diagonalHeight(fillBasinsHeightMap[indexUR], height);
+        float heightU = fillBasinsHeightMap[indexU];
+        float heightUL = diagonalHeight(fillBasinsHeightMap[indexUL], height);
+        float heightL = fillBasinsHeightMap[indexL];
 
-        if (heightDL < height && heightDL < heightD && heightDL < heightDR && heightDL < heightR && heightDL < heightUR && heightDL < heightU && heightDL < heightUL && heightDL < heightL)
+        bool goingNowhere = false;
+        float2 gradient = new float2(0, 0);
+        float heightDifference = 0;
+
+        if (heightDL < heightD && heightDL < heightDR && heightDL < heightR && heightDL < heightUR && heightDL < heightU && heightDL < heightUL && heightDL < heightL)
         {
             //DL is the lowest.
-            nextX = leftX;
-            nextY = bottomY;
-            //flowMap[indexDL] += height - heightDL;
-            flowMap[indexDL] += amount;
+            heightDifference = height - heightDL;
+            gradient = new float2(-0.707107f, 0.707107f);
         }
-        else if (heightD < height && heightD < heightDR && heightD < heightR && heightD < heightUR && heightD < heightU && heightD < heightUL && heightD < heightL && heightD < heightDL)
+        else if (heightD < heightDR && heightD < heightR && heightD < heightUR && heightD < heightU && heightD < heightUL && heightD < heightL && heightD < heightDL)
         {
             //D is the lowest.
-            nextX = x;
-            nextY = bottomY;
-            //flowMap[indexD] += height - heightD;
-            flowMap[indexD] += amount;
+            heightDifference = height - heightD;
+            gradient = new float2(0, 1);
         }
-        else if (heightDR < height && heightDR < heightR && heightDR < heightUR && heightDR < heightU && heightDR < heightUL && heightDR < heightL && heightDR < heightDL && heightDR < heightD)
+        else if (heightDR < heightR && heightDR < heightUR && heightDR < heightU && heightDR < heightUL && heightDR < heightL && heightDR < heightDL && heightDR < heightD)
         {
             //DR is the lowest.
-            nextX = rightX;
-            nextY = bottomY;
-            //flowMap[indexDR] += height - heightDR;
-            flowMap[indexDR] += amount;
+            heightDifference = height - heightDR;
+            gradient = new float2(0.707107f, 0.707107f);
         }
-        else if (heightR < height && heightR < heightUR && heightR < heightU && heightR < heightUL && heightR < heightL && heightR < heightDL && heightR < heightD && heightR < heightDR)
+        else if (heightR < heightUR && heightR < heightU && heightR < heightUL && heightR < heightL && heightR < heightDL && heightR < heightD && heightR < heightDR)
         {
             //R is the lowest.
-            nextX = rightX;
-            nextY = y;
-            //flowMap[indexR] += height - heightR;
-            flowMap[indexR] += amount;
+            heightDifference = height - heightR;
+            gradient = new float2(1, 0);
         }
-        else if (heightUR < height && heightUR < heightU && heightUR < heightUL && heightUR < heightL && heightUR < heightDL && heightUR < heightD && heightUR < heightDR && heightUR < heightR)
+        else if (heightUR < heightU && heightUR < heightUL && heightUR < heightL && heightUR < heightDL && heightUR < heightD && heightUR < heightDR && heightUR < heightR)
         {
             //UR is the lowest.
-            nextX = rightX;
-            nextY = topY;
-            //flowMap[indexUR] += height - heightUR;
-            flowMap[indexUR] += amount;
+            heightDifference = height - heightUR;
+            gradient = new float2(0.707107f, -0.707107f);
         }
-        else if (heightU < height && heightU < heightUL && heightU < heightL && heightU < heightDL && heightU < heightD && heightU < heightDR && heightU < heightR && heightU < heightUR)
+        else if (heightU < heightUL && heightU < heightL && heightU < heightDL && heightU < heightD && heightU < heightDR && heightU < heightR && heightU < heightUR)
         {
             //U is the lowest.
-            nextX = x;
-            nextY = topY;
-            //flowMap[indexU] += height - heightU;
-            flowMap[indexU] += amount;
+            heightDifference = height - heightU;
+            gradient = new float2(0, -1);
         }
-        else if (heightUL < height && heightUL < heightL && heightUL < heightDL && heightUL < heightD && heightUL < heightDR && heightUL < heightR && heightUL < heightUR && heightUL < heightU)
+        else if (heightUL < heightL && heightUL < heightDL && heightUL < heightD && heightUL < heightDR && heightUL < heightR && heightUL < heightUR && heightUL < heightU)
         {
             //UL is the lowest.
-            nextX = leftX;
-            nextY = topY;
-            //flowMap[indexUL] += height - heightUL;
-            flowMap[indexUL] += amount;
+            heightDifference = height - heightUL;
+            gradient = new float2(-0.707107f, -0.707107f);
         }
-        else if (heightL < height && heightL < heightDL && heightL < heightD && heightL < heightDR && heightL < heightR && heightL < heightUR && heightL < heightU && heightL < heightUL)
+        else if (heightL < heightDL && heightL < heightD && heightL < heightDR && heightL < heightR && heightL < heightUR && heightL < heightU && heightL < heightUL)
         {
             //L is the lowest.
-            nextX = leftX;
-            nextY = y;
-            //flowMap[indexL] += height - heightL;
-            flowMap[indexL] += amount;
+            heightDifference = height - heightL;
+            gradient = new float2(-1, 0);
         }
         else
         {
-            nextX = -1;
-            nextY = -1;
-            return false;
+            goingNowhere = true;
         }
-        return true;
+
+        if (heightDifference >= 0) // Going downhill
+        {
+            gradient *= heightDifference;
+        }
+        else // Going uphill - adds forced inertia and disconsiders current gradient.
+        {
+            gradient *= 0;
+        }
+        newGradient = prevGradient * inertia + gradient * (1 - inertia);
+
+        // Rounds up the new gradient to the nearest integer direction.
+        int2 finalCoordinates = new int2(-1, -1);
+        if (!goingNowhere && (newGradient.x != 0 || newGradient.y != 0))
+        {
+            float2 finalNewGradient = new float2(newGradient.x, newGradient.y);
+            float magnitude = Mathf.Sqrt(newGradient.x * newGradient.x + newGradient.y * newGradient.y);
+            finalNewGradient /= magnitude;
+            finalNewGradient *= 1.125;
+
+            int finalX = x + (int)Mathf.Round(finalNewGradient.x);
+            int finalY = y + (int)Mathf.Round(finalNewGradient.y);
+
+            if (finalX < 0) finalX += mapWidth;
+            if (finalX >= mapWidth) finalX -= mapWidth;
+            if (finalY >= mapHeight) finalY = mapHeight - 1;
+            if (finalY < 0) finalY = 0;
+
+            int nextIndex = finalX + mapWidth * finalY;
+            flowMap[nextIndex] += amount;
+            finalCoordinates = new int2(finalX, finalY);
+        }
+
+        return finalCoordinates;
     }
 
     float diagonalHeight(float diagonalHeight, float thisHeight)

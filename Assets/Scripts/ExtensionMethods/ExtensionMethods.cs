@@ -395,6 +395,26 @@ public static partial class ExtensionMethods
         UnityEngine.Object.Destroy(texture);
     }
 
+    public static void SaveAsPng(this float[] array, int width, string fileName)
+    {
+        int height = array.Length / width;
+        Color[] colors = new Color[width * height];
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int index = x + y * width;
+                float value = array[index];
+                Color color = new Color(value, value, value);
+                colors[index] = color;
+            }
+        }
+        Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA64, false, true);
+        tex.SetPixels(colors);
+        tex.Apply();
+        tex.SaveAsPNG(fileName);
+    }
+
     public static Component GetChildWithName(this Component obj, string name)
     {
         Transform trans = obj.transform;

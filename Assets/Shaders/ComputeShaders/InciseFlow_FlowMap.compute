@@ -4,19 +4,11 @@
 
 int mapWidth;
 int mapHeight;
+int maxPathDepth = 512;
 float amount = 1;
-RWStructuredBuffer<float> heightMap;
+float inertia = 1;
 RWStructuredBuffer<float> flowMap;
-
-#define DOWN_LEFT 1
-#define DOWN 2
-#define DOWN_RIGHT 3
-#define RIGHT 4
-#define UP_RIGHT 5
-#define UP 6
-#define UP_LEFT 7
-#define LEFT 8
-#define NO_DIRECTION 0
+RWStructuredBuffer<float> heightMap;
 
 float diagonalHeight(float diagonalHeight, float thisHeight)
 {
@@ -24,11 +16,8 @@ float diagonalHeight(float diagonalHeight, float thisHeight)
     return actualHeight;
 }
 
-int2 FindNextCell(int x, int y)
+int2 FindNextCell(int x, int y, float2 prevGradient, out float2 newGradient)
 {
-    int nextX = 0;
-    int nextY = 0;
-
     int index = x + mapWidth * y;
 
     int leftX = x - 1;
@@ -60,76 +49,95 @@ int2 FindNextCell(int x, int y)
     float heightUL = diagonalHeight(heightMap[indexUL], height);
     float heightL = heightMap[indexL];
 
-    int nextIndex = -1;
+    bool goingNowhere = false;
+    float2 gradient = float2(0, 0);
+    float heightDifference = 0;
 
-    if (heightDL < height && heightDL < heightD && heightDL < heightDR && heightDL < heightR && heightDL < heightUR && heightDL < heightU && heightDL < heightUL && heightDL < heightL)
+    if (height != heightDL && heightDL < heightD && heightDL < heightDR && heightDL < heightR && heightDL < heightUR && heightDL < heightU && heightDL < heightUL && heightDL < heightL)
     {
         //DL is the lowest.
-        nextX = leftX;
-        nextY = bottomY;
-        nextIndex = indexDL;
+        heightDifference = height - heightDL;
+        gradient = float2(-0.707107, 0.707107);
     }
-    else if (heightD < height && heightD < heightDR && heightD < heightR && heightD < heightUR && heightD < heightU && heightD < heightUL && heightD < heightL && heightD < heightDL)
+    else if (height != heightD && heightD < heightDR && heightD < heightR && heightD < heightUR && heightD < heightU && heightD < heightUL && heightD < heightL && heightD < heightDL)
     {
         //D is the lowest.
-        nextX = x;
-        nextY = bottomY;
-        nextIndex = indexD;
+        heightDifference = height - heightD;
+        gradient = float2(0, 1);
     }
-    else if (heightDR < height && heightDR < heightR && heightDR < heightUR && heightDR < heightU && heightDR < heightUL && heightDR < heightL && heightDR < heightDL && heightDR < heightD)
+    else if (height != heightDR && heightDR < heightR && heightDR < heightUR && heightDR < heightU && heightDR < heightUL && heightDR < heightL && heightDR < heightDL && heightDR < heightD)
     {
         //DR is the lowest.
-        nextX = rightX;
-        nextY = bottomY;
-        nextIndex = indexDR;
+        heightDifference = height - heightDR;
+        gradient = float2(0.707107, 0.707107);
     }
-    else if (heightR < height && heightR < heightUR && heightR < heightU && heightR < heightUL && heightR < heightL && heightR < heightDL && heightR < heightD && heightR < heightDR)
+    else if (height != heightR && heightR < heightUR && heightR < heightU && heightR < heightUL && heightR < heightL && heightR < heightDL && heightR < heightD && heightR < heightDR)
     {
         //R is the lowest.
-        nextX = rightX;
-        nextY = y;
-        nextIndex = indexR;
+        heightDifference = height - heightR;
+        gradient = float2(1, 0);
     }
-    else if (heightUR < height && heightUR < heightU && heightUR < heightUL && heightUR < heightL && heightUR < heightDL && heightUR < heightD && heightUR < heightDR && heightUR < heightR)
+    else if (height != heightUR && heightUR < heightU && heightUR < heightUL && heightUR < heightL && heightUR < heightDL && heightUR < heightD && heightUR < heightDR && heightUR < heightR)
     {
         //UR is the lowest.
-        nextX = rightX;
-        nextY = topY;
-        nextIndex = indexUR;
+        heightDifference = height - heightUR;
+        gradient = float2(0.707107, -0.707107);
     }
-    else if (heightU < height && heightU < heightUL && heightU < heightL && heightU < heightDL && heightU < heightD && heightU < heightDR && heightU < heightR && heightU < heightUR)
+    else if (height != heightU && heightU < heightUL && heightU < heightL && heightU < heightDL && heightU < heightD && heightU < heightDR && heightU < heightR && heightU < heightUR)
     {
         //U is the lowest.
-        nextX = x;
-        nextY = topY;
-        nextIndex = indexU;
+        heightDifference = height - heightU;
+        gradient = float2(0, -1);
     }
-    else if (heightUL < height && heightUL < heightL && heightUL < heightDL && heightUL < heightD && heightUL < heightDR && heightUL < heightR && heightUL < heightUR && heightUL < heightU)
+    else if (height != heightUL && heightUL < heightL && heightUL < heightDL && heightUL < heightD && heightUL < heightDR && heightUL < heightR && heightUL < heightUR && heightUL < heightU)
     {
         //UL is the lowest.
-        nextX = leftX;
-        nextY = topY;
-        nextIndex = indexUL;
+        heightDifference = height - heightUL;
+        gradient = float2(-0.707107, -0.707107);
     }
-    else if (heightL < height && heightL < heightDL && heightL < heightD && heightL < heightDR && heightL < heightR && heightL < heightUR && heightL < heightU && heightL < heightUL)
+    else if (height != heightL && heightL < heightDL && heightL < heightD && heightL < heightDR && heightL < heightR && heightL < heightUR && heightL < heightU && heightL < heightUL)
     {
         //L is the lowest.
-        nextX = leftX;
-        nextY = y;
-        nextIndex = indexL;
+        heightDifference = height - heightL;
+        gradient = float2(-1, 0);
     }
     else
     {
-        nextX = -1;
-        nextY = -1;
+        goingNowhere = true;
     }
 
-    if (nextIndex != -1)
+    if (heightDifference >= 0) // Going downhill
     {
+        gradient *= heightDifference;
+    }
+    else // Going uphill - adds forced inertia and disconsiders current gradient.
+    {
+        heightMap[index] = height - heightDifference;
+        gradient *= 0;
+    }
+    newGradient = prevGradient * inertia + gradient;
+
+    // Rounds up the new gradient to the nearest integer direction.
+    int2 finalCoordinates = int2(-1, -1);
+    if (!goingNowhere && (newGradient.x != 0 || newGradient.y != 0))
+    {
+        float2 finalNewGradient = normalize(float2(newGradient.x, newGradient.y));
+        finalNewGradient *= 1.125;
+
+        int finalX = x + round(finalNewGradient.x);
+        int finalY = y + round(finalNewGradient.y);
+
+        if (finalX < 0) finalX += mapWidth;
+        if (finalX >= mapWidth) finalX -= mapWidth;
+        if (finalY >= mapHeight) finalY = mapHeight - 1;
+        if (finalY < 0) finalY = 0;
+
+        int nextIndex = finalX + mapWidth * finalY;
         flowMap[nextIndex] += amount;
+        finalCoordinates = int2(finalX, finalY);
     }
 
-    return int2(nextX, nextY);
+    return finalCoordinates;
 }
 
 [numthreads(8,8,1)]
@@ -147,10 +155,15 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     int nextY = 0;
     int2 next = int2(nextX, nextY);
 
-    while (next.x != -1 && next.y != -1)
+    int count = 0;
+    float2 gradient = float2(0, 0);
+    while (count < 256 && count < maxPathDepth && next.x != -1 && next.y != -1)
     {
-        next = FindNextCell(currentX, currentY);
+        float2 newGradient = float2(0, 0);
+        next = FindNextCell(currentX, currentY, gradient, newGradient);
+        gradient = newGradient;
         currentX = next.x;
         currentY = next.y;
+        count++;
     }
 }

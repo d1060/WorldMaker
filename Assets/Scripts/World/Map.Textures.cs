@@ -229,11 +229,13 @@ public partial class Map : MonoBehaviour
             planetSurfaceMaterial.SetInt("_IsMainmapSet", 0);
             planetSurfaceMaterial.SetInt("_IsLandmaskSet", 0);
         }
+
         if (resetEroded)
         {
             erodedHeightMap = null;
             originalHeightMap = null;
             mergedHeightMap = null;
+            fillBasinsHeightMap = null;
             planetSurfaceMaterial.SetInt("_IsEroded", 0);
             planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
         }
@@ -603,6 +605,7 @@ public partial class Map : MonoBehaviour
         bool useCPU = false;
 
         GenerateHeightMap();
+        PerformFillBasins();
         inciseFlowMap = new float[erodedHeightMap.Length];
 
         if (useCPU)
@@ -613,9 +616,13 @@ public partial class Map : MonoBehaviour
             InciseFlow.instance.amount = inciseFlowSettings.amount;
             InciseFlow.instance.minAmount = inciseFlowSettings.minAmount;
             InciseFlow.instance.strength = inciseFlowSettings.strength;
+            InciseFlow.instance.maxPathDepth = 512;
+            InciseFlow.instance.inertia = inciseFlowSettings.inertia;
             InciseFlow.instance.heightFactor = 0.05f;
-
-            InciseFlow.instance.Run(ref erodedHeightMap, ref inciseFlowMap);
+            InciseFlow.instance.heightMap = erodedHeightMap;
+            InciseFlow.instance.fillBasinsHeightMap = fillBasinsHeightMap;
+            InciseFlow.instance.inciseFlowMap = inciseFlowMap;
+            InciseFlow.instance.Run();
         }
         else
         {
@@ -624,8 +631,8 @@ public partial class Map : MonoBehaviour
             ComputeBuffer flowMapBuffer = new ComputeBuffer(flowMap.Length, sizeof(float));
             flowMapBuffer.SetData(flowMap);
 
-            ComputeBuffer heightMapBuffer = new ComputeBuffer(erodedHeightMap.Length, sizeof(float));
-            heightMapBuffer.SetData(erodedHeightMap);
+            ComputeBuffer heightMapBuffer = new ComputeBuffer(fillBasinsHeightMap.Length, sizeof(float));
+            heightMapBuffer.SetData(fillBasinsHeightMap);
 
             ComputeBuffer inciseFlowMapBuffer = new ComputeBuffer(inciseFlowMap.Length, sizeof(float));
             inciseFlowMapBuffer.SetData(inciseFlowMap);
@@ -636,6 +643,8 @@ public partial class Map : MonoBehaviour
             inciseFlowFlowMap.SetInt("mapWidth", textureSettings.textureWidth);
             inciseFlowFlowMap.SetInt("mapHeight", textureSettings.textureHeight);
             inciseFlowFlowMap.SetFloat("amount", inciseFlowSettings.amount);
+            inciseFlowFlowMap.SetFloat("maxPathDepth", 512);
+            inciseFlowFlowMap.SetFloat("inertia", inciseFlowSettings.inertia);
             inciseFlowFlowMap.SetBuffer(0, "heightMap", heightMapBuffer);
             inciseFlowFlowMap.SetBuffer(0, "flowMap", flowMapBuffer);
             inciseFlowFlowMap.Dispatch(0, numThreadsX, numThreadsY, 1);
@@ -646,6 +655,9 @@ public partial class Map : MonoBehaviour
             inciseFlowErosion.SetFloat("heightFactor", 0.05f);
             inciseFlowErosion.SetFloat("strength", inciseFlowSettings.strength);
             inciseFlowErosion.SetFloat("minAmount", inciseFlowSettings.minAmount);
+            inciseFlowErosion.SetFloat("maxFlowStrength", inciseFlowSettings.maxFlowStrength);
+            inciseFlowErosion.SetFloat("curveFactor", inciseFlowSettings.chiselStrength);
+            inciseFlowErosion.SetFloat("heightInfluence", inciseFlowSettings.heightInfluence);
             inciseFlowErosion.SetBuffer(0, "heightMap", heightMapBuffer);
             inciseFlowErosion.SetBuffer(0, "flowMap", flowMapBuffer);
             inciseFlowErosion.SetBuffer(0, "inciseFlowMap", inciseFlowMapBuffer);
@@ -657,10 +669,77 @@ public partial class Map : MonoBehaviour
             heightMapBuffer.Release();
             flowMapBuffer.Release();
             inciseFlowMapBuffer.Release();
-
         }
         HeightMap2Texture();
         UpdateSurfaceMaterialHeightMap(true);
+    }
+
+    public ComputeShader fillBasinsShader;
+    float[] fillBasinsHeightMap;
+    float[] basinsHeightMap;
+    int[] drainageIndexesMap;
+    void PerformFillBasins()
+    {
+        bool useCPU = false;
+        if (fillBasinsHeightMap == null)
+        {
+            fillBasinsHeightMap = new float[erodedHeightMap.Length];
+            Array.Copy(erodedHeightMap, fillBasinsHeightMap, erodedHeightMap.Length);
+            basinsHeightMap = new float[erodedHeightMap.Length];
+            drainageIndexesMap = new int[erodedHeightMap.Length];
+
+            if (useCPU)
+            {
+                // Stabilizes until done. No predefined number of passes.
+                FillBasins.instance.mapWidth = textureSettings.textureWidth;
+                FillBasins.instance.mapHeight = textureSettings.textureHeight;
+                FillBasins.instance.waterLevel = textureSettings.waterLevel;
+                FillBasins.instance.heightMap = fillBasinsHeightMap;
+                FillBasins.instance.basinsMap = basinsHeightMap;
+                FillBasins.instance.drainageMap = drainageIndexesMap;
+                FillBasins.instance.Run();
+                fillBasinsHeightMap = FillBasins.instance.heightMap;
+                basinsHeightMap = FillBasins.instance.basinsMap;
+                drainageIndexesMap = FillBasins.instance.drainageMap;
+            }
+            else
+            {
+                // 100 Stabilization Passes should do it for most cases
+                int numPasses = 100;
+
+                int numThreadsX = Mathf.CeilToInt(textureSettings.textureWidth / 8f);
+                int numThreadsY = Mathf.CeilToInt(textureSettings.textureHeight / 8f);
+
+                ComputeBuffer fillBasinsHeightBuffer = new ComputeBuffer(fillBasinsHeightMap.Length, sizeof(float));
+                fillBasinsHeightBuffer.SetData(fillBasinsHeightMap);
+
+                ComputeBuffer basinsHeightBuffer = new ComputeBuffer(basinsHeightMap.Length, sizeof(float));
+                basinsHeightBuffer.SetData(basinsHeightMap);
+
+                ComputeBuffer drainageIndexesBuffer = new ComputeBuffer(drainageIndexesMap.Length, sizeof(int));
+                drainageIndexesBuffer.SetData(drainageIndexesMap);
+
+                fillBasinsShader.SetInt("mapWidth", textureSettings.textureWidth);
+                fillBasinsShader.SetInt("mapHeight", textureSettings.textureHeight);
+                fillBasinsShader.SetFloat("waterLevel", textureSettings.waterLevel);
+                fillBasinsShader.SetBuffer(0, "heightMap", fillBasinsHeightBuffer);
+                fillBasinsShader.SetBuffer(0, "basinsMap", basinsHeightBuffer);
+                fillBasinsShader.SetBuffer(0, "drainageMap", drainageIndexesBuffer);
+
+                for (int i = 0; i < numPasses; i++)
+                    fillBasinsShader.Dispatch(0, numThreadsX, numThreadsY, 1);
+
+                fillBasinsHeightBuffer.GetData(fillBasinsHeightMap);
+                basinsHeightBuffer.GetData(basinsHeightMap);
+                drainageIndexesBuffer.GetData(drainageIndexesMap);
+
+                fillBasinsHeightBuffer.Release();
+                basinsHeightBuffer.Release();
+                drainageIndexesBuffer.Release();
+            }
+            //fillBasinsHeightMap.SaveAsPng(textureSettings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "filledBasins.png"));
+            //basinsHeightMap.SaveAsPng(textureSettings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "basins.png"));
+        }
     }
 
     public void ApplyInciseFlow()

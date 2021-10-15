@@ -61,10 +61,13 @@ public class HydraulicErosion
             for (int brushX = -erosionSettings.erosionBrushRadius; brushX <= erosionSettings.erosionBrushRadius; brushX++)
             {
                 float sqrDst = brushX * brushX + brushY * brushY;
-                if (sqrDst < erosionSettings.erosionBrushRadius * erosionSettings.erosionBrushRadius)
+                if (sqrDst <= erosionSettings.erosionBrushRadius * erosionSettings.erosionBrushRadius)
                 {
                     brushIndexOffsets.Add(new int2(brushX, brushY));
                     float brushWeight = 1 - Mathf.Sqrt(sqrDst) / erosionSettings.erosionBrushRadius;
+                    if (erosionSettings.erosionBrushRadius == 0)
+                        brushWeight = 1;
+
                     weightSum += brushWeight;
                     brushWeights.Add(brushWeight);
                 }
