@@ -140,10 +140,10 @@ public partial class Map : MonoBehaviour
             StartCoroutine(PerformErosionCycle());
         }
 
-        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.P))
-        {
-            StartCoroutine(PerformPlotRivers());
-        }
+        //if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.P))
+        //{
+        //    StartCoroutine(PerformPlotRivers());
+        //}
 
         //if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.V))
         //{

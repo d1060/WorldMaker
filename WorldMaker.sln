@@ -13,6 +13,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GranuralizedGeoSphere", "Pr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageTools", "Projects\ImageTools\ImageTools.csproj", "{70ADE9CA-6770-4A04-8A66-1A06B6A70690}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rivers", "Projects\Rivers\Rivers.csproj", "{B45410FE-EEE4-41D6-8136-2B042348A4BB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FE5FFAAB-7F16-46CD-A77F-6DE9EFE68786} = {FE5FFAAB-7F16-46CD-A77F-6DE9EFE68786}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +48,10 @@ Global
 		{70ADE9CA-6770-4A04-8A66-1A06B6A70690}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70ADE9CA-6770-4A04-8A66-1A06B6A70690}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{70ADE9CA-6770-4A04-8A66-1A06B6A70690}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B45410FE-EEE4-41D6-8136-2B042348A4BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B45410FE-EEE4-41D6-8136-2B042348A4BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B45410FE-EEE4-41D6-8136-2B042348A4BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B45410FE-EEE4-41D6-8136-2B042348A4BB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -17,7 +17,12 @@ public class InciseFlowSettings
     [Range(0, 1)]
     public float heightInfluence = 0;
     [Range(0, 1)]
-    public float inertia = 0.5f;
-    [Range(0, 1)]
     public float minAmount = 0.01f;
+    public float upwardWeight = 10;
+    public float downwardWeight = 1;
+    public float distanceWeight = 10;
+    public bool plotRivers = true;
+    public Color riverColor = new Color(0, 0, 0.6f);
+    public float riverAmount1 = 0;
+    public float riverAmount2 = 0.5f;
 }

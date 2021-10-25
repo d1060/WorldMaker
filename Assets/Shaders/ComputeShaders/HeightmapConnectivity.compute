@@ -1,0 +1,146 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+int mapWidth;
+int mapHeight;
+float waterLevel;
+float upwardWeight = 10;
+float downwardWeight = 1;
+float distanceWeight = 10;
+RWStructuredBuffer<float> heightMap;
+RWStructuredBuffer<float> distanceMap;
+RWStructuredBuffer<int> connectivityMap;
+//RWStructuredBuffer<int> statusMap;
+
+float diagonalHeight(int index, float thisHeight)
+{
+    float diagonalHeight = heightMap[index];
+    float actualHeight = (diagonalHeight - thisHeight) / 1.41421356 + thisHeight;
+    return actualHeight;
+}
+
+void checkIsCloser(int neighborIndex, int myIndex, float neighborHeight, float myHeight, float distance, inout float lowestConnectedDistance, inout int lowestConnectedIndex)
+{
+    if (neighborHeight < waterLevel)
+    {
+        lowestConnectedDistance = distance + (waterLevel - myHeight) * downwardWeight;
+        if (lowestConnectedDistance == 0)
+            lowestConnectedDistance = 0.0000001;
+        lowestConnectedIndex = neighborIndex;
+    }
+    else if (distanceMap[neighborIndex] != 0 && connectivityMap[neighborIndex] != myIndex)
+    {
+        float slope = neighborHeight - myHeight; // Downward slope is NEGATIVE. Upward is POSITIVE.
+        if (slope > 0)
+            slope *= upwardWeight;
+        else
+            slope *= downwardWeight;
+
+        float currentDistance = distanceMap[neighborIndex];
+        float distanceThroughNeighbor = currentDistance + distance + slope;
+
+        if (distanceThroughNeighbor < lowestConnectedDistance || lowestConnectedDistance == 9999999)
+        {
+            lowestConnectedDistance = distanceThroughNeighbor;
+            lowestConnectedIndex = neighborIndex;
+        }
+    }
+}
+
+[numthreads(32,32,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
+
+    int x = id.x;
+    int y = id.y;
+
+    int index = x + y * mapWidth;
+
+    float linearStep = 1 / (float)mapWidth;
+    linearStep *= distanceWeight;
+    float diagonalStep = linearStep * 1.41421356;
+
+    float height = heightMap[index];
+
+    if (height < waterLevel)
+        return;
+
+    int leftX = x - 1;
+    int rightX = x + 1;
+    int topY = y - 1;
+    int bottomY = y + 1;
+
+    bool isTop = false;
+    bool isBottom = false;
+
+    if (leftX < 0) leftX += mapWidth;
+    if (rightX >= mapWidth) rightX -= mapWidth;
+    if (bottomY >= mapHeight)
+    {
+        bottomY = mapHeight - 1;
+        isBottom = true;
+    }
+    if (topY < 0)
+    {
+        topY = 0;
+        isTop = true;
+    }
+
+    int indexL = leftX + mapWidth * y;
+    int indexR = rightX + mapWidth * y;
+    int indexU = x + mapWidth * topY;
+    int indexD = x + mapWidth * bottomY;
+    int indexDL = leftX + mapWidth * bottomY;
+    int indexDR = rightX + mapWidth * bottomY;
+    int indexUL = leftX + mapWidth * topY;
+    int indexUR = rightX + mapWidth * topY;
+
+    float heightD = heightMap[indexD];
+    float heightR = heightMap[indexR];
+    float heightU = heightMap[indexU];
+    float heightL = heightMap[indexL];
+    float heightDL = diagonalHeight(indexDL, height);
+    float heightDR = diagonalHeight(indexDR, height);
+    float heightUR = diagonalHeight(indexUR, height);
+    float heightUL = diagonalHeight(indexUL, height);
+
+    // If any neighbors have a calculated distance, or are below water:
+    if (distanceMap[indexL] != 0 || heightL < waterLevel ||
+        distanceMap[indexR] != 0 || heightR < waterLevel ||
+        distanceMap[indexU] != 0 || heightU < waterLevel ||
+        distanceMap[indexD] != 0 || heightD < waterLevel ||
+        distanceMap[indexDL] != 0 || heightDL < waterLevel ||
+        distanceMap[indexDR] != 0 || heightDR < waterLevel ||
+        distanceMap[indexUL] != 0 || heightUL < waterLevel ||
+        distanceMap[indexUR] != 0 || heightUR < waterLevel)
+    {
+        float lowestConnectedDistance = 9999999;
+        int lowestConnectedIndex = -1;
+
+        if (!isTop)
+        {
+            checkIsCloser(indexUL, index, heightUL, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(indexU, index, heightU, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(indexUR, index, heightUR, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
+        }
+        checkIsCloser(indexL, index, heightL, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
+        checkIsCloser(indexR, index, heightR, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
+        if (!isBottom)
+        {
+            checkIsCloser(indexDL, index, heightDL, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(indexD, index, heightD, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(indexDR, index, heightDR, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
+        }
+
+        if (lowestConnectedIndex == -1)
+            return;
+
+        if (distanceMap[index] == 0 || distanceMap[index] > lowestConnectedDistance)
+        {
+            distanceMap[index] = lowestConnectedDistance;
+            connectivityMap[index] = lowestConnectedIndex;
+        }
+    }
+}

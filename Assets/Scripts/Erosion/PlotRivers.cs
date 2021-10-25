@@ -64,7 +64,7 @@ public class PlotRivers
         }
     }
 
-    public void RunStep(ref float[] heightMap, ref Texture2D flowTex, int idx)
+    public void RunStep(ref float[] heightMap, int idx)
     {
         uint index = dropPoints[idx];
         Vector2i position = new Vector2i(((int)index % textureSettings.textureWidth), ((int)index / textureSettings.textureWidth));

@@ -6,11 +6,11 @@ using UnityEngine.UI;
 
 public class ContextMenu : MonoBehaviour
 {
-    bool open = true;
+    bool open = false;
     bool opening = false;
     bool closing = false;
-    float alpha = 1;
-    float alphaStep = 0.2f;
+    float alpha = 0;
+    float alphaStep = 0.3f;
     Vector3 newPosition = Vector3.zero;
     DateTime lastTimeOpen;
     Vector3 restPosition;
@@ -38,6 +38,13 @@ public class ContextMenu : MonoBehaviour
                 closing = false;
                 lastTimeOpen = DateTime.Now;
             }
+
+            RectTransform rectTransform = transform as RectTransform;
+            if (newPosition != rectTransform.localPosition)
+            {
+                rectTransform.localPosition = newPosition;
+            }
+
             SetAlphas();
         }
 
@@ -56,7 +63,8 @@ public class ContextMenu : MonoBehaviour
                 if (newPosition != rectTransform.localPosition)
                 {
                     rectTransform.localPosition = newPosition;
-                    opening = true;
+                    if (rectTransform.localPosition != restPosition)
+                        opening = true;
                 }
             }
             else

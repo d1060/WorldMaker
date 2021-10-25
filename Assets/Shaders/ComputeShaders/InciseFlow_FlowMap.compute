@@ -1,169 +1,48 @@
 #pragma kernel CSMain
 
-// Creates a flow map which points to the next cell with the lowest height that is lower than the current height.
-
 int mapWidth;
 int mapHeight;
-int maxPathDepth = 512;
 float amount = 1;
-float inertia = 1;
 RWStructuredBuffer<float> flowMap;
-RWStructuredBuffer<float> heightMap;
+RWStructuredBuffer<int> drainageIndexesMap;
 
-float diagonalHeight(float diagonalHeight, float thisHeight)
+float getFlowFrom(int x, int y, int thisIndex)
 {
-    float actualHeight = (diagonalHeight - thisHeight) / 1.41421356 + thisHeight;
-    return actualHeight;
+    if (y < 0) return 0;
+    if (y >= mapHeight) return 0;
+    if (x >= mapWidth) x -= mapWidth;
+    if (x < 0) x += mapWidth;
+
+    int nextIndex = x + y * mapWidth;
+
+    if (drainageIndexesMap[nextIndex] != thisIndex)
+        return 0;
+
+    return flowMap[nextIndex];
 }
 
-int2 FindNextCell(int x, int y, float2 prevGradient, out float2 newGradient)
-{
-    int index = x + mapWidth * y;
-
-    int leftX = x - 1;
-    int rightX = x + 1;
-    int topY = y - 1;
-    int bottomY = y + 1;
-
-    if (leftX < 0) leftX += mapWidth;
-    if (rightX >= mapWidth) rightX -= mapWidth;
-    if (bottomY >= mapHeight) bottomY = mapHeight - 1;
-    if (topY < 0) topY = 0;
-
-    int indexL = leftX + mapWidth * y;
-    int indexR = rightX + mapWidth * y;
-    int indexU = x + mapWidth * topY;
-    int indexD = x + mapWidth * bottomY;
-    int indexDL = leftX + mapWidth * bottomY;
-    int indexDR = rightX + mapWidth * bottomY;
-    int indexUL = leftX + mapWidth * topY;
-    int indexUR = rightX + mapWidth * topY;
-
-    float height = heightMap[index];
-    float heightDL = diagonalHeight(heightMap[indexDL], height);
-    float heightD = heightMap[indexD];
-    float heightDR = diagonalHeight(heightMap[indexDR], height);
-    float heightR = heightMap[indexR];
-    float heightUR = diagonalHeight(heightMap[indexUR], height);
-    float heightU = heightMap[indexU];
-    float heightUL = diagonalHeight(heightMap[indexUL], height);
-    float heightL = heightMap[indexL];
-
-    bool goingNowhere = false;
-    float2 gradient = float2(0, 0);
-    float heightDifference = 0;
-
-    if (height != heightDL && heightDL < heightD && heightDL < heightDR && heightDL < heightR && heightDL < heightUR && heightDL < heightU && heightDL < heightUL && heightDL < heightL)
-    {
-        //DL is the lowest.
-        heightDifference = height - heightDL;
-        gradient = float2(-0.707107, 0.707107);
-    }
-    else if (height != heightD && heightD < heightDR && heightD < heightR && heightD < heightUR && heightD < heightU && heightD < heightUL && heightD < heightL && heightD < heightDL)
-    {
-        //D is the lowest.
-        heightDifference = height - heightD;
-        gradient = float2(0, 1);
-    }
-    else if (height != heightDR && heightDR < heightR && heightDR < heightUR && heightDR < heightU && heightDR < heightUL && heightDR < heightL && heightDR < heightDL && heightDR < heightD)
-    {
-        //DR is the lowest.
-        heightDifference = height - heightDR;
-        gradient = float2(0.707107, 0.707107);
-    }
-    else if (height != heightR && heightR < heightUR && heightR < heightU && heightR < heightUL && heightR < heightL && heightR < heightDL && heightR < heightD && heightR < heightDR)
-    {
-        //R is the lowest.
-        heightDifference = height - heightR;
-        gradient = float2(1, 0);
-    }
-    else if (height != heightUR && heightUR < heightU && heightUR < heightUL && heightUR < heightL && heightUR < heightDL && heightUR < heightD && heightUR < heightDR && heightUR < heightR)
-    {
-        //UR is the lowest.
-        heightDifference = height - heightUR;
-        gradient = float2(0.707107, -0.707107);
-    }
-    else if (height != heightU && heightU < heightUL && heightU < heightL && heightU < heightDL && heightU < heightD && heightU < heightDR && heightU < heightR && heightU < heightUR)
-    {
-        //U is the lowest.
-        heightDifference = height - heightU;
-        gradient = float2(0, -1);
-    }
-    else if (height != heightUL && heightUL < heightL && heightUL < heightDL && heightUL < heightD && heightUL < heightDR && heightUL < heightR && heightUL < heightUR && heightUL < heightU)
-    {
-        //UL is the lowest.
-        heightDifference = height - heightUL;
-        gradient = float2(-0.707107, -0.707107);
-    }
-    else if (height != heightL && heightL < heightDL && heightL < heightD && heightL < heightDR && heightL < heightR && heightL < heightUR && heightL < heightU && heightL < heightUL)
-    {
-        //L is the lowest.
-        heightDifference = height - heightL;
-        gradient = float2(-1, 0);
-    }
-    else
-    {
-        goingNowhere = true;
-    }
-
-    if (heightDifference >= 0) // Going downhill
-    {
-        gradient *= heightDifference;
-    }
-    else // Going uphill - adds forced inertia and disconsiders current gradient.
-    {
-        heightMap[index] = height - heightDifference;
-        gradient *= 0;
-    }
-    newGradient = prevGradient * inertia + gradient;
-
-    // Rounds up the new gradient to the nearest integer direction.
-    int2 finalCoordinates = int2(-1, -1);
-    if (!goingNowhere && (newGradient.x != 0 || newGradient.y != 0))
-    {
-        float2 finalNewGradient = normalize(float2(newGradient.x, newGradient.y));
-        finalNewGradient *= 1.125;
-
-        int finalX = x + round(finalNewGradient.x);
-        int finalY = y + round(finalNewGradient.y);
-
-        if (finalX < 0) finalX += mapWidth;
-        if (finalX >= mapWidth) finalX -= mapWidth;
-        if (finalY >= mapHeight) finalY = mapHeight - 1;
-        if (finalY < 0) finalY = 0;
-
-        int nextIndex = finalX + mapWidth * finalY;
-        flowMap[nextIndex] += amount;
-        finalCoordinates = int2(finalX, finalY);
-    }
-
-    return finalCoordinates;
-}
-
-[numthreads(8,8,1)]
+[numthreads(32,32,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
         return;
 
-    int index = id.x + id.y * mapWidth;
-    int currentX = id.x;
-    int currentY = id.y;
+    int x = id.x;
+    int y = id.y;
+    int index = x + y * mapWidth;
 
-    flowMap[index] = amount > 1 ? amount : 1;
-    int nextX = 0;
-    int nextY = 0;
-    int2 next = int2(nextX, nextY);
+    if (drainageIndexesMap[index] == 0)
+        return;
 
-    int count = 0;
-    float2 gradient = float2(0, 0);
-    while (count < 256 && count < maxPathDepth && next.x != -1 && next.y != -1)
-    {
-        float2 newGradient = float2(0, 0);
-        next = FindNextCell(currentX, currentY, gradient, newGradient);
-        gradient = newGradient;
-        currentX = next.x;
-        currentY = next.y;
-        count++;
-    }
+    float inflowAmount = amount >= 1 ? amount : 1;
+    inflowAmount += getFlowFrom(x + 1, y, index);
+    inflowAmount += getFlowFrom(x, y + 1, index);
+    inflowAmount += getFlowFrom(x - 1, y, index);
+    inflowAmount += getFlowFrom(x, y - 1, index);
+    inflowAmount += getFlowFrom(x + 1, y + 1, index);
+    inflowAmount += getFlowFrom(x + 1, y - 1, index);
+    inflowAmount += getFlowFrom(x - 1, y + 1, index);
+    inflowAmount += getFlowFrom(x - 1, y - 1, index);
+    
+    flowMap[index] = inflowAmount;
 }

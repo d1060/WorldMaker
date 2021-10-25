@@ -709,7 +709,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
-            PerformInciseFlow();
+            PerformInciseFlow(false);
             MapData.instance.Save();
         }
     }
@@ -723,7 +723,7 @@ public partial class Map : MonoBehaviour
             MapData.instance.inciseFlowSettings = inciseFlowSettings;
             if (!firstUpdate)
             {
-                PerformInciseFlow();
+                PerformInciseFlow(false);
                 MapData.instance.Save();
             }
         }
@@ -738,7 +738,7 @@ public partial class Map : MonoBehaviour
             MapData.instance.inciseFlowSettings = inciseFlowSettings;
             if (!firstUpdate)
             {
-                PerformInciseFlow();
+                PerformInciseFlow(false);
                 MapData.instance.Save();
             }
         }
@@ -750,18 +750,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
-            PerformInciseFlow();
-            MapData.instance.Save();
-        }
-    }
-
-    public void NewFlowInertia(float value)
-    {
-        inciseFlowSettings.inertia = value;
-        MapData.instance.inciseFlowSettings = inciseFlowSettings;
-        if (!firstUpdate)
-        {
-            PerformInciseFlow();
+            PerformInciseFlow(false);
             MapData.instance.Save();
         }
     }
@@ -772,7 +761,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
-            PerformInciseFlow();
+            PerformInciseFlow(false);
             MapData.instance.Save();
         }
     }
@@ -783,7 +772,85 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
+            PerformInciseFlow(false);
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewFlowDistanceWeight(float value)
+    {
+        inciseFlowSettings.distanceWeight = Mathf.Pow(10, 3 * value);
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
+        {
             PerformInciseFlow();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewFlowUpwardsWeight(float value)
+    {
+        inciseFlowSettings.upwardWeight = Mathf.Pow(10, 3 * value);
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
+        {
+            PerformInciseFlow();
+            MapData.instance.Save();
+        }
+    }
+
+    public void PlotRivers(bool plotRivers)
+    {
+        inciseFlowSettings.plotRivers = plotRivers;
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
+        {
+            PerformInciseFlow(false);
+            MapData.instance.Save();
+        }
+
+        if (plotRivers)
+            planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
+        else
+            planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+    }
+
+    public Color InciseFlowRiverColor
+    {
+        get
+        {
+            return inciseFlowSettings.riverColor;
+        }
+
+        set
+        {
+            inciseFlowSettings.riverColor = value;
+            if (!firstUpdate)
+            {
+                InciseFlowPlotRivers();
+                MapData.instance.Save();
+            }
+        }
+    }
+
+    public void NewRiverAmount1(float value)
+    {
+        inciseFlowSettings.riverAmount1 = value;
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
+        {
+            InciseFlowPlotRivers();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewRiverAmount2(float value)
+    {
+        inciseFlowSettings.riverAmount2 = value;
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
+        {
+            InciseFlowPlotRivers();
             MapData.instance.Save();
         }
     }
@@ -1109,9 +1176,14 @@ public partial class Map : MonoBehaviour
             UpdateUIInputField(inciseFlowPanelTransform, "Flow Exponent Text Box", inciseFlowSettings.exponent.ToString());
             UpdateUIInputField(inciseFlowPanelTransform, "Flow Amount Text Box", inciseFlowSettings.amount.ToString());
             UpdateUISlider(inciseFlowPanelTransform, "Min Amount Slider", inciseFlowSettings.minAmount);
-            UpdateUISlider(inciseFlowPanelTransform, "Flow Inertia Slider", inciseFlowSettings.inertia);
             UpdateUISlider(inciseFlowPanelTransform, "Flow Curve Strength Slider", inciseFlowSettings.chiselStrength);
             UpdateUISlider(inciseFlowPanelTransform, "Flow Height Influence Slider", inciseFlowSettings.heightInfluence);
+            UpdateUISlider(inciseFlowPanelTransform, "Flow Distance Weight Slider", Mathf.Log10(inciseFlowSettings.distanceWeight) / 3);
+            UpdateUISlider(inciseFlowPanelTransform, "Flow Uphill Weight Slider", Mathf.Log10(inciseFlowSettings.upwardWeight) / 3);
+            UpdateUIToggle(inciseFlowPanelTransform, "Toggle Plot Rivers", inciseFlowSettings.plotRivers);
+            UpdateUIColorPanel(inciseFlowPanelTransform, "River Color Panel", inciseFlowSettings.riverColor);
+            UpdateUISlider(inciseFlowPanelTransform, "River Amount 1 Slider", inciseFlowSettings.riverAmount1);
+            UpdateUISlider(inciseFlowPanelTransform, "River Amount 2 Slider", inciseFlowSettings.riverAmount2);
         }
     }
 
@@ -1391,6 +1463,12 @@ public partial class Map : MonoBehaviour
     public void StopInciseFlowPreview()
     {
         inciseFlowMap = null;
+        if (!isInciseFlowApplied)
+        {
+            flowMap = null;
+            planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+        }
+
         HeightMap2Texture();
         UpdateSurfaceMaterialHeightMap(true);
     }

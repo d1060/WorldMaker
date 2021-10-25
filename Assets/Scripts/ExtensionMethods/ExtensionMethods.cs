@@ -1,17 +1,10 @@
 ﻿using System.Collections;
+using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum POLAR_ROUNDING_TYPE
-{
-    NONE,
-    DOWN,
-    UP
-};
-
 public static partial class ExtensionMethods
 {
-    static readonly int FloatingPointPrecision = 7;
     static readonly Vector3 horizontalPlaneNormal = new Vector3(0, 1, 0);
     static readonly Vector3 southPole = new Vector3(0, -1, 0);
     static readonly Plane horizontalPlane = new Plane(horizontalPlaneNormal, new Vector3(0, 0, 0));
@@ -219,83 +212,6 @@ public static partial class ExtensionMethods
         lv.Add(v2);
     }
 
-    public static Vector2 CartesianToPolarDegrees(this Vector3 cartesian, float radius)
-    {
-        cartesian.Normalize();
-        cartesian *= radius;
-
-        Vector2 retVal;
-        float xzAtan2 = 0;
-
-        if (cartesian.x == 0)
-        {
-            if (cartesian.z > 0)
-                xzAtan2 = Mathf.PI / 2.0f;
-            else
-                xzAtan2 = -Mathf.PI / 2.0f;
-        }
-        else
-            xzAtan2 = Mathf.Atan2(cartesian.z, cartesian.x);
-
-        retVal.x = xzAtan2;
-
-        retVal.y = Mathf.Asin(cartesian.y / radius);
-
-        retVal.x *= Mathf.Rad2Deg;
-        retVal.y *= Mathf.Rad2Deg;
-
-        return retVal;
-    }
-
-    public static Vector2 CartesianToPolarRatio(this Vector3 cartesian, float radius)
-    {
-        Vector2 polar = cartesian.CartesianToPolarDegrees(radius);
-        polar.x /= 360;
-        polar.y /= 180;
-        polar.x += 0.5f;
-        polar.y += 0.5f;
-        return polar;
-    }
-
-    public static Vector2 CartesianToPolarRatio(this Vector3 cartesian, float radius, POLAR_ROUNDING_TYPE rounding)
-    {
-        Vector2 polar = cartesian.CartesianToPolarDegrees(radius);
-        polar.x /= 360;
-        polar.y /= 180;
-        polar.x += 0.5f;
-        polar.y += 0.5f;
-        if (rounding == POLAR_ROUNDING_TYPE.DOWN && polar.x >= 1)
-            polar.x -= 1;
-        else if (rounding == POLAR_ROUNDING_TYPE.UP && polar.x <= 0)
-            polar.x += 1;
-        return polar;
-    }
-
-    public static Vector3 PolarRatioToCartesian(this Vector2 polar, float radius)
-    {
-        polar.x -= 0.5f;
-        polar.y -= 0.5f;
-        polar.x *= 360;
-        polar.y *= 180;
-
-        float a = radius * Mathf.Cos(polar.y * Mathf.Deg2Rad);
-        float y = radius * Mathf.Sin(polar.y * Mathf.Deg2Rad);
-        float z = a * Mathf.Sin(polar.x * Mathf.Deg2Rad);
-        float x = a * Mathf.Cos(polar.x * Mathf.Deg2Rad);
-
-        return new Vector3(x, y, z);
-    }
-
-    public static Vector3 PolarDegreesToCartesian(this Vector2 polar, float radius)
-    {
-        float a = radius * Mathf.Cos(polar.y * Mathf.Deg2Rad);
-        float y = (float)System.Math.Round(radius * Mathf.Sin(polar.y * Mathf.Deg2Rad), FloatingPointPrecision);
-        float z = (float)System.Math.Round(a * Mathf.Sin(polar.x * Mathf.Deg2Rad), FloatingPointPrecision);
-        float x = (float)System.Math.Round(a * Mathf.Cos(polar.x * Mathf.Deg2Rad), FloatingPointPrecision);
-
-        return new Vector3(x, y, z);
-    }
-
     //public static Vector2 PolarRatioToStereographic(this Vector2 polar)
     //{
     //    // x is longitude. y is latitude.
@@ -413,6 +329,70 @@ public static partial class ExtensionMethods
         tex.SetPixels(colors);
         tex.Apply();
         tex.SaveAsPNG(fileName);
+    }
+
+    public static void SaveAsPng(this Color[] array, int width, string fileName)
+    {
+        int height = array.Length / width;
+        Texture2D tex = new Texture2D(width, height);
+        tex.SetPixels(array);
+        tex.Apply();
+        tex.SaveAsPNG(fileName);
+    }
+
+    public static void SaveConnectivityMap(this int[] array, int width, string fileName)
+    {
+        int height = array.Length / width;
+
+        Color[] drainageColors = new Color[array.Length];
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                int index = x + y * width;
+                int drainageIndex = array[index];
+
+                Color color = new Color(0, 0, 0, 1);
+                if (drainageIndex != 0)
+                {
+                    int drainX = drainageIndex % width;
+                    int drainY = drainageIndex / width;
+
+                    int relX = drainX - x;
+                    int relY = drainY - y;
+
+                    if (relX >= width / 2)
+                        relX -= width;
+                    else if (relX <= -(width / 2))
+                        relX += width;
+
+                    if (relX > 0)
+                        color.r += 1; // RED is for RIGHT
+                    if (relX < 0)
+                        color.b += 1; // BLUE is for LEFT
+
+                    if (relY > 0)
+                        color.g += 1; // GREEN is for UP
+                    if (relY < 0)
+                    {                // GREY is for DOWN
+                        color.r += 0.25f;
+                        color.g += 0.25f;
+                        color.b += 0.25f;
+                    }
+
+                    // Is the next cell pointing here?
+                    if (array[drainageIndex] == index)
+                    {
+                        color.r = 1;
+                        color.g = 1;
+                        color.b = 1;
+                    }
+                }
+
+                drainageColors[index] = color;
+            }
+        }
+        drainageColors.SaveAsPng(width, fileName);
     }
 
     public static Component GetChildWithName(this Component obj, string name)
