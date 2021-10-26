@@ -104,6 +104,7 @@ public partial class Map : MonoBehaviour
         Graphics.Blit(source, destination, planetSurfaceMaterial, 2);
         destination.Save(fileName);
         RenderTexture.ReleaseTemporary(destination);
+        UnityEngine.Object.Destroy(source);
         planetSurfaceMaterial.SetFloat("_DrawType", showTemperature ? 3 : 0);
     }
 
@@ -419,6 +420,7 @@ public partial class Map : MonoBehaviour
         humidityBuffer.Release();
     }
 
+    RenderTexture heightmapRT;
     public void HeightMap2Texture()
     {
         if (erodedHeightMap == null || originalHeightMap == null || mergedHeightMap == null)
@@ -447,11 +449,21 @@ public partial class Map : MonoBehaviour
             mapBufferMerged.SetData(mergedHeightMap);
             heightmap2TextureShader.SetBuffer(0, "mergedHeightMap", mapBufferMerged);
 
-            RenderTexture rTexture = RenderTexture.GetTemporary(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
-            rTexture.enableRandomWrite = true;
-            rTexture.Create();
+            if (heightmapRT != null && (heightmapRT.width != textureSettings.textureWidth || heightmapRT.height != textureSettings.textureHeight))
+            {
+                Destroy(heightmapRT);
+                heightmapRT = null;
+            }
 
-            heightmap2TextureShader.SetTexture(0, "result", rTexture);
+            if (heightmapRT == null)
+            {
+                heightmapRT = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
+                heightmapRT.name = "Heightmap Render Texture";
+                heightmapRT.enableRandomWrite = true;
+                heightmapRT.Create();
+            }
+
+            heightmap2TextureShader.SetTexture(0, "result", heightmapRT);
             heightmap2TextureShader.SetInt("mapWidth", textureSettings.textureWidth);
             heightmap2TextureShader.SetInt("mapHeight", textureSettings.textureHeight);
             heightmap2TextureShader.SetFloat("waterLevel", textureSettings.waterLevel);
@@ -459,10 +471,12 @@ public partial class Map : MonoBehaviour
 
             heightmap2TextureShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 32f), Mathf.CeilToInt(textureSettings.textureHeight / 32f), 1);
 
-            heightmap = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
+            if (heightmap == null || heightmap.width != textureSettings.textureWidth || heightmap.height != textureSettings.textureHeight)
+                heightmap = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
+
             RenderTexture prevActive = RenderTexture.active;
-            RenderTexture.active = rTexture;
-            heightmap.ReadPixels(new Rect(0, 0, rTexture.width, rTexture.height), 0, 0);
+            RenderTexture.active = heightmapRT;
+            heightmap.ReadPixels(new Rect(0, 0, heightmapRT.width, heightmapRT.height), 0, 0);
             RenderTexture.active = prevActive;
             heightmap.Apply();
             //heightmap.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "heightmap.png"));
@@ -472,7 +486,6 @@ public partial class Map : MonoBehaviour
             mapBufferEroded.Release();
             mapBufferMerged.Release();
             inciseFlowMapBuffer.Release();
-            RenderTexture.ReleaseTemporary(rTexture);
         }
         else
         {
@@ -496,7 +509,8 @@ public partial class Map : MonoBehaviour
                     colors[index] = color;
                 }
             }
-            heightmap = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
+            if (heightmap == null || heightmap.width != textureSettings.textureWidth || heightmap.height != textureSettings.textureHeight)
+                heightmap = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
             heightmap.SetPixels(colors);
             heightmap.Apply();
         }
@@ -558,6 +572,7 @@ public partial class Map : MonoBehaviour
     }
 
     public ComputeShader randomPlotRivers;
+    RenderTexture randomRiversRT;
     void PerformPlotRiversRandomly()
     {
         bool useCpu = false;
@@ -574,7 +589,7 @@ public partial class Map : MonoBehaviour
         if (connectivityMap == null)
             EstablishHeightmapConnectivity();
 
-        if (flowTextureRandom == null)
+        if (flowTextureRandom == null || flowTextureRandom.width != textureSettings.textureWidth || flowTextureRandom.height != textureSettings.textureHeight)
         {
             flowTextureRandom = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight);
             Color[] colors = new Color[textureSettings.textureWidth * textureSettings.textureHeight];
@@ -649,11 +664,22 @@ public partial class Map : MonoBehaviour
             ComputeBuffer connectivityMapBuffer = new ComputeBuffer(connectivityMap.Length, sizeof(int));
             connectivityMapBuffer.SetData(connectivityMap);
 
-            RenderTexture rTexture = RenderTexture.GetTemporary(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
-            rTexture.enableRandomWrite = true;
-            rTexture.Create();
+            if (randomRiversRT != null && (randomRiversRT.width != textureSettings.textureWidth || randomRiversRT.height != textureSettings.textureHeight))
+            {
+                Destroy(randomRiversRT);
+                randomRiversRT = null;
+            }
 
-            if (flowTexture == null)
+            if (randomRiversRT == null)
+            {
+                randomRiversRT = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
+                randomRiversRT.name = "Heightmap Render Texture";
+                randomRiversRT.enableRandomWrite = true;
+                randomRiversRT.Create();
+            }
+            randomRiversRT.Release();
+
+            if (flowTexture == null || flowTexture.width != textureSettings.textureWidth || flowTexture.height != textureSettings.textureHeight)
             {
                 flowTexture = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight);
                 Color[] colors = new Color[textureSettings.textureWidth * textureSettings.textureHeight];
@@ -669,22 +695,24 @@ public partial class Map : MonoBehaviour
             randomPlotRivers.SetBuffer(0, "riverFlowMask", riverFlowMaskBuffer);
             randomPlotRivers.SetBuffer(0, "connectvityMap", connectivityMapBuffer);
             randomPlotRivers.SetTexture(0, "original", flowTexture);
-            randomPlotRivers.SetTexture(0, "result", rTexture);
+            randomPlotRivers.SetTexture(0, "result", randomRiversRT);
 
             int numPasses = (int)(textureSettings.textureWidth * (1 - textureSettings.waterLevel) / 3);
             for (int i = 0; i < numPasses; i++)
                 randomPlotRivers.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 32f), Mathf.CeilToInt(textureSettings.textureHeight / 32f), 1);
 
-            flowTextureRandom = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
+            if (flowTextureRandom == null || flowTextureRandom.width != textureSettings.textureWidth || flowTextureRandom.height != textureSettings.textureHeight)
+                flowTextureRandom = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
+
             RenderTexture prevActive = RenderTexture.active;
-            RenderTexture.active = rTexture;
-            flowTextureRandom.ReadPixels(new Rect(0, 0, rTexture.width, rTexture.height), 0, 0);
+            RenderTexture.active = randomRiversRT;
+            flowTextureRandom.ReadPixels(new Rect(0, 0, randomRiversRT.width, randomRiversRT.height), 0, 0);
             RenderTexture.active = prevActive;
             flowTextureRandom.Apply();
 
             riverFlowMaskBuffer.Release();
             connectivityMapBuffer.Release();
-            RenderTexture.ReleaseTemporary(rTexture);
+            //RenderTexture.ReleaseTemporary(randomRiversRT);
         }
 
         //PlotRivers.instance.Run(ref erodedHeightMap, ref flowTexture);
@@ -854,12 +882,13 @@ public partial class Map : MonoBehaviour
     }
 
     public ComputeShader inciseFlowPlotRivers;
+    RenderTexture plotRiversRT;
     void InciseFlowPlotRivers()
     {
         if (!inciseFlowSettings.plotRivers && !inciseFlowSettings.plotRiversRandomly)
             return;
 
-        if (flowTexture == null)
+        if (flowTexture == null || flowTexture.width != textureSettings.textureWidth || flowTexture.height != textureSettings.textureHeight)
         {
             flowTexture = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight);
             Color[] colors = new Color[textureSettings.textureWidth * textureSettings.textureHeight];
@@ -867,9 +896,20 @@ public partial class Map : MonoBehaviour
             flowTexture.Apply();
         }
 
-        RenderTexture rTexture = RenderTexture.GetTemporary(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
-        rTexture.enableRandomWrite = true;
-        rTexture.Create();
+        if (plotRiversRT != null && (plotRiversRT.width != textureSettings.textureWidth || plotRiversRT.height != textureSettings.textureHeight))
+        {
+            Destroy(plotRiversRT);
+            plotRiversRT = null;
+        }
+
+        if (plotRiversRT == null)
+        {
+            plotRiversRT = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
+            plotRiversRT.name = "Heightmap Render Texture";
+            plotRiversRT.enableRandomWrite = true;
+            plotRiversRT.Create();
+        }
+        plotRiversRT.Release();
 
         if (inciseFlowSettings.plotRivers)
         {
@@ -881,7 +921,7 @@ public partial class Map : MonoBehaviour
 
             //RenderTexture prevActive = RenderTexture.active;
             //RenderTexture.active = rTexture;
-            inciseFlowPlotRivers.SetTexture(0, "result", rTexture);
+            inciseFlowPlotRivers.SetTexture(0, "result", plotRiversRT);
             inciseFlowPlotRivers.SetInt("mapWidth", textureSettings.textureWidth);
             inciseFlowPlotRivers.SetInt("mapHeight", textureSettings.textureHeight);
             inciseFlowPlotRivers.SetBuffer(0, "inciseFlowMap", flowMapBuffer);
@@ -940,7 +980,7 @@ public partial class Map : MonoBehaviour
             randomPlotRivers.SetBuffer(0, "riverFlowMask", riverFlowMaskBuffer);
             randomPlotRivers.SetBuffer(0, "connectvityMap", connectivityMapBuffer);
             randomPlotRivers.SetTexture(0, "original", flowTexture);
-            randomPlotRivers.SetTexture(0, "result", rTexture);
+            randomPlotRivers.SetTexture(0, "result", plotRiversRT);
 
             int numPasses = (int)(textureSettings.textureWidth * (1 - textureSettings.waterLevel) / 3);
             for (int i = 0; i < numPasses; i++)
@@ -950,14 +990,16 @@ public partial class Map : MonoBehaviour
             connectivityMapBuffer.Release();
         }
 
-        flowTexture = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
+        if (flowTexture == null || flowTexture.width != textureSettings.textureWidth || flowTexture.height != textureSettings.textureHeight)
+            flowTexture = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
+
         RenderTexture prevActive = RenderTexture.active;
-        RenderTexture.active = rTexture;
-        flowTexture.ReadPixels(new Rect(0, 0, rTexture.width, rTexture.height), 0, 0);
+        RenderTexture.active = plotRiversRT;
+        flowTexture.ReadPixels(new Rect(0, 0, plotRiversRT.width, plotRiversRT.height), 0, 0);
         RenderTexture.active = prevActive;
         flowTexture.Apply();
 
-        RenderTexture.ReleaseTemporary(rTexture);
+        //RenderTexture.ReleaseTemporary(plotRiversRT);
 
         planetSurfaceMaterial.SetTexture("_FlowTex", flowTexture);
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
