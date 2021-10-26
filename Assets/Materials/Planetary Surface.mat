@@ -99,7 +99,7 @@ Material:
     - _IceTemperatureThreshold1: 0
     - _IceTemperatureThreshold2: -20
     - _IsEroded: 1
-    - _IsFlowTexSet: 0
+    - _IsFlowTexSet: 1
     - _IsHeightmapSet: 0
     - _IsLandmaskSet: 0
     - _IsMainmapSet: 0

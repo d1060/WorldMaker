@@ -30,4 +30,5 @@ public class InciseFlowSettings
     public bool plotRiversRandomly = false;
     public int numberOfRivers = 1024;
     public float startingAlpha = 0.5f;
+    public int riverPlotSeed = 234543;
 }

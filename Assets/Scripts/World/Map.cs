@@ -142,7 +142,7 @@ public partial class Map : MonoBehaviour
 
         if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.P))
         {
-            StartCoroutine(PerformPlotRiversRandomly());
+            PerformPlotRiversRandomly();
         }
 
         //if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.V))

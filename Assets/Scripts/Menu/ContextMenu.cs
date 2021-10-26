@@ -29,6 +29,8 @@ public class ContextMenu : MonoBehaviour
     {
         if (opening && alpha < 1)
         {
+            //Debug.Log("Opening Context Menu. Alpha = " + alpha);
+            //Log.Write("Opening Context Menu. Alpha = " + alpha);
             alpha += alphaStep;
             if (alpha >= 1)
             {
@@ -42,6 +44,8 @@ public class ContextMenu : MonoBehaviour
             RectTransform rectTransform = transform as RectTransform;
             if (newPosition != rectTransform.localPosition)
             {
+                //Debug.Log("Setting new Context Menu Position.");
+                //Log.Write("Setting new Context Menu Position.");
                 rectTransform.localPosition = newPosition;
             }
 
@@ -50,6 +54,8 @@ public class ContextMenu : MonoBehaviour
 
         if (closing && alpha > 0)
         {
+            //Debug.Log("Closing Context Menu. Alpha = " + alpha);
+            //Log.Write("Closing Context Menu. Alpha = " + alpha);
             alpha -= alphaStep;
             if (alpha <= 0)
             {
@@ -62,6 +68,8 @@ public class ContextMenu : MonoBehaviour
                 RectTransform rectTransform = transform as RectTransform;
                 if (newPosition != rectTransform.localPosition)
                 {
+                    //Debug.Log("Setting new Context Menu Position.");
+                    //Log.Write("Setting new Context Menu Position.");
                     rectTransform.localPosition = newPosition;
                     if (rectTransform.localPosition != restPosition)
                         opening = true;
@@ -80,6 +88,8 @@ public class ContextMenu : MonoBehaviour
 
     public void Open(Vector3 position)
     {
+        //Debug.Log("Open Context Menu.");
+        //Log.Write("Open Context Menu.");
         RectTransform rectTransform = transform as RectTransform;
         newPosition = new Vector3(position.x + rectTransform.sizeDelta.x / 2, 
                                   position.y - rectTransform.sizeDelta.y / 2,
@@ -98,6 +108,8 @@ public class ContextMenu : MonoBehaviour
 
     public void Close()
     {
+        //Debug.Log("Close Context Menu.");
+        //Log.Write("Close Context Menu.");
         RectTransform rectTransform = transform as RectTransform;
         newPosition = restPosition;
         if (newPosition != rectTransform.localPosition)

@@ -709,7 +709,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
-            PerformInciseFlow(false);
+            PerformInciseFlow(false, false, false);
             MapData.instance.Save();
         }
     }
@@ -723,7 +723,7 @@ public partial class Map : MonoBehaviour
             MapData.instance.inciseFlowSettings = inciseFlowSettings;
             if (!firstUpdate)
             {
-                PerformInciseFlow(false);
+                PerformInciseFlow(false, false, false);
                 MapData.instance.Save();
             }
         }
@@ -738,7 +738,7 @@ public partial class Map : MonoBehaviour
             MapData.instance.inciseFlowSettings = inciseFlowSettings;
             if (!firstUpdate)
             {
-                PerformInciseFlow(false);
+                PerformInciseFlow(false, false, false);
                 MapData.instance.Save();
             }
         }
@@ -750,7 +750,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
-            PerformInciseFlow(false);
+            PerformInciseFlow(false, false, false);
             MapData.instance.Save();
         }
     }
@@ -761,7 +761,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
-            PerformInciseFlow(false);
+            PerformInciseFlow(false, false, false);
             MapData.instance.Save();
         }
     }
@@ -772,7 +772,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
-            PerformInciseFlow(false);
+            PerformInciseFlow(false, false, false);
             MapData.instance.Save();
         }
     }
@@ -783,7 +783,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
-            PerformInciseFlow();
+            PerformInciseFlow(true, true, true);
             MapData.instance.Save();
         }
     }
@@ -794,7 +794,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
-            PerformInciseFlow();
+            PerformInciseFlow(true, true, true);
             MapData.instance.Save();
         }
     }
@@ -805,7 +805,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
-            PerformInciseFlow();
+            PerformInciseFlow(false, false, false);
             MapData.instance.Save();
         }
     }
@@ -816,7 +816,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
-            PerformInciseFlow(false);
+            PerformInciseFlow(false, false, false);
             MapData.instance.Save();
         }
     }
@@ -827,7 +827,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
-            PerformInciseFlow(false);
+            PerformInciseFlow(false, true, true);
             MapData.instance.Save();
         }
 
@@ -883,7 +883,7 @@ public partial class Map : MonoBehaviour
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
-            PerformInciseFlow(false);
+            PerformInciseFlow(false, true, true);
             MapData.instance.Save();
         }
 
@@ -1524,7 +1524,7 @@ public partial class Map : MonoBehaviour
 
     public void StartInciseFlowPreview()
     {
-        PerformInciseFlow();
+        PerformInciseFlow(true, true, true);
     }
 
     public void StopInciseFlowPreview()
