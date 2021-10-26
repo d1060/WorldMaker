@@ -5,6 +5,7 @@
 // with cs.SetTexture
 int mapWidth;
 int mapHeight;
+float waterLevel;
 float erosionNoiseMerge;
 RWStructuredBuffer<float> originalHeightMap;
 RWStructuredBuffer<float> erodedHeightMap;
@@ -12,22 +13,22 @@ RWStructuredBuffer<float> mergedHeightMap;
 RWStructuredBuffer<float> inciseFlowMap;
 RWTexture2D<float4> result;
 
-[numthreads(8,8,1)]
+[numthreads(32,32,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x < (uint)mapWidth && id.y < (uint)mapHeight)
-    {
-        int index = id.x + id.y * mapWidth;
-        float erodedHeight = erodedHeightMap[index] - inciseFlowMap[index];
-        if (erodedHeight < 0) erodedHeight = 0;
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
 
-        float originalHeight = originalHeightMap[index];
-        float mergedHeight = erodedHeight;
-        if (erosionNoiseMerge >= 1)
-            mergedHeight = originalHeight;
-        else if (erosionNoiseMerge > 0)
-            mergedHeight = erodedHeight * (1 - erosionNoiseMerge) + originalHeight * erosionNoiseMerge;
-        mergedHeightMap[index] = mergedHeight;
-        result[float2(id.x, id.y)] = float4(mergedHeight, mergedHeight, mergedHeight, 1);
-    }
+    int index = id.x + id.y * mapWidth;
+    float erodedHeight = erodedHeightMap[index] - inciseFlowMap[index];
+    if (erodedHeight < 0) erodedHeight = 0;
+
+    float originalHeight = originalHeightMap[index];
+    float mergedHeight = erodedHeight;
+    if (erosionNoiseMerge >= 1)
+        mergedHeight = originalHeight;
+    else if (erosionNoiseMerge > 0)
+        mergedHeight = erodedHeight * (1 - erosionNoiseMerge) + originalHeight * erosionNoiseMerge;
+    mergedHeightMap[index] = mergedHeight;
+    result[float2(id.x, id.y)] = float4(mergedHeight, mergedHeight, mergedHeight, 1);
 }

@@ -25,4 +25,9 @@ public class InciseFlowSettings
     public Color riverColor = new Color(0, 0, 0.6f);
     public float riverAmount1 = 0;
     public float riverAmount2 = 0.5f;
+    public float preBlur = 0;
+    public float postBlur = 0;
+    public bool plotRiversRandomly = false;
+    public int numberOfRivers = 1024;
+    public float startingAlpha = 0.5f;
 }

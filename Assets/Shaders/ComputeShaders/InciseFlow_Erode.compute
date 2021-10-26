@@ -11,9 +11,38 @@ float maxFlowStrength = 10;
 float curveFactor = 1;
 float heightInfluence = 1;
 float waterLevel = 0.6;
+float blur = 0;
 RWStructuredBuffer<float> heightMap;
 RWStructuredBuffer<float> flowMap;
 RWStructuredBuffer<float> inciseFlowMap;
+
+#define MIN_WATER_HEIGHT 0.0045
+
+float getErodeValueFromFlowIndex(int index)
+{
+    float flowValue = flowMap[index];
+    float flowHeight = heightMap[index];
+
+    if (flowValue < 1) flowValue = 1;
+
+    float erodeValue = (log(flowValue) / log(logBase)) * heightFactor;
+    if (erodeValue < minAmount)
+        erodeValue = 0;
+    else
+        erodeValue -= minAmount;
+
+    if (erodeValue > flowHeight - waterLevel - MIN_WATER_HEIGHT)
+        erodeValue = flowHeight - waterLevel - MIN_WATER_HEIGHT;
+    else if (erodeValue > heightFactor)
+        erodeValue = heightFactor;
+    if (erodeValue < 0)
+        erodeValue = 0;
+
+    erodeValue = pow(abs(erodeValue), curveFactor);
+    erodeValue = erodeValue * ((1 - heightInfluence) + heightInfluence * ((flowHeight - waterLevel) / (1 - waterLevel)));
+    erodeValue *= strength;
+    return erodeValue;
+}
 
 [numthreads(32,32,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
@@ -27,26 +56,46 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     if (height < waterLevel)
         return;
 
-    float flowValue = flowMap[index];// + 1;
-    //if (flowValue > maxFlowStrength) flowValue = maxFlowStrength;
-
-    if (flowValue < 1) flowValue = 1;
     if (logBase <= 1) logBase = 1.1;
 
-    float erodeValue = (log(flowValue) / log(logBase)) * heightFactor;
-    if (erodeValue < minAmount)
+    float erodeValue = getErodeValueFromFlowIndex(index);
+    //float erodeCount = 1;
+
+    if (blur > 0)
+    {
+        int blurSquareRadius = (int)ceil(blur);
+
+        for (int blurRelativeX = -blurSquareRadius; blurRelativeX <= blurSquareRadius; blurRelativeX++)
+        {
+            for (int blurRelativeY = -blurSquareRadius; blurRelativeY <= blurSquareRadius; blurRelativeY++)
+            {
+                if (blurRelativeX == 0 && blurRelativeY == 0)
+                    continue;
+
+                int blurX = id.x + blurRelativeX;
+                int blurY = id.y + blurRelativeY;
+                if (blurY >= mapHeight) continue;
+                if (blurY < 0) continue;
+
+                float distance = sqrt(blurRelativeX * blurRelativeX + blurRelativeY * blurRelativeY);
+                if (distance > blur) continue;
+
+                float distanceRatio = 1 - distance / blur;
+                int blurIndex = blurX + blurY * mapWidth;
+
+                float blurErodeValue = getErodeValueFromFlowIndex(blurIndex);
+                blurErodeValue *= distanceRatio;
+                //erodeCount += distanceRatio;
+
+                if (blurErodeValue > erodeValue)
+                    erodeValue = blurErodeValue;
+            }
+        }
+    }
+
+    if (erodeValue > height - waterLevel - MIN_WATER_HEIGHT)
+        erodeValue = height - waterLevel - MIN_WATER_HEIGHT;
+    if (erodeValue < 0)
         erodeValue = 0;
-    else
-        erodeValue -= minAmount;
-
-    if (erodeValue > height - waterLevel)
-        erodeValue = height - waterLevel;
-    else if (erodeValue > heightFactor)
-        erodeValue = heightFactor;
-
-    erodeValue = pow(abs(erodeValue), curveFactor);
-    erodeValue = erodeValue * ((1 - heightInfluence) + heightInfluence * (height - waterLevel) * 4);
-    erodeValue *= strength;
-
     inciseFlowMap[index] = erodeValue;
 }

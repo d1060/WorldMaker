@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -52,9 +52,6 @@
     <UnityBuildTarget>StandaloneWindows64:19</UnityBuildTarget>
     <UnityVersion>2021.1.20f1</UnityVersion>
   </PropertyGroup>
-  <ItemGroup>
-    <Analyzer Include="C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\IDE\Extensions\Microsoft\Visual Studio Tools for Unity\Analyzers\Microsoft.Unity.Analyzers.dll" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorSliderImage.cs" />
     <Compile Include="Assets\Scripts\Menu\MainMenu.cs" />
@@ -148,10 +145,10 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF SSD.shader" />
     <None Include="Assets\Shaders\ComputeShaders\indexes.cginc" />
     <None Include="Assets\Shaders\ComputeShaders\PluvialErosion_Outflow.compute" />
+    <None Include="Assets\Shaders\ComputeShaders\RandomPlotRivers.compute" />
     <None Include="Assets\Shaders\ComputeShaders\PluvialErosion_SedimentAndEvaporation.compute" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface-Mobile.shader" />
     <None Include="Assets\Libraries\GranuralizedGeoSphere.dll" />
-    <None Include="Assets\Shaders\ComputeShaders\FlowMap2Texture.compute" />
     <None Include="Assets\Libraries\ExtensionMethods.dll" />
     <None Include="Assets\Shaders\ComputeShaders\Erosion.compute" />
     <None Include="Assets\StandaloneFileBrowser\Plugins\Ookii.Dialogs.dll" />
@@ -163,6 +160,7 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile SSD.shader" />
     <None Include="Assets\Shaders\ComputeShaders\PluvialErosion.compute" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Leading Characters.txt" />
+    <None Include="Assets\Shaders\ComputeShaders\AverageHeightMap.compute" />
     <None Include="Assets\Shaders\ComputeShaders\interpolate.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Properties.cginc" />
     <None Include="Assets\Shaders\SurfaceSimplexNoise.shader" />
@@ -176,6 +174,7 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Masking.shader" />
     <None Include="Assets\Libraries\ImageTools.dll" />
     <None Include="Assets\StandaloneFileBrowser\Plugins\System.Windows.Forms.dll" />
+    <None Include="Assets\Shaders\ComputeShaders\LandMask.compute" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Mobile.shader" />
     <None Include="Assets\TextMesh Pro\Fonts\LiberationSans - OFL.txt" />

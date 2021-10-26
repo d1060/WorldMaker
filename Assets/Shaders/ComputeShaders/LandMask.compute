@@ -1,0 +1,24 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+int mapWidth;
+int mapHeight;
+float waterLevel = 0.6;
+
+RWStructuredBuffer<float> heightMap;
+RWStructuredBuffer<int> landMask;
+
+[numthreads(32,32,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
+
+    int index = id.x + id.y * mapWidth;
+
+    float height = heightMap[index];
+    if (height < waterLevel)
+        return;
+
+    landMask[index] = 1;
+}

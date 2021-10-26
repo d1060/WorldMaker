@@ -799,6 +799,28 @@ public partial class Map : MonoBehaviour
         }
     }
 
+    public void NewFlowPreBlur(float value)
+    {
+        inciseFlowSettings.preBlur = value;
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
+        {
+            PerformInciseFlow();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewFlowPostBlur(float value)
+    {
+        inciseFlowSettings.postBlur = value;
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
+        {
+            PerformInciseFlow(false);
+            MapData.instance.Save();
+        }
+    }
+
     public void PlotRivers(bool plotRivers)
     {
         inciseFlowSettings.plotRivers = plotRivers;
@@ -809,7 +831,7 @@ public partial class Map : MonoBehaviour
             MapData.instance.Save();
         }
 
-        if (plotRivers)
+        if (inciseFlowSettings.plotRiversRandomly || inciseFlowSettings.plotRivers)
             planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
         else
             planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
@@ -847,6 +869,44 @@ public partial class Map : MonoBehaviour
     public void NewRiverAmount2(float value)
     {
         inciseFlowSettings.riverAmount2 = value;
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
+        {
+            InciseFlowPlotRivers();
+            MapData.instance.Save();
+        }
+    }
+
+    public void PlotRiversRandomly(bool plotRivers)
+    {
+        inciseFlowSettings.plotRiversRandomly = plotRivers;
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
+        {
+            PerformInciseFlow(false);
+            MapData.instance.Save();
+        }
+
+        if (inciseFlowSettings.plotRiversRandomly || inciseFlowSettings.plotRivers)
+            planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
+        else
+            planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+    }
+
+    public void NewNumberOfRivers(string value)
+    {
+        inciseFlowSettings.numberOfRivers = value.ToInt();
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
+        {
+            InciseFlowPlotRivers();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewStartingAlpha(float value)
+    {
+        inciseFlowSettings.startingAlpha = value;
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         if (!firstUpdate)
         {
@@ -1180,10 +1240,17 @@ public partial class Map : MonoBehaviour
             UpdateUISlider(inciseFlowPanelTransform, "Flow Height Influence Slider", inciseFlowSettings.heightInfluence);
             UpdateUISlider(inciseFlowPanelTransform, "Flow Distance Weight Slider", Mathf.Log10(inciseFlowSettings.distanceWeight) / 3);
             UpdateUISlider(inciseFlowPanelTransform, "Flow Uphill Weight Slider", Mathf.Log10(inciseFlowSettings.upwardWeight) / 3);
+            UpdateUISlider(inciseFlowPanelTransform, "Flow Pre Blur Slider", inciseFlowSettings.preBlur);
+            UpdateUISlider(inciseFlowPanelTransform, "Flow Post Blur Slider", inciseFlowSettings.postBlur);
+
             UpdateUIToggle(inciseFlowPanelTransform, "Toggle Plot Rivers", inciseFlowSettings.plotRivers);
             UpdateUIColorPanel(inciseFlowPanelTransform, "River Color Panel", inciseFlowSettings.riverColor);
             UpdateUISlider(inciseFlowPanelTransform, "River Amount 1 Slider", inciseFlowSettings.riverAmount1);
             UpdateUISlider(inciseFlowPanelTransform, "River Amount 2 Slider", inciseFlowSettings.riverAmount2);
+
+            UpdateUIToggle(inciseFlowPanelTransform, "Toggle Plot Rivers Randomly", inciseFlowSettings.plotRiversRandomly);
+            UpdateUIInputField(inciseFlowPanelTransform, "Number of Rivers Text Box", inciseFlowSettings.numberOfRivers.ToString());
+            UpdateUISlider(inciseFlowPanelTransform, "Starting Alpha Slider", inciseFlowSettings.startingAlpha);
         }
     }
 
@@ -1466,11 +1533,13 @@ public partial class Map : MonoBehaviour
         if (!isInciseFlowApplied)
         {
             flowMap = null;
+            flowTexture = null;
+            flowTextureRandom = null;
             planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
         }
 
         HeightMap2Texture();
-        UpdateSurfaceMaterialHeightMap(true);
+        UpdateSurfaceMaterialHeightMap(erodedHeightMap != null);
     }
 
     void HideErodingTerrainPanel()

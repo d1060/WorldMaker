@@ -1,0 +1,62 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+int mapWidth;
+int mapHeight;
+float waterLevel = 0.6;
+float startingAlpha;
+float3 riverColor;
+RWStructuredBuffer<int> riverFlowMask;
+RWStructuredBuffer<int> connectvityMap;
+
+Texture2D<float4> original;
+RWTexture2D<float4> result;
+
+int getIncomingFlow(int x, int y, int index)
+{
+    int thisIndex = x + y * mapWidth;
+    if (connectvityMap[thisIndex] == index)
+        return riverFlowMask[thisIndex];
+    return 0;
+}
+
+[numthreads(32,32,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
+
+    int x = id.x;
+    int y = id.y;
+
+    int index = x + y * mapWidth;
+
+    int incomingFlow = 0;
+    incomingFlow += getIncomingFlow(x + 1, y, index);
+    incomingFlow += getIncomingFlow(x, y + 1, index);
+    incomingFlow += getIncomingFlow(x - 1, y, index);
+    incomingFlow += getIncomingFlow(x, y - 1, index);
+    incomingFlow += getIncomingFlow(x + 1, y - 1, index);
+    incomingFlow += getIncomingFlow(x + 1, y + 1, index);
+    incomingFlow += getIncomingFlow(x - 1, y + 1, index);
+    incomingFlow += getIncomingFlow(x - 1, y - 1, index);
+
+    if (incomingFlow == 0)
+        return;
+
+    riverFlowMask[index] = incomingFlow + 1;
+
+    float thisVarAlpha = (incomingFlow / 128.0);
+    float thisAlpha = thisVarAlpha + startingAlpha;
+    if (thisAlpha > 1)
+        thisAlpha = 1;
+
+    float4 currentColor = original[id.xy];
+    float4 newColor = float4(riverColor.r, riverColor.g, riverColor.b, thisAlpha);
+    if (currentColor.a > 0)
+    {
+        newColor = float4(currentColor.r, currentColor.g, currentColor.b, currentColor.a + thisVarAlpha);
+    }
+
+    result[id.xy] = newColor;
+}

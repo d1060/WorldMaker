@@ -438,7 +438,7 @@ public partial class Map : MonoBehaviour
             mapBufferEroded.SetData(erodedHeightMap);
             heightmap2TextureShader.SetBuffer(0, "erodedHeightMap", mapBufferEroded);
 
-            ComputeBuffer inciseFlowMapBuffer = new ComputeBuffer(erodedHeightMap.Length, sizeof(float));
+            ComputeBuffer inciseFlowMapBuffer = new ComputeBuffer(inciseFlowMap.Length, sizeof(float));
             inciseFlowMapBuffer.SetData(inciseFlowMap);
             heightmap2TextureShader.SetBuffer(0, "inciseFlowMap", inciseFlowMapBuffer);
 
@@ -454,9 +454,10 @@ public partial class Map : MonoBehaviour
             heightmap2TextureShader.SetTexture(0, "result", rTexture);
             heightmap2TextureShader.SetInt("mapWidth", textureSettings.textureWidth);
             heightmap2TextureShader.SetInt("mapHeight", textureSettings.textureHeight);
+            heightmap2TextureShader.SetFloat("waterLevel", textureSettings.waterLevel);
             heightmap2TextureShader.SetFloat("erosionNoiseMerge", textureSettings.erosionNoiseMerge);
 
-            heightmap2TextureShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 8f), Mathf.CeilToInt(textureSettings.textureHeight / 8f), 1);
+            heightmap2TextureShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 32f), Mathf.CeilToInt(textureSettings.textureHeight / 32f), 1);
 
             RenderTexture.active = rTexture;
 
@@ -525,12 +526,18 @@ public partial class Map : MonoBehaviour
         yield return null;
     }
 
+    public void ReplotRivers()
+    {
+        StartCoroutine(PerformPlotRiversRandomly());
+    }
+
     public void UndoErosion()
     {
         erodedHeightMap = null;
         originalHeightMap = null;
         mergedHeightMap = null;
         flowTexture = null;
+        flowTextureRandom = null;
         inciseFlowMap = null;
         flowMap = null;
         isInciseFlowApplied = false;
@@ -541,66 +548,186 @@ public partial class Map : MonoBehaviour
     }
 
     Texture2D flowTexture;
+    Texture2D flowTextureRandom;
     public void RunPlotRiversFromButton()
     {
-        StartCoroutine(PerformPlotRivers());
+        StartCoroutine(PerformPlotRiversRandomly());
     }
 
-    public ComputeShader flow2TextureShader;
-    IEnumerator PerformPlotRivers()
+    public ComputeShader randomPlotRivers;
+    IEnumerator PerformPlotRiversRandomly()
     {
-        SetupPlottingRiversPanel(plotRiversSettings.numIterations);
-        ShowPlottingRiversPanel();
+        bool useCpu = false;
+
+        if (!inciseFlowSettings.plotRiversRandomly)
+            yield break;
+
+        if (useCpu)
+        {
+            SetupPlottingRiversPanel(plotRiversSettings.numIterations);
+            ShowPlottingRiversPanel();
+        }
         yield return null;
         GenerateHeightMap();
+        if (connectivityMap == null)
+            EstablishHeightmapConnectivity();
 
-        if (flowTexture == null)
+        if (flowTextureRandom == null)
         {
-            flowTexture = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight);
+            flowTextureRandom = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight);
             Color[] colors = new Color[textureSettings.textureWidth * textureSettings.textureHeight];
-            flowTexture.SetPixels(colors);
-            flowTexture.Apply();
+            flowTextureRandom.SetPixels(colors);
+            flowTextureRandom.Apply();
         }
 
-        Rivers.instance.numIterations = plotRiversSettings.numIterations;
-        Rivers.instance.textureWidth = textureSettings.textureWidth;
-        Rivers.instance.textureHeight = textureSettings.textureHeight;
-        Rivers.instance.waterLevel = textureSettings.waterLevel;
-        Rivers.instance.flowHeightDelta = plotRiversSettings.flowHeightDelta;
-        Rivers.instance.startingAlpha = plotRiversSettings.startingAlpha;
-        Rivers.instance.riverColor = plotRiversSettings.riverColor;
-        Rivers.instance.heightWeight = plotRiversSettings.heightWeight;
-        Rivers.instance.brushSize = plotRiversSettings.brushSize;
-        Rivers.instance.brushExponent = plotRiversSettings.brushExponent;
-        Rivers.instance.heightMap = erodedHeightMap;
-
-        Rivers.instance.Init(ref flowTexture);
-        Rivers.instance.StartThreads();
-
-        int updateStep = plotRiversSettings.numIterations / 100;
-        int startedIterations = 0;
-        while (startedIterations < plotRiversSettings.numIterations)
+        if (useCpu)
         {
-            startedIterations = Rivers.instance.RunStep();
-            if (startedIterations % updateStep == 0 || startedIterations >= plotRiversSettings.numIterations)
-            {
-                UpdatePlottingRiversPanel(startedIterations + 1);
-                yield return null;
-            }
-        }
+            Rivers.instance.numIterations = plotRiversSettings.numIterations;
+            Rivers.instance.textureWidth = textureSettings.textureWidth;
+            Rivers.instance.textureHeight = textureSettings.textureHeight;
+            Rivers.instance.waterLevel = textureSettings.waterLevel;
+            Rivers.instance.flowHeightDelta = plotRiversSettings.flowHeightDelta;
+            Rivers.instance.startingAlpha = plotRiversSettings.startingAlpha;
+            Rivers.instance.riverColor = plotRiversSettings.riverColor;
+            Rivers.instance.heightWeight = plotRiversSettings.heightWeight;
+            Rivers.instance.brushSize = plotRiversSettings.brushSize;
+            Rivers.instance.brushExponent = plotRiversSettings.brushExponent;
+            Rivers.instance.heightMap = erodedHeightMap;
 
-        Rivers.instance.WaitForThreads();
-        Rivers.instance.Finalize(ref flowTexture);
+            Rivers.instance.Init(ref flowTexture);
+            Rivers.instance.StartThreads();
+
+            int updateStep = plotRiversSettings.numIterations / 100;
+            int startedIterations = 0;
+            while (startedIterations < plotRiversSettings.numIterations)
+            {
+                startedIterations = Rivers.instance.RunStep();
+                if (startedIterations % updateStep == 0 || startedIterations >= plotRiversSettings.numIterations)
+                {
+                    UpdatePlottingRiversPanel(startedIterations + 1);
+                    yield return null;
+                }
+            }
+
+            Rivers.instance.WaitForThreads();
+            Rivers.instance.Finalize(ref flowTexture);
+        }
+        else
+        {
+            GenerateHeightMap();
+            if (connectivityMap == null) 
+                EstablishHeightmapConnectivity();
+            CalculateLandMask();
+
+            int actualNumberOfRiverSources = plotRiversSettings.numIterations;
+            if (actualNumberOfRiverSources > landMaskCount)
+                actualNumberOfRiverSources = landMaskCount;
+
+            int[] riverFlowMask = new int[textureSettings.textureWidth * textureSettings.textureHeight];
+
+            System.Random random = new System.Random();
+            for (int i = 0; i < actualNumberOfRiverSources; i++)
+            {
+                Vector3 pointInSpace = new Vector3((float)(random.NextDouble() - 0.5), (float)(random.NextDouble() - 0.5), (float)(random.NextDouble() - 0.5));
+                Vector2 pointInMap = pointInSpace.CartesianToPolarRatio(1);
+                int mapX = (int)(pointInMap.x * textureSettings.textureWidth);
+                int mapY = (int)(pointInMap.y * textureSettings.textureHeight);
+
+                int dropPointIndex = mapY * textureSettings.textureWidth + mapX;
+                if (erodedHeightMap[dropPointIndex] <= textureSettings.waterLevel)
+                {
+                    i--;
+                    continue;
+                }
+                riverFlowMask[dropPointIndex] = 1;
+            }
+
+            ComputeBuffer riverFlowMaskBuffer = new ComputeBuffer(riverFlowMask.Length, sizeof(int));
+            riverFlowMaskBuffer.SetData(riverFlowMask);
+
+            ComputeBuffer connectivityMapBuffer = new ComputeBuffer(connectivityMap.Length, sizeof(int));
+            connectivityMapBuffer.SetData(connectivityMap);
+
+            RenderTexture prevActive = RenderTexture.active;
+
+            RenderTexture rTexture = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
+            rTexture.enableRandomWrite = true;
+            rTexture.Create();
+            RenderTexture.active = rTexture;
+
+            if (flowTexture == null)
+            {
+                flowTexture = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight);
+                Color[] colors = new Color[textureSettings.textureWidth * textureSettings.textureHeight];
+                flowTexture.SetPixels(colors);
+                flowTexture.Apply();
+            }
+
+            randomPlotRivers.SetInt("mapWidth", textureSettings.textureWidth);
+            randomPlotRivers.SetInt("mapHeight", textureSettings.textureHeight);
+            randomPlotRivers.SetFloat("waterLevel", textureSettings.waterLevel);
+            randomPlotRivers.SetFloat("startingAlpha", inciseFlowSettings.startingAlpha);
+            randomPlotRivers.SetFloats("riverColor", new float[] { inciseFlowSettings.riverColor.r, inciseFlowSettings.riverColor.g, inciseFlowSettings.riverColor.b });
+            randomPlotRivers.SetBuffer(0, "riverFlowMask", riverFlowMaskBuffer);
+            randomPlotRivers.SetBuffer(0, "connectvityMap", connectivityMapBuffer);
+            randomPlotRivers.SetTexture(0, "original", flowTexture);
+            randomPlotRivers.SetTexture(0, "result", rTexture);
+
+            int numPasses = (int)(textureSettings.textureWidth * (1 - textureSettings.waterLevel) / 3);
+            for (int i = 0; i < numPasses; i++)
+                randomPlotRivers.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 32f), Mathf.CeilToInt(textureSettings.textureHeight / 32f), 1);
+
+            RenderTexture.active = rTexture;
+            flowTextureRandom = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
+            flowTextureRandom.ReadPixels(new Rect(0, 0, rTexture.width, rTexture.height), 0, 0);
+            flowTextureRandom.Apply();
+            RenderTexture.active = prevActive;
+
+            riverFlowMaskBuffer.Release();
+            connectivityMapBuffer.Release();
+            rTexture.Release();
+        }
 
         //PlotRivers.instance.Run(ref erodedHeightMap, ref flowTexture);
         //flowTexture.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "flowMap.png"));
         HeightMap2Texture();
         planetSurfaceMaterial.SetTexture("_MainTex", heightmap);
-        planetSurfaceMaterial.SetTexture("_FlowTex", flowTexture);
+        planetSurfaceMaterial.SetTexture("_FlowTex", flowTextureRandom);
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
         planetSurfaceMaterial.SetInt("_IsEroded", 1);
-        HidePlottingRiversPanel();
+        if (useCpu)
+            HidePlottingRiversPanel();
         yield return null;
+    }
+
+    public ComputeShader landMaskShader;
+    int[] landMask;
+    int landMaskCount = 0;
+    void CalculateLandMask()
+    {
+        ComputeBuffer heightMapBuffer = new ComputeBuffer(erodedHeightMap.Length, sizeof(float));
+        heightMapBuffer.SetData(erodedHeightMap);
+
+        landMask = new int[erodedHeightMap.Length];
+        ComputeBuffer landMaskBuffer = new ComputeBuffer(landMask.Length, sizeof(int));
+        landMaskBuffer.SetData(landMask);
+
+        landMaskShader.SetInt("mapWidth", textureSettings.textureWidth);
+        landMaskShader.SetInt("mapHeight", textureSettings.textureHeight);
+        landMaskShader.SetFloat("waterLevel", textureSettings.waterLevel);
+        landMaskShader.SetBuffer(0, "heightMap", heightMapBuffer);
+        landMaskShader.SetBuffer(0, "landMask", landMaskBuffer);
+
+        int numThreadsX = Mathf.CeilToInt(textureSettings.textureWidth / 32f);
+        int numThreadsY = Mathf.CeilToInt(textureSettings.textureHeight / 32f);
+
+        landMaskShader.Dispatch(0, numThreadsX, numThreadsY, 1);
+
+        landMaskBuffer.GetData(landMask);
+        landMaskCount = landMask.Sum();
+
+        heightMapBuffer.Release();
+        landMaskBuffer.Release();
     }
 
     struct float4
@@ -632,6 +759,7 @@ public partial class Map : MonoBehaviour
             EstablishHeightmapConnectivity();
 
         inciseFlowMap = new float[erodedHeightMap.Length];
+        flowMap = new float[erodedHeightMap.Length];
 
         if (useCPU)
         {
@@ -641,12 +769,13 @@ public partial class Map : MonoBehaviour
             InciseFlow.instance.amount = inciseFlowSettings.amount;
             InciseFlow.instance.minAmount = inciseFlowSettings.minAmount;
             InciseFlow.instance.strength = inciseFlowSettings.strength;
-            InciseFlow.instance.maxPathDepth = 1024;
             InciseFlow.instance.heightFactor = 0.05f;
             InciseFlow.instance.maxFlowStrength = inciseFlowSettings.maxFlowStrength;
             InciseFlow.instance.curveFactor = inciseFlowSettings.chiselStrength;
             InciseFlow.instance.heightInfluence = inciseFlowSettings.heightInfluence;
             InciseFlow.instance.waterLevel = textureSettings.waterLevel;
+            InciseFlow.instance.blur = inciseFlowSettings.preBlur;
+            InciseFlow.instance.flowMap = flowMap;
 
             InciseFlow.instance.heightMap = erodedHeightMap;
             InciseFlow.instance.drainageIndexesMap = connectivityMap;
@@ -656,8 +785,6 @@ public partial class Map : MonoBehaviour
         else
         {
             int numPasses = (int)(textureSettings.textureWidth * (1 - textureSettings.waterLevel) / 3);
-
-            flowMap = new float[textureSettings.textureWidth * textureSettings.textureHeight];
 
             ComputeBuffer flowMapBuffer = new ComputeBuffer(flowMap.Length, sizeof(float));
             flowMapBuffer.SetData(flowMap);
@@ -693,16 +820,21 @@ public partial class Map : MonoBehaviour
             inciseFlowErosion.SetFloat("curveFactor", inciseFlowSettings.chiselStrength);
             inciseFlowErosion.SetFloat("heightInfluence", inciseFlowSettings.heightInfluence);
             inciseFlowErosion.SetFloat("waterLevel", textureSettings.waterLevel);
+            inciseFlowErosion.SetFloat("blur", inciseFlowSettings.preBlur);
             inciseFlowErosion.SetBuffer(0, "heightMap", heightMapBuffer);
             inciseFlowErosion.SetBuffer(0, "flowMap", flowMapBuffer);
             inciseFlowErosion.SetBuffer(0, "inciseFlowMap", inciseFlowMapBuffer);
 
-            numThreadsX = Mathf.CeilToInt(textureSettings.textureWidth / 32f);
-            numThreadsY = Mathf.CeilToInt(textureSettings.textureHeight / 32f);
-
             inciseFlowErosion.Dispatch(0, numThreadsX, numThreadsY, 1);
 
             inciseFlowMapBuffer.GetData(inciseFlowMap);
+
+            if (inciseFlowSettings.postBlur > 0)
+            {
+                float actualBlur = inciseFlowSettings.postBlur / 3;
+                AverageHeightMap(actualBlur, ref inciseFlowMap);
+            }
+
             flowMapBuffer.GetData(flowMap);
 
             flowMaxValue = flowMap.Max();
@@ -715,7 +847,11 @@ public partial class Map : MonoBehaviour
 
         if (inciseFlowSettings.plotRivers)
             InciseFlowPlotRivers();
-        else
+
+        if (inciseFlowSettings.plotRiversRandomly)
+            StartCoroutine(PerformPlotRiversRandomly());
+
+        if (!inciseFlowSettings.plotRivers && !inciseFlowSettings.plotRiversRandomly)
             planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
 
         HeightMap2Texture();
@@ -735,6 +871,9 @@ public partial class Map : MonoBehaviour
             flowTexture.SetPixels(colors);
             flowTexture.Apply();
         }
+
+        if (flowMap == null)
+            flowMap = new float[textureSettings.textureWidth * textureSettings.textureHeight];
 
         ComputeBuffer flowMapBuffer = new ComputeBuffer(erodedHeightMap.Length, sizeof(float));
         flowMapBuffer.SetData(flowMap);
@@ -771,6 +910,7 @@ public partial class Map : MonoBehaviour
     }
 
     public ComputeShader heightmapConnectivityShader;
+    public ComputeShader heightmapAverageShader;
 
     int[] connectivityMap;
     float[] distanceToWaterMap;
@@ -803,8 +943,11 @@ public partial class Map : MonoBehaviour
                 int numThreadsX = Mathf.CeilToInt(textureSettings.textureWidth / 32f);
                 int numThreadsY = Mathf.CeilToInt(textureSettings.textureHeight / 32f);
 
-                ComputeBuffer heightBuffer = new ComputeBuffer(erodedHeightMap.Length, sizeof(float));
-                heightBuffer.SetData(erodedHeightMap);
+                float[] connectivityHeightMap = new float[erodedHeightMap.Length];
+                Array.Copy(erodedHeightMap, connectivityHeightMap, erodedHeightMap.Length);
+
+                ComputeBuffer heightBuffer = new ComputeBuffer(connectivityHeightMap.Length, sizeof(float));
+                heightBuffer.SetData(connectivityHeightMap);
 
                 ComputeBuffer connectivityIndexesBuffer = new ComputeBuffer(connectivityMap.Length, sizeof(int));
                 connectivityIndexesBuffer.SetData(connectivityMap);
@@ -834,6 +977,47 @@ public partial class Map : MonoBehaviour
             }
             //connectivityMap.SaveConnectivityMap(textureSettings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityColors.png"));
         }
+    }
+
+    void AverageHeightMap(float blur, ref float[] heightMap)
+    {
+        int numThreadsX = Mathf.CeilToInt(textureSettings.textureWidth / 32f);
+        int numThreadsY = Mathf.CeilToInt(textureSettings.textureHeight / 32f);
+
+        ComputeBuffer heightBuffer1 = new ComputeBuffer(heightMap.Length, sizeof(float));
+        heightBuffer1.SetData(heightMap);
+
+        ComputeBuffer heightBuffer2 = new ComputeBuffer(heightMap.Length, sizeof(float));
+        heightBuffer2.SetData(heightMap);
+
+        heightmapAverageShader.SetInt("mapWidth", textureSettings.textureWidth);
+        heightmapAverageShader.SetInt("mapHeight", textureSettings.textureHeight);
+        heightmapAverageShader.SetFloat("blur", blur);
+
+        int i = 0;
+        for (i = 0; i < Mathf.CeilToInt(blur); i++)
+        {
+            heightmapAverageShader.SetInt("blurStep", i + 1);
+            if (i % 2 == 0)
+            {
+                heightmapAverageShader.SetBuffer(0, "sourceHeightMap", heightBuffer1);
+                heightmapAverageShader.SetBuffer(0, "targetHeightMap", heightBuffer2);
+            }
+            else
+            {
+                heightmapAverageShader.SetBuffer(0, "sourceHeightMap", heightBuffer2);
+                heightmapAverageShader.SetBuffer(0, "targetHeightMap", heightBuffer1);
+            }
+            heightmapAverageShader.Dispatch(0, numThreadsX, numThreadsY, 1);
+        }
+
+        if (i % 2 == 0)
+            heightBuffer1.GetData(heightMap);
+        else
+            heightBuffer2.GetData(heightMap);
+
+        heightBuffer1.Release();
+        heightBuffer2.Release();
     }
 
     bool isInciseFlowApplied = false;
