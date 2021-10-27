@@ -262,7 +262,7 @@ Shader "Noise/PlanetarySurface"
                 }
 
                 float actualLatitude = (abs(IN.uv_MainTex.y - 0.5) * 2);
-                float latitudeTemperature = 1 - actualLatitude;
+                float latitudeTemperature = 0.9 - actualLatitude;
                 //latitudeTemperature = pow(latitudeTemperature, 0.5f);
                 latitudeTemperature *= 40; // From 0 to 10
                 latitudeTemperature -= 15; // From -15 to 25
@@ -338,7 +338,7 @@ Shader "Noise/PlanetarySurface"
                             o.Albedo = normalColor;
                         }
                     }
-                    else // Drawing the main map.
+                    else if (_DrawType == 0 || _DrawType == 6) // Drawing the main map.
                     {
                         // Get Land Color
                         float4 color = float4(0, 0, 0, 1);
@@ -381,7 +381,6 @@ Shader "Noise/PlanetarySurface"
                                 }
                             }
                         }
-                        o.Albedo = color;
 
                         float3 normal = float3(0, 0, 1);
                         if (!isAboveWater)
@@ -399,7 +398,19 @@ Shader "Noise/PlanetarySurface"
                                 1);
                         }
                         normal = normalize(normal);
-                        o.Normal = normal;
+
+                        if (_DrawType == 0) // Land
+                        {
+                            o.Albedo = color;
+                            o.Normal = normal;
+                        }
+                        else if (_DrawType == 6) // Land with baked normals.
+                        {
+                            float3 lightRay = float3(1.25, 1.25, 0.7);
+                            float projection = dot(normal, lightRay);
+                            color *= projection * 1.5;
+                            o.Albedo = color;
+                        }
                     }
                 }
             }

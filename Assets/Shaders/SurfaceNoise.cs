@@ -5,5 +5,6 @@ public enum SphereShaderDrawType
     LandMask = 2,
     Temperature = 3,
     Normal = 4,
-    Humidity = 5
+    Humidity = 5,
+    LandNormal = 6
 }

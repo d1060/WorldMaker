@@ -100,7 +100,10 @@ public class CameraController : MonoBehaviour
                     isClickingContextMenu = true;
             }
             if (!isClickingContextMenu)
+            {
+                Debug.Log("Camera Controller: Close Context Menu - Not clicking on Context Menu.");
                 CloseContextMenu();
+            }
         }
 
         // Only moves camera if no UI element was pressed.
@@ -150,9 +153,15 @@ public class CameraController : MonoBehaviour
         else if (graphicRaycastResults.Count == 0 && isLeftMouseButtonDown)
         {
             if (!IsClickGoingToHitAWaypointMarker())
+            {
+                Debug.Log("Camera Controller: Open Context Menu.");
                 OpenContextMenu();
+            }
             else
+            {
+                Debug.Log("Camera Controller: Close Context Menu - Not going to hit a waypoint Marker.");
                 CloseContextMenu();
+            }
         }
     }
 

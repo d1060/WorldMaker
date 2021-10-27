@@ -16,6 +16,9 @@ public class AppData
     public bool SaveSpecularMap = true;
     public bool SaveTemperature = true;
     public bool SaveRivers = true;
+    public bool ExportAsCubemap = false;
+    public int CubemapDimension = 256;
+    public int CubemapDivisions = 2;
     public string LastSavedImageFolder = "";
     public List<string> RecentWorlds = new List<string>();
     int MaxRecentWorlds = 8;
@@ -68,6 +71,9 @@ public class AppData
                 LastSavedImageFolder = ad.LastSavedImageFolder;
                 AutoRegenerate = ad.AutoRegenerate;
                 RecentWorlds = ad.RecentWorlds;
+                ExportAsCubemap = ad.ExportAsCubemap;
+                CubemapDimension = ad.CubemapDimension;
+                CubemapDivisions = ad.CubemapDivisions;
                 return true;
             }
         }

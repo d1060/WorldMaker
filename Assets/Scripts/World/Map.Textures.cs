@@ -27,71 +27,80 @@ public partial class Map : MonoBehaviour
                 lastSavedImageFolder = Application.persistentDataPath;
         }
 
-        string savedFile = StandaloneFileBrowser.SaveFilePanel("Save Generated Image Files", lastSavedImageFolder, MapData.instance.WorldName, new[] { new ExtensionFilter("Png Image", "png") });
+        string title = "Save Generated Image Files";
+        if (AppData.instance.ExportAsCubemap)
+            title = "Export Image as Cubemap";
+
+        string savedFile = StandaloneFileBrowser.SaveFilePanel(title, lastSavedImageFolder, MapData.instance.WorldName, new[] { new ExtensionFilter("Png Image", "png") });
         if (savedFile != null && savedFile != "")
         {
             cameraController.CloseContextMenu();
 
-            string fileNamePath = System.IO.Path.GetDirectoryName(savedFile);
-            string fileNameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(savedFile);
-            string fileNameExtension = System.IO.Path.GetExtension(savedFile);
-            AppData.instance.LastSavedImageFolder = fileNamePath;
-
-            int isEroded = planetSurfaceMaterial.GetInt("_IsEroded");
-            planetSurfaceMaterial.SetInt("_IsEroded", 0);
-
-            if (AppData.instance.SaveMainMap)
+            if (AppData.instance.ExportAsCubemap)
+                ExportCubemaps(savedFile);
+            else
             {
-                SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-MainMap" + fileNameExtension), 0);
+                string fileNamePath = System.IO.Path.GetDirectoryName(savedFile);
+                string fileNameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(savedFile);
+                string fileNameExtension = System.IO.Path.GetExtension(savedFile);
+                AppData.instance.LastSavedImageFolder = fileNamePath;
+
+                int isEroded = planetSurfaceMaterial.GetInt("_IsEroded");
+                planetSurfaceMaterial.SetInt("_IsEroded", 0);
+
+                if (AppData.instance.SaveMainMap)
+                {
+                    SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-MainMap" + fileNameExtension), SphereShaderDrawType.Land);
+                }
+
+                if (AppData.instance.SaveHeightMap)
+                {
+                    GenerateHeightMap();
+                    if (mergedHeightMap != null)
+                        ImageTools.SaveTextureFloatArray(mergedHeightMap, textureSettings.textureWidth, textureSettings.textureHeight, Path.Combine(fileNamePath, fileNameWithoutExtension + "-Heightmap" + fileNameExtension));
+                    else if (originalHeightMap != null)
+                        ImageTools.SaveTextureFloatArray(originalHeightMap, textureSettings.textureWidth, textureSettings.textureHeight, Path.Combine(fileNamePath, fileNameWithoutExtension + "-Heightmap" + fileNameExtension));
+                }
+
+                if (AppData.instance.SaveLandMask)
+                {
+                    SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Landmask" + fileNameExtension), SphereShaderDrawType.LandMask);
+                }
+
+                if (AppData.instance.SaveNormalMap)
+                {
+                    SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Normalmap" + fileNameExtension), SphereShaderDrawType.Normal);
+                }
+
+                if (AppData.instance.SaveTemperature)
+                {
+                    SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Temperature" + fileNameExtension), SphereShaderDrawType.Temperature);
+                }
+
+                if (AppData.instance.SaveRivers && flowTexture != null)
+                {
+                    SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Rivers" + fileNameExtension), flowTexture);
+                }
+
+                planetSurfaceMaterial.SetInt("_IsEroded", isEroded);
+
+                AppData.instance.Save();
             }
-
-            if (AppData.instance.SaveHeightMap)
-            {
-                GenerateHeightMap();
-                if (mergedHeightMap != null)
-                    ImageTools.SaveTextureFloatArray(mergedHeightMap, textureSettings.textureWidth, textureSettings.textureHeight, Path.Combine(fileNamePath, fileNameWithoutExtension + "-Heightmap" + fileNameExtension));
-                else if (originalHeightMap != null)
-                    ImageTools.SaveTextureFloatArray(originalHeightMap, textureSettings.textureWidth, textureSettings.textureHeight, Path.Combine(fileNamePath, fileNameWithoutExtension + "-Heightmap" + fileNameExtension));
-            }
-
-            if (AppData.instance.SaveLandMask)
-            {
-                SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Landmask" + fileNameExtension), 2);
-            }
-
-            if (AppData.instance.SaveNormalMap)
-            {
-                SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Normalmap" + fileNameExtension), 4);
-            }
-
-            if (AppData.instance.SaveTemperature)
-            {
-                SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Temperature" + fileNameExtension), 3);
-            }
-
-            if (AppData.instance.SaveRivers && flowTexture != null)
-            {
-                SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Rivers" + fileNameExtension), flowTexture);
-            }
-
-            planetSurfaceMaterial.SetInt("_IsEroded", isEroded);
-
-            AppData.instance.Save();
         }
         else
             cameraController.CloseContextMenu();
     }
 
-    void SaveImageFile(string fileName, int drawMode)
+    void SaveImageFile(string fileName, SphereShaderDrawType drawMode)
     {
         if (File.Exists(fileName))
             File.Delete(fileName);
 
-        planetSurfaceMaterial.SetFloat("_DrawType", drawMode);
+        planetSurfaceMaterial.SetFloat("_DrawType", (int)drawMode);
         //Texture source = flatMap.GetComponent<MeshRenderer>().material.mainTexture;
         Texture2D source;
         RenderTextureFormat outputFormat = RenderTextureFormat.ARGB32;
-        if (drawMode != 1)
+        if (drawMode != SphereShaderDrawType.HeightMap)
         {
             source = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA32, false);
         }
@@ -105,7 +114,36 @@ public partial class Map : MonoBehaviour
         destination.Save(fileName);
         RenderTexture.ReleaseTemporary(destination);
         UnityEngine.Object.Destroy(source);
-        planetSurfaceMaterial.SetFloat("_DrawType", showTemperature ? 3 : 0);
+        UnityEngine.Object.Destroy(destination);
+        planetSurfaceMaterial.SetFloat("_DrawType", showTemperature ? (int)SphereShaderDrawType.Temperature : (int)SphereShaderDrawType.Land);
+    }
+
+    Texture2D ShaderToTexture(SphereShaderDrawType drawMode)
+    {
+        Texture2D source;
+        RenderTextureFormat outputFormat = RenderTextureFormat.ARGB32;
+        if (drawMode != SphereShaderDrawType.HeightMap)
+        {
+            source = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA32, false);
+        }
+        else
+        {
+            source = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGB48, false);
+            outputFormat = RenderTextureFormat.DefaultHDR;
+        }
+        float prevDrawType = planetSurfaceMaterial.GetFloat("_DrawType");
+        planetSurfaceMaterial.SetFloat("_DrawType", (int)drawMode);
+        RenderTexture destination = RenderTexture.GetTemporary(textureSettings.textureWidth, textureSettings.textureHeight, 0, outputFormat);
+        Graphics.Blit(source, destination, planetSurfaceMaterial, 2);
+        planetSurfaceMaterial.SetFloat("_DrawType", prevDrawType);
+
+        RenderTexture prevActive = RenderTexture.active;
+        RenderTexture.active = destination;
+        source.ReadPixels(new Rect(0, 0, textureSettings.textureWidth, textureSettings.textureHeight), 0, 0);
+        source.Apply();
+        RenderTexture.active = prevActive;
+        RenderTexture.ReleaseTemporary(destination);
+        return source;
     }
 
     void SaveImageFile(string fileName, Texture2D texture)
@@ -114,6 +152,170 @@ public partial class Map : MonoBehaviour
             File.Delete(fileName);
 
         texture.SaveAsPNG(fileName);
+    }
+
+    public ComputeShader equirectangular2CubemapShader;
+    void ExportCubemaps(string savedFile)
+    {
+        string savePath = Path.GetDirectoryName(savedFile);
+        string saveFile = Path.GetFileNameWithoutExtension(savedFile);
+        //string saveExtension = Path.GetExtension(savedFile);
+
+        // Gets the Main Map.
+        Texture2D mainMap = ShaderToTexture(SphereShaderDrawType.LandNormal);
+        // Gets the Landmask.
+        Texture2D landMask = ShaderToTexture(SphereShaderDrawType.LandMask);
+        // Gets the Bump.
+        Texture2D bumpMap = ShaderToTexture(SphereShaderDrawType.HeightMap);
+
+        float mainMapHeightToExtract = mainMap.height / 2f;
+        float mainMapWidthToExtract = mainMap.width / 4f;
+        int bottomY = Mathf.RoundToInt(mainMapHeightToExtract / 2);
+        int topY = Mathf.RoundToInt(bottomY + mainMapHeightToExtract);
+        int cropHeight = topY - bottomY;
+        int cropWidth = Mathf.RoundToInt(mainMapWidthToExtract);
+
+        string baseFolder = Path.Combine(savePath, saveFile, "Surface");
+        if (!Directory.Exists(baseFolder))
+            Directory.CreateDirectory(baseFolder);
+
+        string bumpBaseFolder = Path.Combine(savePath, saveFile, "Bump");
+        if (!Directory.Exists(bumpBaseFolder))
+            Directory.CreateDirectory(bumpBaseFolder);
+
+        for (int faceCount = 0; faceCount < 6; faceCount++)
+        {
+            string baseSubfolder = "neg_x";
+            switch (faceCount)
+            {
+                case 1:
+                    baseSubfolder = "pos_z";
+                    break;
+                case 2:
+                    baseSubfolder = "pos_x";
+                    break;
+                case 3:
+                    baseSubfolder = "neg_z";
+                    break;
+                case 4:
+                    baseSubfolder = "pos_y";
+                    break;
+                case 5:
+                    baseSubfolder = "neg_y";
+                    break;
+            }
+
+            string folder = Path.Combine(savePath, saveFile, "Surface", baseSubfolder);
+            if (!Directory.Exists(folder))
+                Directory.CreateDirectory(folder);
+
+            string bumpFolder = Path.Combine(savePath, saveFile, "Bump", baseSubfolder);
+            if (!Directory.Exists(bumpFolder))
+                Directory.CreateDirectory(bumpFolder);
+
+            ExportCubeMapFile(mainMap, folder, "_c", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
+            ExportCubeMapFile(landMask, folder, "_a", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
+            ExportCubeMapFile(bumpMap, bumpFolder, "", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
+
+            for (int i = 1; i < AppData.instance.CubemapDivisions; i++)
+            {
+                SaveMapSubDivisions(mainMap, faceCount, i, folder, "_c");
+                SaveMapSubDivisions(landMask, faceCount, i, folder, "_a");
+                SaveMapSubDivisions(bumpMap, faceCount, i, bumpFolder, "");
+            }
+        }
+
+        mainMap = mainMap.ResizePixels(AppData.instance.CubemapDimension, AppData.instance.CubemapDimension);
+        landMask = landMask.ResizePixels(AppData.instance.CubemapDimension, AppData.instance.CubemapDimension);
+        bumpMap = bumpMap.ResizePixels(AppData.instance.CubemapDimension, AppData.instance.CubemapDimension);
+
+        mainMap.SaveAsJPG(Path.Combine(baseFolder, "base.jpg"));
+        landMask.SaveAsJPG(Path.Combine(baseFolder, "base_a.jpg"));
+        bumpMap.SaveAsJPG(Path.Combine(bumpBaseFolder, "base.jpg"));
+
+        UnityEngine.Object.Destroy(mainMap);
+        UnityEngine.Object.Destroy(landMask);
+        UnityEngine.Object.Destroy(bumpMap);
+
+        mainMap = null;
+        landMask = null;
+        bumpMap = null;
+
+        AppData.instance.LastSavedImageFolder = savePath;
+        AppData.instance.Save();
+    }
+
+    void ExportCubeMapFile(Texture2D map, string folder, string filePosfix, int dimension, int face, int division, int divisionX, int divisionY)
+    {
+        bool useCpu = false;
+        string fileName = division + "_" + divisionY + "_" + divisionX + filePosfix + ".jpg";
+
+        if (!useCpu)
+        {
+            equirectangular2CubemapShader.SetInt("mapWidth", textureSettings.textureWidth);
+            equirectangular2CubemapShader.SetInt("mapHeight", textureSettings.textureHeight);
+            equirectangular2CubemapShader.SetInt("cubemapDimension", dimension);
+            equirectangular2CubemapShader.SetInt("subdivision", division);
+            equirectangular2CubemapShader.SetInt("subDivisionX", divisionX);
+            equirectangular2CubemapShader.SetInt("subDivisionY", divisionY);
+            equirectangular2CubemapShader.SetInt("faceId", face);
+
+            equirectangular2CubemapShader.SetTexture(0, "base", map);
+
+            RenderTexture result = RenderTexture.GetTemporary(dimension, dimension);
+            result.enableRandomWrite = true;
+            result.Create();
+
+            equirectangular2CubemapShader.SetTexture(0, "Result", result);
+
+            equirectangular2CubemapShader.Dispatch(0, Mathf.CeilToInt(dimension / 32f), Mathf.CeilToInt(dimension / 32f), 1);
+
+            Texture2D resultTexture = new Texture2D(dimension, dimension);
+
+            RenderTexture prevActive = RenderTexture.active;
+            RenderTexture.active = result;
+            resultTexture.ReadPixels(new Rect(0, 0, dimension, dimension), 0, 0);
+            RenderTexture.active = prevActive;
+            resultTexture.Apply();
+            resultTexture.SaveAsJPG(Path.Combine(folder, fileName));
+
+            RenderTexture.ReleaseTemporary(result);
+            UnityEngine.Object.Destroy(resultTexture);
+            resultTexture = null;
+        }
+        else
+        {
+            Equirectangular2Cubemap.instance.mapWidth = textureSettings.textureWidth;
+            Equirectangular2Cubemap.instance.mapHeight = textureSettings.textureHeight;
+            Equirectangular2Cubemap.instance.cubemapDimension = dimension;
+            Equirectangular2Cubemap.instance.subdivision = division;
+            Equirectangular2Cubemap.instance.subDivisionX = divisionX;
+            Equirectangular2Cubemap.instance.subDivisionY = divisionY;
+            Equirectangular2Cubemap.instance.faceId = face;
+            Equirectangular2Cubemap.instance.baseTex = map;
+            Equirectangular2Cubemap.instance.Result = new Texture2D(dimension, dimension);
+
+            Equirectangular2Cubemap.instance.Run();
+
+            Equirectangular2Cubemap.instance.Result.Apply();
+            Equirectangular2Cubemap.instance.Result.SaveAsJPG(Path.Combine(folder, fileName));
+
+            UnityEngine.Object.Destroy(Equirectangular2Cubemap.instance.Result);
+        }
+    }
+
+
+    void SaveMapSubDivisions(Texture2D tex, int faceCount, int subdivision, string folder, string filePosfix)
+    {
+        int sizeDivisor = (int)Mathf.Pow(2, subdivision);
+
+        for (int countX = 0; countX < sizeDivisor; countX++)
+        {
+            for (int countY = 0; countY < sizeDivisor; countY++)
+            {
+                ExportCubeMapFile(tex, folder, filePosfix, AppData.instance.CubemapDimension, faceCount, subdivision, countX, countY);
+            }
+        }
     }
 
     void UpdateSurfaceMaterialProperties(bool resetEroded = true)

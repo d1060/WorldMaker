@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -52,9 +52,6 @@
     <UnityBuildTarget>StandaloneWindows64:19</UnityBuildTarget>
     <UnityVersion>2021.1.20f1</UnityVersion>
   </PropertyGroup>
-  <ItemGroup>
-    <Analyzer Include="C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\IDE\Extensions\Microsoft\Visual Studio Tools for Unity\Analyzers\Microsoft.Unity.Analyzers.dll" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorSliderImage.cs" />
     <Compile Include="Assets\Scripts\Menu\MainMenu.cs" />
@@ -131,6 +128,7 @@
     <Compile Include="Assets\Scripts\NameGenerator\NameGeneratorSyllabes.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorImage.cs" />
     <Compile Include="Assets\Scripts\Erosion\ErosionSettings.cs" />
+    <Compile Include="Assets\Scripts\Texture\Equirectangular2Cubemap.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
@@ -139,6 +137,7 @@
     <None Include="Assets\Libraries\Log.dll" />
     <None Include="Assets\Shaders\ComputeShaders\Heightmap.compute" />
     <None Include="Assets\Shaders\ComputeShaders\PluvialErosion_Erosion.compute" />
+    <None Include="Assets\Shaders\ComputeShaders\Equirectangular2Cubemap.compute" />
     <None Include="Assets\Shaders\TerrainBrush.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />
     <None Include="Assets\Libraries\Rivers.dll" />

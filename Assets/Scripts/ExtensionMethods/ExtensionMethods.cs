@@ -340,6 +340,15 @@ public static partial class ExtensionMethods
         tex.SaveAsPNG(fileName);
     }
 
+    public static Texture2D ToTexture2D(this Color[] array, int width)
+    {
+        int height = array.Length / width;
+        Texture2D texture = new Texture2D(width, height);
+        texture.SetPixels(array);
+        texture.Apply();
+        return texture;
+    }
+
     public static void SaveConnectivityMap(this int[] array, int width, string fileName)
     {
         int height = array.Length / width;
@@ -395,6 +404,19 @@ public static partial class ExtensionMethods
         drainageColors.SaveAsPng(width, fileName);
     }
 
+    public static Texture2D ResizePixels(this Texture2D tex, int newWidth, int newHeight)
+    {
+        RenderTexture rt = RenderTexture.GetTemporary(newWidth, newHeight, 32);
+        RenderTexture.active = rt;
+        Graphics.Blit(tex, rt);
+        Texture2D result = new Texture2D(newWidth, newHeight);
+        result.ReadPixels(new Rect(0, 0, newWidth, newHeight), 0, 0);
+        result.Apply();
+        RenderTexture.ReleaseTemporary(rt);
+        UnityEngine.Object.Destroy(tex);
+        return result;
+    }
+
     public static Component GetChildWithName(this Component obj, string name)
     {
         Transform trans = obj.transform;
@@ -437,6 +459,12 @@ public static partial class ExtensionMethods
     public static void SaveAsPNG(this Texture2D _texture, string _fullPath)
     {
         byte[] _bytes = _texture.EncodeToPNG();
+        System.IO.File.WriteAllBytes(_fullPath, _bytes);
+    }
+
+    public static void SaveAsJPG(this Texture2D _texture, string _fullPath)
+    {
+        byte[] _bytes = _texture.EncodeToJPG(100);
         System.IO.File.WriteAllBytes(_fullPath, _bytes);
     }
 }

@@ -81,7 +81,7 @@ Material:
     - _ColorSteps: 6
     - _Cutoff: 0.5
     - _DesertThreshold1: 10
-    - _DesertThreshold2: 20
+    - _DesertThreshold2: 50
     - _DetailNormalMapScale: 1
     - _DomainWarping: 1
     - _DomainWarping2: 0
@@ -98,8 +98,8 @@ Material:
     - _HumiditySeed: 148852
     - _IceTemperatureThreshold1: 0
     - _IceTemperatureThreshold2: -20
-    - _IsEroded: 1
-    - _IsFlowTexSet: 1
+    - _IsEroded: 0
+    - _IsFlowTexSet: 0
     - _IsHeightmapSet: 0
     - _IsLandmaskSet: 0
     - _IsMainmapSet: 0

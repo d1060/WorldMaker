@@ -1053,6 +1053,37 @@ public partial class Map : MonoBehaviour
         AppData.instance.Save();
     }
 
+    public void ExportAsCubemap(bool doExportAsCubemap)
+    {
+        AppData.instance.ExportAsCubemap = doExportAsCubemap;
+        AppData.instance.Save();
+    }
+
+    public void CubemapDimension(string cubemapDimension)
+    {
+        int dimension = cubemapDimension.ToInt();
+        if (dimension > SystemInfo.maxTextureSize)
+        {
+            dimension = SystemInfo.maxTextureSize;
+            UpdateUIInputField(contextMenuPanelTransform, "Cubemap Dimension Text Box", dimension.ToString());
+        }
+        AppData.instance.CubemapDimension = dimension;
+        AppData.instance.Save();
+    }
+
+    public void CubemapDivisions(string cubemapDivisions)
+    {
+        int divisions = cubemapDivisions.ToInt();
+        if (divisions > 10 || divisions < 1)
+        {
+            if (divisions > 10) divisions = 10;
+            if (divisions < 1) divisions = 1;
+            UpdateUIInputField(contextMenuPanelTransform, "Cubemap Subdivisions Text Box", divisions.ToString());
+        }
+        AppData.instance.CubemapDivisions = divisions;
+        AppData.instance.Save();
+    }
+
     public void KeepSeedOnRegenerate(bool keepSeed)
     {
         AppData.instance.KeepSeedOnRegenerate = keepSeed;
@@ -1201,6 +1232,9 @@ public partial class Map : MonoBehaviour
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Specular Map", AppData.instance.SaveSpecularMap);
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Temperature", AppData.instance.SaveTemperature);
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Rivers", AppData.instance.SaveRivers);
+            UpdateUIToggle(contextMenuPanelTransform, "Toggle Export as Cubemap", AppData.instance.ExportAsCubemap);
+            UpdateUIInputField(contextMenuPanelTransform, "Cubemap Dimension Text Box", AppData.instance.CubemapDimension.ToString());
+            UpdateUIInputField(contextMenuPanelTransform, "Cubemap Subdivisions Text Box", AppData.instance.CubemapDivisions.ToString());
         }
 
         if (erosionPanelTransform != null)
