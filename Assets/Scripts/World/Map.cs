@@ -33,21 +33,8 @@ public partial class Map : MonoBehaviour
     bool updatingFieldCyclically = false;
 
     public float[,] heights = null;
-    float[] heightsLat0 = null;
-    float[] heightsLon0 = null;
-    float lowestHeight = float.MaxValue;
-    float highestHeight = float.MinValue;
-    float lowestHumidity = float.MaxValue;
-    float highestHumidity = float.MinValue;
-    float lowestTemperature = float.MaxValue;
-    float highestTemperature = float.MinValue;
-    List<float> allHeights = new List<float>();
-    float waterHeight; // Actual water height within the Noise variation
-    int mapInfosWidth;
-    int mapInfosHeight;
     public GameObject waypointMarkerPrefab;
     public GameObject terrainBrushPrefab;
-    float heightRatio = 10;
     Vector3 mouseMapHit = Vector3.zero;
     bool firstUpdate = true;
     public Material pathMaterial;
@@ -88,6 +75,10 @@ public partial class Map : MonoBehaviour
             inciseFlowSettings = MapData.instance.inciseFlowSettings;
         }
         GranuralizedGeoSphere.instance.Init(50);
+
+        planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+        planetSurfaceMaterial.SetInt("_IsEroded", 0);
+        LoadTerrainTransformations();
     }
 
     // Start is called before the first frame update
@@ -97,7 +88,7 @@ public partial class Map : MonoBehaviour
         UpdateMenuFields();
         UpdateRecentWorldsPanel();
         GenerateSeeds();
-        UpdateSurfaceMaterialProperties();
+        UpdateSurfaceMaterialProperties(false);
 
         cameraController = cam.GetComponent<CameraController>();
         NameGenerator.instance.Load();
@@ -169,7 +160,7 @@ public partial class Map : MonoBehaviour
 
     void OnApplicationQuit()
     {
-
+        SaveCurrentTerrainTransformations();
     }
     #endregion
 
@@ -495,19 +486,9 @@ public partial class Map : MonoBehaviour
         namesSeed = (int)(masterRandom.NextDouble() * 1000000);
     }
 
-    public int CurrentZoomLevel { get { return cameraController != null ? cameraController.ZoomLevel : 1; } }
     public Vector2 CenterScreenWorldPosition { get { return centerScreenWorldPosition; }  set { centerScreenWorldPosition = value; } }
     public float MapWidth { get { return mapWidth; } set { mapWidth = value; } }
     public float MapHeight { get { return mapHeight; } set { mapHeight = value; } }
-    public float[] HeightsLat0 { get { return heightsLat0; } set { heightsLat0 = value; } }
-    public float[] HeightsLon0 { get { return heightsLon0; } set { heightsLon0 = value; } }
-    public float LowestHeight { get { return lowestHeight; } set { lowestHeight = value; } }
-    public float HighestHeight { get { return highestHeight; } set { highestHeight = value; } }
-    public float LowestHumidity { get { return lowestHumidity; } set { lowestHumidity = value; } }
-    public float HighestHumidity { get { return highestHumidity; } set { highestHumidity = value; } }
-    public float LowestTemperature { get { return lowestTemperature; } set { lowestTemperature = value; } }
-    public float HighestTemperature { get { return highestTemperature; } set { highestTemperature = value; } }
-    public float HeightRatio { get { return heightRatio; } set { heightRatio = value; } }
     public Vector3 MouseMapHit
     {
         get { return mouseMapHit; }
@@ -625,5 +606,128 @@ public partial class Map : MonoBehaviour
         if (height < textureSettings.waterLevel)
             return textureSettings.waterLevel;
         return height;
+    }
+
+    void SaveCurrentTerrainTransformations()
+    {
+        string tempDataFolder = Path.Combine(Application.persistentDataPath, "Temp", mapSettings.Seed.ToString());
+        if (!Directory.Exists(tempDataFolder))
+            Directory.CreateDirectory(tempDataFolder);
+
+        if (originalHeightMap != null)
+        {
+            originalHeightMap.SaveBytes(Path.Combine(tempDataFolder, "originalHeightMap.raw"));
+        }
+        else if (File.Exists(Path.Combine(tempDataFolder, "originalHeightMap.raw")))
+            File.Delete(Path.Combine(tempDataFolder, "originalHeightMap.raw"));
+
+        if (erodedHeightMap != null)
+        {
+            erodedHeightMap.SaveBytes(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
+        }
+        else if (File.Exists(Path.Combine(tempDataFolder, "erodedHeightMap.raw")))
+            File.Delete(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
+
+        if (mergedHeightMap != null)
+        {
+            mergedHeightMap.SaveBytes(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
+        }
+        else if (File.Exists(Path.Combine(tempDataFolder, "mergedHeightMap.raw")))
+            File.Delete(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
+
+        if (flowTexture != null)
+        {
+            flowTexture.SaveAsPNG(Path.Combine(tempDataFolder, "flow.png"));
+        }
+        else if (File.Exists(Path.Combine(tempDataFolder, "flow.png")))
+            File.Delete(Path.Combine(tempDataFolder, "flow.png"));
+
+        if (flowTextureRandom != null)
+        {
+            flowTextureRandom.SaveAsPNG(Path.Combine(tempDataFolder, "flowRandom.png"));
+        }
+        else if (File.Exists(Path.Combine(tempDataFolder, "flowRandom.png")))
+            File.Delete(Path.Combine(tempDataFolder, "flowRandom.png"));
+
+        if (inciseFlowMap != null)
+        {
+            inciseFlowMap.SaveBytes(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+        }
+        else if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
+            File.Delete(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+
+        planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+        planetSurfaceMaterial.SetInt("_IsEroded", 0);
+    }
+
+    void LoadTerrainTransformations()
+    {
+        string tempDataFolder = Path.Combine(Application.persistentDataPath, "Temp", mapSettings.Seed.ToString());
+        if (!Directory.Exists(tempDataFolder))
+            return;
+
+        bool updateMaterial = false;
+        bool updateFlow = false;
+        if (File.Exists(Path.Combine(tempDataFolder, "originalHeightMap.raw")))
+        {
+            originalHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "originalHeightMap.raw"));
+            updateMaterial = true;
+        }
+        if (File.Exists(Path.Combine(tempDataFolder, "erodedHeightMap.raw")))
+        {
+            erodedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
+            updateMaterial = true;
+        }
+        if (File.Exists(Path.Combine(tempDataFolder, "mergedHeightMap.raw")))
+        {
+            mergedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
+            updateMaterial = true;
+        }
+        if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
+        {
+            inciseFlowMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+            updateMaterial = true;
+        }
+
+        if (File.Exists(Path.Combine(tempDataFolder, "flow.png")))
+        {
+            flowTexture = LoadAnyImageFile(Path.Combine(tempDataFolder, "flow.png"));
+            updateFlow = true;
+        }
+        if (File.Exists(Path.Combine(tempDataFolder, "flowRandom.png")))
+        {
+            flowTextureRandom = LoadAnyImageFile(Path.Combine(tempDataFolder, "flowRandom.png"));
+            updateFlow = true;
+        }
+
+        if (updateMaterial)
+        {
+            HeightMap2Texture();
+            UpdateSurfaceMaterialHeightMap(true);
+        }
+
+        if (updateFlow)
+        {
+            if (flowTexture != null)
+                planetSurfaceMaterial.SetTexture("_FlowTex", flowTexture);
+            else
+                planetSurfaceMaterial.SetTexture("_FlowTex", flowTextureRandom);
+            planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
+        }
+    }
+
+    float[] LoadFloatArrayFromFile(string fileName)
+    {
+        long arrayLength = new System.IO.FileInfo(fileName).Length / sizeof(float);
+        float[] array = new float[arrayLength];
+
+        byte[] byteArray = File.ReadAllBytes(fileName);
+        int byteIndex = 0;
+        for (int i = 0; i < arrayLength; i++)
+        {
+            array[i] = BitConverter.ToSingle(byteArray, byteIndex);
+            byteIndex += sizeof(float);
+        }
+        return array;
     }
 }

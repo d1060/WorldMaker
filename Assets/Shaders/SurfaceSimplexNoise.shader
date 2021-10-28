@@ -222,6 +222,7 @@ Shader "Noise/PlanetarySurface"
 
             bool isAboveWater = height > _WaterLevel;
 
+            o.Alpha = 1;
             if (_DrawType == 1) // Drawing a Heightmap.
             {
                 o.Albedo = float4(height, height, height, 1);
@@ -237,6 +238,20 @@ Shader "Noise/PlanetarySurface"
                 else
                 {
                     o.Albedo = float3(0, 0, 0);
+                }
+
+                o.Metallic = 0;
+                o.Smoothness = 0;
+            }
+            else if (_DrawType == 7) // Drawing a Landmask.
+            {
+                if (isAboveWater)
+                {
+                    o.Albedo = float3(0, 0, 0);
+                }
+                else
+                {
+                    o.Albedo = float3(1, 1, 1);
                 }
 
                 o.Metallic = 0;
@@ -414,7 +429,6 @@ Shader "Noise/PlanetarySurface"
                     }
                 }
             }
-            o.Alpha = 1;
         }
         ENDCG
     }

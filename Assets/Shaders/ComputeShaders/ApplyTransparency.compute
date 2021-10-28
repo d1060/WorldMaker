@@ -1,0 +1,25 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+int mapWidth;
+int mapHeight;
+int alphaAsTransparency;
+Texture2D baseTexture;
+Texture2D transparencyMask;
+RWTexture2D<float4> Result;
+
+[numthreads(32,32,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
+
+    float4 color = baseTexture[id.xy];
+    float4 transparency = transparencyMask[id.xy];
+    float alpha = sqrt(transparency.r * transparency.r + transparency.g * transparency.g + transparency.b * transparency.b);
+    if (alphaAsTransparency)
+        alpha = 1 - alpha;
+    color.a = alpha;
+
+    Result[id.xy] = color;
+}

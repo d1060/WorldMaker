@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
@@ -329,6 +330,15 @@ public static partial class ExtensionMethods
         tex.SetPixels(colors);
         tex.Apply();
         tex.SaveAsPNG(fileName);
+        UnityEngine.Object.Destroy(tex);
+        tex = null;
+    }
+
+    public static void SaveBytes(this float[] array, string fileName)
+    {
+        byte[] byteArray = new byte[array.Length * sizeof(float)];
+        Buffer.BlockCopy(array, 0, byteArray, 0, byteArray.Length);
+        File.WriteAllBytes(fileName, byteArray);
     }
 
     public static void SaveAsPng(this Color[] array, int width, string fileName)
@@ -338,6 +348,8 @@ public static partial class ExtensionMethods
         tex.SetPixels(array);
         tex.Apply();
         tex.SaveAsPNG(fileName);
+        UnityEngine.Object.Destroy(tex);
+        tex = null;
     }
 
     public static Texture2D ToTexture2D(this Color[] array, int width)
@@ -404,7 +416,7 @@ public static partial class ExtensionMethods
         drainageColors.SaveAsPng(width, fileName);
     }
 
-    public static Texture2D ResizePixels(this Texture2D tex, int newWidth, int newHeight)
+    public static Texture2D ResizePixels(this Texture2D tex, int newWidth, int newHeight, bool createCopy = false)
     {
         RenderTexture rt = RenderTexture.GetTemporary(newWidth, newHeight, 32);
         RenderTexture.active = rt;
@@ -413,7 +425,8 @@ public static partial class ExtensionMethods
         result.ReadPixels(new Rect(0, 0, newWidth, newHeight), 0, 0);
         result.Apply();
         RenderTexture.ReleaseTemporary(rt);
-        UnityEngine.Object.Destroy(tex);
+        if (!createCopy)
+            UnityEngine.Object.Destroy(tex);
         return result;
     }
 

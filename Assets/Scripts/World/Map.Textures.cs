@@ -110,7 +110,7 @@ public partial class Map : MonoBehaviour
             outputFormat = RenderTextureFormat.DefaultHDR;
         }
         RenderTexture destination = RenderTexture.GetTemporary(textureSettings.textureWidth, textureSettings.textureHeight, 0, outputFormat);
-        Graphics.Blit(source, destination, planetSurfaceMaterial, 2);
+        Graphics.Blit(source, destination, planetSurfaceMaterial);
         destination.Save(fileName);
         RenderTexture.ReleaseTemporary(destination);
         UnityEngine.Object.Destroy(source);
@@ -132,6 +132,7 @@ public partial class Map : MonoBehaviour
             outputFormat = RenderTextureFormat.DefaultHDR;
         }
         float prevDrawType = planetSurfaceMaterial.GetFloat("_DrawType");
+
         planetSurfaceMaterial.SetFloat("_DrawType", (int)drawMode);
         RenderTexture destination = RenderTexture.GetTemporary(textureSettings.textureWidth, textureSettings.textureHeight, 0, outputFormat);
         Graphics.Blit(source, destination, planetSurfaceMaterial, 2);
@@ -164,16 +165,21 @@ public partial class Map : MonoBehaviour
         // Gets the Main Map.
         Texture2D mainMap = ShaderToTexture(SphereShaderDrawType.LandNormal);
         // Gets the Landmask.
-        Texture2D landMask = ShaderToTexture(SphereShaderDrawType.LandMask);
+        Texture2D landMask = ShaderToTexture(SphereShaderDrawType.InvertedLandMask);
         // Gets the Bump.
         Texture2D bumpMap = ShaderToTexture(SphereShaderDrawType.HeightMap);
 
-        float mainMapHeightToExtract = mainMap.height / 2f;
-        float mainMapWidthToExtract = mainMap.width / 4f;
-        int bottomY = Mathf.RoundToInt(mainMapHeightToExtract / 2);
-        int topY = Mathf.RoundToInt(bottomY + mainMapHeightToExtract);
-        int cropHeight = topY - bottomY;
-        int cropWidth = Mathf.RoundToInt(mainMapWidthToExtract);
+        if (AppData.instance.TransparentOceans)
+        {
+            ApplyTransparency(mainMap, landMask);
+        }
+
+        //float mainMapHeightToExtract = mainMap.height / 2f;
+        //float mainMapWidthToExtract = mainMap.width / 4f;
+        //int bottomY = Mathf.RoundToInt(mainMapHeightToExtract / 2);
+        //int topY = Mathf.RoundToInt(bottomY + mainMapHeightToExtract);
+        //int cropHeight = topY - bottomY;
+        //int cropWidth = Mathf.RoundToInt(mainMapWidthToExtract);
 
         string baseFolder = Path.Combine(savePath, saveFile, "Surface");
         if (!Directory.Exists(baseFolder))
@@ -182,6 +188,19 @@ public partial class Map : MonoBehaviour
         string bumpBaseFolder = Path.Combine(savePath, saveFile, "Bump");
         if (!Directory.Exists(bumpBaseFolder))
             Directory.CreateDirectory(bumpBaseFolder);
+
+        Texture2D mainMapCubemapResized = null;
+        Texture2D landMaskCubemapResized = null;
+        Texture2D bumpMapCubemapResized = null;
+        if (AppData.instance.CubemapDivisions >= 1)
+        {
+            int cubemapResizeDimensions = (int)Mathf.Pow(2, AppData.instance.CubemapDivisions) * AppData.instance.CubemapDimension;
+
+            mainMapCubemapResized = mainMap.ResizePixels(cubemapResizeDimensions, cubemapResizeDimensions, true);
+            if (!AppData.instance.TransparentOceans)
+                landMaskCubemapResized = landMask.ResizePixels(cubemapResizeDimensions, cubemapResizeDimensions, true);
+            bumpMapCubemapResized = bumpMap.ResizePixels(cubemapResizeDimensions, cubemapResizeDimensions, true);
+        }
 
         for (int faceCount = 0; faceCount < 6; faceCount++)
         {
@@ -213,25 +232,41 @@ public partial class Map : MonoBehaviour
             if (!Directory.Exists(bumpFolder))
                 Directory.CreateDirectory(bumpFolder);
 
-            ExportCubeMapFile(mainMap, folder, "_c", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
-            ExportCubeMapFile(landMask, folder, "_a", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
-            ExportCubeMapFile(bumpMap, bumpFolder, "", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
+            if (AppData.instance.TransparentOceans)
+                ExportCubeMapFile(mainMap, folder, "", AppData.instance.CubemapDimension, faceCount, 0, 0, 0, true);
+            if (!AppData.instance.TransparentOceans)
+            {
+                ExportCubeMapFile(mainMap, folder, "_c", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
+                ExportCubeMapFile(landMask, folder, "_a", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
+            }
+            ExportCubeMapFile(bumpMap, bumpFolder, "", AppData.instance.CubemapDimension, faceCount, 0, 0, 0, true);
 
             for (int i = 1; i < AppData.instance.CubemapDivisions; i++)
             {
-                SaveMapSubDivisions(mainMap, faceCount, i, folder, "_c");
-                SaveMapSubDivisions(landMask, faceCount, i, folder, "_a");
-                SaveMapSubDivisions(bumpMap, faceCount, i, bumpFolder, "");
+                if (AppData.instance.TransparentOceans)
+                    SaveMapSubDivisions(mainMapCubemapResized, faceCount, i, folder, "", true);
+                if (!AppData.instance.TransparentOceans)
+                {
+                    SaveMapSubDivisions(mainMapCubemapResized, faceCount, i, folder, "_c");
+                    SaveMapSubDivisions(landMaskCubemapResized, faceCount, i, folder, "_a");
+                }
+                SaveMapSubDivisions(bumpMapCubemapResized, faceCount, i, bumpFolder, "", true);
             }
         }
 
         mainMap = mainMap.ResizePixels(AppData.instance.CubemapDimension, AppData.instance.CubemapDimension);
-        landMask = landMask.ResizePixels(AppData.instance.CubemapDimension, AppData.instance.CubemapDimension);
+        if (!AppData.instance.TransparentOceans)
+            landMask = landMask.ResizePixels(AppData.instance.CubemapDimension, AppData.instance.CubemapDimension);
         bumpMap = bumpMap.ResizePixels(AppData.instance.CubemapDimension, AppData.instance.CubemapDimension);
 
-        mainMap.SaveAsJPG(Path.Combine(baseFolder, "base.jpg"));
-        landMask.SaveAsJPG(Path.Combine(baseFolder, "base_a.jpg"));
-        bumpMap.SaveAsJPG(Path.Combine(bumpBaseFolder, "base.jpg"));
+        if (AppData.instance.TransparentOceans)
+            mainMap.SaveAsPNG(Path.Combine(baseFolder, "base.png"));
+        if (!AppData.instance.TransparentOceans)
+        {
+            mainMap.SaveAsJPG(Path.Combine(baseFolder, "base_c.jpg"));
+            landMask.SaveAsJPG(Path.Combine(baseFolder, "base_a.jpg"));
+        }
+        bumpMap.SaveAsPNG(Path.Combine(bumpBaseFolder, "base.png"));
 
         UnityEngine.Object.Destroy(mainMap);
         UnityEngine.Object.Destroy(landMask);
@@ -241,19 +276,80 @@ public partial class Map : MonoBehaviour
         landMask = null;
         bumpMap = null;
 
+        if (AppData.instance.CubemapDivisions >= 1)
+        {
+            UnityEngine.Object.Destroy(mainMapCubemapResized);
+            mainMapCubemapResized = null;
+            if (!AppData.instance.TransparentOceans)
+            {
+                UnityEngine.Object.Destroy(landMaskCubemapResized);
+                landMaskCubemapResized = null;
+            }
+            UnityEngine.Object.Destroy(bumpMapCubemapResized);
+            bumpMapCubemapResized = null;
+        }
+
         AppData.instance.LastSavedImageFolder = savePath;
         AppData.instance.Save();
     }
 
-    void ExportCubeMapFile(Texture2D map, string folder, string filePosfix, int dimension, int face, int division, int divisionX, int divisionY)
+    public ComputeShader applyTransparencyShader;
+    RenderTexture transparencyRT;
+    void ApplyTransparency(Texture2D baseTexture, Texture2D transparencyMask)
+    {
+        applyTransparencyShader.SetInt("mapWidth", baseTexture.width);
+        applyTransparencyShader.SetInt("mapHeight", baseTexture.height);
+        applyTransparencyShader.SetInt("alphaAsTransparency", 1);
+        applyTransparencyShader.SetTexture(0, "baseTexture", baseTexture);
+        applyTransparencyShader.SetTexture(0, "transparencyMask", transparencyMask);
+
+        if (transparencyRT != null && (transparencyRT.width != baseTexture.width || transparencyRT.height != baseTexture.height))
+        {
+            Destroy(transparencyRT);
+            transparencyRT = null;
+        }
+
+        if (transparencyRT == null)
+        {
+            transparencyRT = new RenderTexture(baseTexture.width, baseTexture.height, 32, RenderTextureFormat.ARGBHalf);
+            transparencyRT.name = "Transparency Render Texture";
+            transparencyRT.enableRandomWrite = true;
+            transparencyRT.Create();
+        }
+
+        if (!transparencyRT.IsCreated())
+        {
+            transparencyRT.enableRandomWrite = true;
+            transparencyRT.Create();
+        }
+
+        applyTransparencyShader.SetTexture(0, "Result", transparencyRT);
+
+        applyTransparencyShader.Dispatch(0, Mathf.CeilToInt(baseTexture.width / 32f), Mathf.CeilToInt(baseTexture.height / 32f), 1);
+
+        RenderTexture prevActive = RenderTexture.active;
+        RenderTexture.active = transparencyRT;
+        baseTexture.ReadPixels(new Rect(0, 0, baseTexture.width, baseTexture.height), 0, 0);
+        RenderTexture.active = prevActive;
+        baseTexture.Apply();
+
+        Destroy(transparencyRT);
+        transparencyRT = null;
+    }
+
+    void ExportCubeMapFile(Texture2D map, string folder, string filePosfix, int dimension, int face, int division, int divisionX, int divisionY, bool saveAsPng = false)
     {
         bool useCpu = false;
-        string fileName = division + "_" + divisionY + "_" + divisionX + filePosfix + ".jpg";
+        string fileName = division + "_" + divisionY + "_" + divisionX + filePosfix;
+        if (saveAsPng)
+            fileName += ".png";
+        else
+            fileName += ".jpg";
 
         if (!useCpu)
         {
-            equirectangular2CubemapShader.SetInt("mapWidth", textureSettings.textureWidth);
-            equirectangular2CubemapShader.SetInt("mapHeight", textureSettings.textureHeight);
+            equirectangular2CubemapShader.SetInt("mapWidth", map.width);
+            equirectangular2CubemapShader.SetInt("mapHeight", map.height);
             equirectangular2CubemapShader.SetInt("cubemapDimension", dimension);
             equirectangular2CubemapShader.SetInt("subdivision", division);
             equirectangular2CubemapShader.SetInt("subDivisionX", divisionX);
@@ -277,7 +373,10 @@ public partial class Map : MonoBehaviour
             resultTexture.ReadPixels(new Rect(0, 0, dimension, dimension), 0, 0);
             RenderTexture.active = prevActive;
             resultTexture.Apply();
-            resultTexture.SaveAsJPG(Path.Combine(folder, fileName));
+            if (saveAsPng)
+                resultTexture.SaveAsPNG(Path.Combine(folder, fileName));
+            else
+                resultTexture.SaveAsJPG(Path.Combine(folder, fileName));
 
             RenderTexture.ReleaseTemporary(result);
             UnityEngine.Object.Destroy(resultTexture);
@@ -285,8 +384,8 @@ public partial class Map : MonoBehaviour
         }
         else
         {
-            Equirectangular2Cubemap.instance.mapWidth = textureSettings.textureWidth;
-            Equirectangular2Cubemap.instance.mapHeight = textureSettings.textureHeight;
+            Equirectangular2Cubemap.instance.mapWidth = map.width;
+            Equirectangular2Cubemap.instance.mapHeight = map.height;
             Equirectangular2Cubemap.instance.cubemapDimension = dimension;
             Equirectangular2Cubemap.instance.subdivision = division;
             Equirectangular2Cubemap.instance.subDivisionX = divisionX;
@@ -298,14 +397,16 @@ public partial class Map : MonoBehaviour
             Equirectangular2Cubemap.instance.Run();
 
             Equirectangular2Cubemap.instance.Result.Apply();
-            Equirectangular2Cubemap.instance.Result.SaveAsJPG(Path.Combine(folder, fileName));
+            if (saveAsPng)
+                Equirectangular2Cubemap.instance.Result.SaveAsPNG(Path.Combine(folder, fileName));
+            else
+                Equirectangular2Cubemap.instance.Result.SaveAsJPG(Path.Combine(folder, fileName));
 
             UnityEngine.Object.Destroy(Equirectangular2Cubemap.instance.Result);
         }
     }
 
-
-    void SaveMapSubDivisions(Texture2D tex, int faceCount, int subdivision, string folder, string filePosfix)
+    void SaveMapSubDivisions(Texture2D tex, int faceCount, int subdivision, string folder, string filePosfix, bool saveAsPng = false)
     {
         int sizeDivisor = (int)Mathf.Pow(2, subdivision);
 
@@ -313,7 +414,7 @@ public partial class Map : MonoBehaviour
         {
             for (int countY = 0; countY < sizeDivisor; countY++)
             {
-                ExportCubeMapFile(tex, folder, filePosfix, AppData.instance.CubemapDimension, faceCount, subdivision, countX, countY);
+                ExportCubeMapFile(tex, folder, filePosfix, AppData.instance.CubemapDimension, faceCount, subdivision, countX, countY, saveAsPng);
             }
         }
     }

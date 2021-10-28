@@ -464,7 +464,8 @@ public partial class Map : MonoBehaviour
             UpdateUIToggle(noisePanelTransform, "Toggle Ridged Noise", textureSettings.Ridged);
             cyclicalNoiseTypeUpdate = false;
         }
-        UpdateSurfaceMaterialProperties();
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
     }
 
@@ -477,7 +478,8 @@ public partial class Map : MonoBehaviour
             UpdateUIToggle(noisePanelTransform, "Toggle Regular Noise", !textureSettings.Ridged);
             cyclicalNoiseTypeUpdate = false;
         }
-        UpdateSurfaceMaterialProperties();
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
     }
 
@@ -490,7 +492,8 @@ public partial class Map : MonoBehaviour
             UpdateUIToggle(noisePanelTransform, "Toggle Domain Warping Noise", textureSettings.DomainWarping);
             cyclicalNoiseTypeUpdate = false;
         }
-        UpdateSurfaceMaterialProperties();
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
     }
 
@@ -503,7 +506,8 @@ public partial class Map : MonoBehaviour
             UpdateUIToggle(noisePanelTransform, "Toggle FBM Noise", !textureSettings.DomainWarping);
             cyclicalNoiseTypeUpdate = false;
         }
-        UpdateSurfaceMaterialProperties();
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
     }
     public void SetTextureHeight(string value)
@@ -546,7 +550,8 @@ public partial class Map : MonoBehaviour
     {
         textureSettings.HeightScale = value;
         MapData.instance.textureSettings = textureSettings;
-        UpdateSurfaceMaterialProperties();
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
     }
 
@@ -554,7 +559,8 @@ public partial class Map : MonoBehaviour
     {
         textureSettings.Detail = value;
         MapData.instance.textureSettings = textureSettings;
-        UpdateSurfaceMaterialProperties();
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
     }
 
@@ -562,7 +568,8 @@ public partial class Map : MonoBehaviour
     {
         textureSettings.Scale = value;
         MapData.instance.textureSettings = textureSettings;
-        UpdateSurfaceMaterialProperties();
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
     }
 
@@ -570,7 +577,8 @@ public partial class Map : MonoBehaviour
     {
         textureSettings.Persistence = value;
         MapData.instance.textureSettings = textureSettings;
-        UpdateSurfaceMaterialProperties();
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
     }
 
@@ -578,7 +586,8 @@ public partial class Map : MonoBehaviour
     {
         textureSettings.Multiplier = value;
         MapData.instance.textureSettings = textureSettings;
-        UpdateSurfaceMaterialProperties();
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
     }
 
@@ -586,7 +595,8 @@ public partial class Map : MonoBehaviour
     {
         textureSettings.LayerStrength = value;
         MapData.instance.textureSettings = textureSettings;
-        UpdateSurfaceMaterialProperties();
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
     }
 
@@ -594,7 +604,8 @@ public partial class Map : MonoBehaviour
     {
         textureSettings.HeightExponent = value;
         MapData.instance.textureSettings = textureSettings;
-        UpdateSurfaceMaterialProperties();
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties();
         MapData.instance.Save();
     }
 
@@ -602,18 +613,21 @@ public partial class Map : MonoBehaviour
     {
         textureSettings.waterLevel = value;
         MapData.instance.textureSettings = textureSettings;
-        UpdateSurfaceMaterialProperties(false);
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties(false);
         MapData.instance.Save();
     }
 
     public void SliderDeselect()
     {
-        UpdateSurfaceMaterialProperties();
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties();
     }
 
     public void WaterLevelDeselect()
     {
-        UpdateSurfaceMaterialProperties(false);
+        if (!firstUpdate)
+            UpdateSurfaceMaterialProperties(false);
     }
     #endregion
 
@@ -1059,6 +1073,12 @@ public partial class Map : MonoBehaviour
         AppData.instance.Save();
     }
 
+    public void TransparentOceans(bool doTransparentOceans)
+    {
+        AppData.instance.TransparentOceans = doTransparentOceans;
+        AppData.instance.Save();
+    }
+
     public void CubemapDimension(string cubemapDimension)
     {
         int dimension = cubemapDimension.ToInt();
@@ -1074,10 +1094,10 @@ public partial class Map : MonoBehaviour
     public void CubemapDivisions(string cubemapDivisions)
     {
         int divisions = cubemapDivisions.ToInt();
-        if (divisions > 10 || divisions < 1)
+        if (divisions > 10 || divisions < 0)
         {
             if (divisions > 10) divisions = 10;
-            if (divisions < 1) divisions = 1;
+            if (divisions < 0) divisions = 0;
             UpdateUIInputField(contextMenuPanelTransform, "Cubemap Subdivisions Text Box", divisions.ToString());
         }
         AppData.instance.CubemapDivisions = divisions;
@@ -1233,6 +1253,7 @@ public partial class Map : MonoBehaviour
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Temperature", AppData.instance.SaveTemperature);
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Rivers", AppData.instance.SaveRivers);
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Export as Cubemap", AppData.instance.ExportAsCubemap);
+            UpdateUIToggle(contextMenuPanelTransform, "Toggle Transparent Oceans", AppData.instance.TransparentOceans);
             UpdateUIInputField(contextMenuPanelTransform, "Cubemap Dimension Text Box", AppData.instance.CubemapDimension.ToString());
             UpdateUIInputField(contextMenuPanelTransform, "Cubemap Subdivisions Text Box", AppData.instance.CubemapDivisions.ToString());
         }

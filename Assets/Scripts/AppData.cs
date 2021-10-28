@@ -17,6 +17,7 @@ public class AppData
     public bool SaveTemperature = true;
     public bool SaveRivers = true;
     public bool ExportAsCubemap = false;
+    public bool TransparentOceans = false;
     public int CubemapDimension = 256;
     public int CubemapDivisions = 2;
     public string LastSavedImageFolder = "";
@@ -74,6 +75,7 @@ public class AppData
                 ExportAsCubemap = ad.ExportAsCubemap;
                 CubemapDimension = ad.CubemapDimension;
                 CubemapDivisions = ad.CubemapDivisions;
+                TransparentOceans = ad.TransparentOceans;
                 return true;
             }
         }
