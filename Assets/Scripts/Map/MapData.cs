@@ -16,6 +16,7 @@ public class MapData
     public ErosionSettings erosionSettings;
     public PlotRiversSettings plotRiversSettings;
     public InciseFlowSettings inciseFlowSettings;
+    public bool IsSaved = false;
 
     #region Singleton
     static MapData myInstance = null;

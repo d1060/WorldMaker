@@ -336,20 +336,37 @@ public static partial class ExtensionMethods
 
     public static void SaveBytes(this float[] array, string fileName)
     {
-        byte[] byteArray = new byte[array.Length * sizeof(float)];
-        Buffer.BlockCopy(array, 0, byteArray, 0, byteArray.Length);
-        File.WriteAllBytes(fileName, byteArray);
+        if (array == null || array.Length == 0)
+            return;
+
+        try
+        {
+            byte[] byteArray = new byte[array.Length * sizeof(float)];
+            Buffer.BlockCopy(array, 0, byteArray, 0, byteArray.Length);
+            File.WriteAllBytes(fileName, byteArray);
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
     }
 
     public static void SaveAsPng(this Color[] array, int width, string fileName)
     {
-        int height = array.Length / width;
-        Texture2D tex = new Texture2D(width, height);
-        tex.SetPixels(array);
-        tex.Apply();
-        tex.SaveAsPNG(fileName);
-        UnityEngine.Object.Destroy(tex);
-        tex = null;
+        try
+        {
+            int height = array.Length / width;
+            Texture2D tex = new Texture2D(width, height);
+            tex.SetPixels(array);
+            tex.Apply();
+            tex.SaveAsPNG(fileName);
+            UnityEngine.Object.Destroy(tex);
+            tex = null;
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
     }
 
     public static Texture2D ToTexture2D(this Color[] array, int width)
@@ -471,13 +488,27 @@ public static partial class ExtensionMethods
 
     public static void SaveAsPNG(this Texture2D _texture, string _fullPath)
     {
-        byte[] _bytes = _texture.EncodeToPNG();
-        System.IO.File.WriteAllBytes(_fullPath, _bytes);
+        try
+        {
+            byte[] _bytes = _texture.EncodeToPNG();
+            System.IO.File.WriteAllBytes(_fullPath, _bytes);
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
     }
 
     public static void SaveAsJPG(this Texture2D _texture, string _fullPath)
     {
-        byte[] _bytes = _texture.EncodeToJPG(100);
-        System.IO.File.WriteAllBytes(_fullPath, _bytes);
+        try
+        {
+            byte[] _bytes = _texture.EncodeToJPG(100);
+            System.IO.File.WriteAllBytes(_fullPath, _bytes);
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
     }
 }

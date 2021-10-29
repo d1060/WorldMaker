@@ -1811,10 +1811,13 @@ public partial class Map : MonoBehaviour
                             erosionSettings = MapData.instance.erosionSettings;
                             plotRiversSettings = MapData.instance.plotRiversSettings;
 
+                            ResetImages();
+                            UndoErosion();
                             GenerateSeeds();
                             ReGenerateWorld(true);
-
                             UpdateMenuFields();
+                            LoadTerrainTransformations();
+
                             AppData.instance.AddRecentWorld(fileName);
                             UpdateRecentWorldsPanel();
                             return;

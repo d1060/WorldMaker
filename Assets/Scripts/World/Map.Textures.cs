@@ -445,17 +445,26 @@ public partial class Map : MonoBehaviour
             if (mapSettings.HeightMapPath == "" || !File.Exists(mapSettings.HeightMapPath))
                 planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
             else
+            {
+                UpdateSurfaceMaterialHeightMap();
                 planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
+            }
 
             if (mapSettings.MainTexturePath == "" || !File.Exists(mapSettings.MainTexturePath))
                 planetSurfaceMaterial.SetInt("_IsMainmapSet", 0);
             else
+            {
+                UpdateSurfaceMaterialMainMap();
                 planetSurfaceMaterial.SetInt("_IsMainmapSet", 1);
+            }
 
             if (mapSettings.LandMaskPath == "" || !File.Exists(mapSettings.LandMaskPath))
                 planetSurfaceMaterial.SetInt("_IsLandmaskSet", 0);
             else
+            {
+                UpdateSurfaceMaterialLandMask();
                 planetSurfaceMaterial.SetInt("_IsLandmaskSet", 1);
+            }
         }
         else
         {
@@ -498,7 +507,7 @@ public partial class Map : MonoBehaviour
         else
             planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
 
-        if (isEroded)
+        if (isEroded && heightmap != null)
             planetSurfaceMaterial.SetInt("_IsEroded", 1);
         else
             planetSurfaceMaterial.SetInt("_IsEroded", 0);
@@ -655,7 +664,7 @@ public partial class Map : MonoBehaviour
     RenderTexture heightmapRT;
     public void HeightMap2Texture()
     {
-        if (erodedHeightMap == null || originalHeightMap == null || mergedHeightMap == null)
+        if (erodedHeightMap == null || erodedHeightMap.Length == 0 || originalHeightMap == null || originalHeightMap.Length == 0 || mergedHeightMap == null || mergedHeightMap.Length == 0)
             return;
 
         if (inciseFlowMap == null || inciseFlowMap.Length < originalHeightMap.Length)
@@ -778,6 +787,22 @@ public partial class Map : MonoBehaviour
         inciseFlowSettings.riverPlotSeed = random.Next();
 
         PerformPlotRiversRandomly();
+    }
+
+    public void ResetImages()
+    {
+        planetSurfaceMaterial.SetInt("_IsMainMapSet", 0);
+        planetSurfaceMaterial.SetInt("_IsLandMaskSet", 0);
+        planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
+        if (heightmap != null)
+            UnityEngine.Object.Destroy(heightmap);
+        heightmap = null;
+        if (landmap != null)
+            UnityEngine.Object.Destroy(landmap);
+        landmap = null;
+        if (landmask != null)
+            UnityEngine.Object.Destroy(landmask);
+        landmask = null;
     }
 
     public void UndoErosion()

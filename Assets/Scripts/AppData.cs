@@ -76,6 +76,7 @@ public class AppData
                 CubemapDimension = ad.CubemapDimension;
                 CubemapDivisions = ad.CubemapDivisions;
                 TransparentOceans = ad.TransparentOceans;
+                RemoveRepeatedRecentWorlds();
                 return true;
             }
         }
@@ -87,29 +88,47 @@ public class AppData
         //#endif
     }
 
+    void RemoveRepeatedRecentWorlds()
+    {
+        if (RecentWorlds == null || RecentWorlds.Count < 2)
+            return;
+
+        for (int i = 0; i < RecentWorlds.Count; i++)
+        {
+            for (int a = i + 1; a < RecentWorlds.Count; a++)
+            {
+                if (RecentWorlds[i] == RecentWorlds[a])
+                {
+                    RecentWorlds.RemoveAt(a);
+                    a--;
+                }
+            }
+        }
+    }
+
     public void AddRecentWorld(string fileName)
     {
-        if (AppData.instance.RecentWorlds.Contains(fileName))
+        if (RecentWorlds.Contains(fileName))
         {
-            AppData.instance.RecentWorlds.Remove(fileName);
-            AppData.instance.RecentWorlds.Insert(0, fileName);
+            RecentWorlds.Remove(fileName);
+            RecentWorlds.Insert(0, fileName);
         }
-        else if (AppData.instance.RecentWorlds.Count < MaxRecentWorlds)
+        else if (RecentWorlds.Count < MaxRecentWorlds)
         {
-            AppData.instance.RecentWorlds.Insert(0, fileName);
+            RecentWorlds.Insert(0, fileName);
         }
-        else if (!AppData.instance.RecentWorlds.Contains(fileName))
+        else if (!RecentWorlds.Contains(fileName))
         {
-            AppData.instance.RecentWorlds.RemoveAt(AppData.instance.RecentWorlds.Count - 1);
-            AppData.instance.RecentWorlds.Insert(0, fileName);
+            RecentWorlds.RemoveAt(RecentWorlds.Count - 1);
+            RecentWorlds.Insert(0, fileName);
         }
     }
 
     public void RemoveRecentWorld(string fileName)
     {
-        if (AppData.instance.RecentWorlds.Contains(fileName))
+        if (RecentWorlds.Contains(fileName))
         {
-            AppData.instance.RecentWorlds.Remove(fileName);
+            RecentWorlds.Remove(fileName);
         }
     }
 }

@@ -78,7 +78,6 @@ public partial class Map : MonoBehaviour
 
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
         planetSurfaceMaterial.SetInt("_IsEroded", 0);
-        LoadTerrainTransformations();
     }
 
     // Start is called before the first frame update
@@ -89,6 +88,7 @@ public partial class Map : MonoBehaviour
         UpdateRecentWorldsPanel();
         GenerateSeeds();
         UpdateSurfaceMaterialProperties(false);
+        LoadTerrainTransformations();
 
         cameraController = cam.GetComponent<CameraController>();
         NameGenerator.instance.Load();
@@ -400,7 +400,9 @@ public partial class Map : MonoBehaviour
             });
         if (savedFile != null && savedFile != "")
         {
+            SaveCurrentTerrainTransformations();
             AppData.instance.AddRecentWorld(savedFile);
+            MapData.instance.IsSaved = true;
             MapData.instance.Save(savedFile);
             AppData.instance.Save();
             UpdateRecentWorldsPanel();
@@ -438,9 +440,13 @@ public partial class Map : MonoBehaviour
             mapSettings = MapData.instance.mapSettings;
             erosionSettings = MapData.instance.erosionSettings;
             plotRiversSettings = MapData.instance.plotRiversSettings;
+            MapData.instance.IsSaved = true;
 
+            ResetImages();
+            UndoErosion();
             GenerateSeeds();
             ReGenerateWorld(true);
+            LoadTerrainTransformations();
 
             UpdateMenuFields();
             AppData.instance.AddRecentWorld(openFile);
@@ -655,9 +661,6 @@ public partial class Map : MonoBehaviour
         }
         else if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
             File.Delete(Path.Combine(tempDataFolder, "inciseFlow.raw"));
-
-        planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
-        planetSurfaceMaterial.SetInt("_IsEroded", 0);
     }
 
     void LoadTerrainTransformations()
@@ -671,33 +674,39 @@ public partial class Map : MonoBehaviour
         if (File.Exists(Path.Combine(tempDataFolder, "originalHeightMap.raw")))
         {
             originalHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "originalHeightMap.raw"));
-            updateMaterial = true;
+            if (originalHeightMap != null && originalHeightMap.Length > 0)
+                updateMaterial = true;
         }
         if (File.Exists(Path.Combine(tempDataFolder, "erodedHeightMap.raw")))
         {
             erodedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
-            updateMaterial = true;
+            if (erodedHeightMap != null && erodedHeightMap.Length > 0)
+                updateMaterial = true;
         }
         if (File.Exists(Path.Combine(tempDataFolder, "mergedHeightMap.raw")))
         {
             mergedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
-            updateMaterial = true;
+            if (mergedHeightMap != null && mergedHeightMap.Length > 0)
+                updateMaterial = true;
         }
         if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
         {
             inciseFlowMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "inciseFlow.raw"));
-            updateMaterial = true;
+            if (inciseFlowMap != null && inciseFlowMap.Length > 0)
+                updateMaterial = true;
         }
 
         if (File.Exists(Path.Combine(tempDataFolder, "flow.png")))
         {
             flowTexture = LoadAnyImageFile(Path.Combine(tempDataFolder, "flow.png"));
-            updateFlow = true;
+            if (flowTexture != null)
+                updateFlow = true;
         }
         if (File.Exists(Path.Combine(tempDataFolder, "flowRandom.png")))
         {
             flowTextureRandom = LoadAnyImageFile(Path.Combine(tempDataFolder, "flowRandom.png"));
-            updateFlow = true;
+            if (flowTextureRandom != null)
+                updateFlow = true;
         }
 
         if (updateMaterial)
