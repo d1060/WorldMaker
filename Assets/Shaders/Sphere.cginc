@@ -12,8 +12,8 @@ float4 interpolateColor(float level, float4 color1, float4 color2)
     return newColor;
 }
 
-float4 overlandColor(float height, float waterLevel, float temperature, float humidity, float desertThreshold1, float desertThreshold2, float highHumidityLightnessPercentage, fixed4 desertColor,
-    float colorStep1, fixed4 color1, float colorStep2, fixed4 color2, float colorStep3, fixed4 color3, float colorStep4, fixed4 color4, float colorStep5, fixed4 color5, float colorStep6, fixed4 color6, float colorStep7, fixed4 color7, float colorStep8, fixed4 color8)
+float4 overlandColor(float height, float waterLevel, float temperature, float humidity, float desertThreshold1, float desertThreshold2, float highHumidityLightnessPercentage, float4 desertColor,
+    float colorStep1, float4 color1, float colorStep2, float4 color2, float colorStep3, float4 color3, float colorStep4, float4 color4, float colorStep5, float4 color5, float colorStep6, float4 color6, float colorStep7, float4 color7, float colorStep8, float4 color8)
 {
     float4 landColor = float4(0, 0, 0, 0);
     float desertRate = 0;
@@ -58,7 +58,7 @@ float4 overlandColor(float height, float waterLevel, float temperature, float hu
 }
 
 float4 oceanColor(float height, float waterLevel,
-    float oceanColorStep1, fixed4 oceanColor1, float oceanColorStep2, fixed4 oceanColor2, float oceanColorStep3, fixed4 oceanColor3, float oceanColorStep4, fixed4 oceanColor4)
+    float oceanColorStep1, float4 oceanColor1, float oceanColorStep2, float4 oceanColor2, float oceanColorStep3, float4 oceanColor3, float oceanColorStep4, float4 oceanColor4)
 {
     float4 oceanColor = float4(0, 0, 0, 0);
     float newHeight = 1 - (height / waterLevel);
@@ -78,13 +78,13 @@ float4 oceanColor(float height, float waterLevel,
 float4 colorAtElevation(float height, float waterLevel, float temperature, float humidity,
                         float iceTemperatureThreshold1, float iceTemperatureThreshold2,
                         float desertThreshold1, float desertThreshold2,
-                        float highHumidityLightnessPercentage, fixed4 iceColor, fixed4 desertColor,
+                        float highHumidityLightnessPercentage, float4 iceColor, float4 desertColor,
                         int isLandMastSet, int isAboveWater,
-                        float colorStep1, fixed4 color1, float colorStep2, fixed4 color2, float colorStep3, fixed4 color3, float colorStep4, fixed4 color4, float colorStep5, fixed4 color5, float colorStep6, fixed4 color6, float colorStep7, fixed4 color7, float colorStep8, fixed4 color8, 
-                        float oceanColorStep1, fixed4 oceanColor1, float oceanColorStep2, fixed4 oceanColor2, float oceanColorStep3, fixed4 oceanColor3, float oceanColorStep4, fixed4 oceanColor4)
+                        float colorStep1, float4 color1, float colorStep2, float4 color2, float colorStep3, float4 color3, float colorStep4, float4 color4, float colorStep5, float4 color5, float colorStep6, float4 color6, float colorStep7, float4 color7, float colorStep8, float4 color8,
+                        float oceanColorStep1, float4 oceanColor1, float oceanColorStep2, float4 oceanColor2, float oceanColorStep3, float4 oceanColor3, float oceanColorStep4, float4 oceanColor4)
 {
-    if (temperature <= iceTemperatureThreshold2)
-        return iceColor;
+    //if (temperature <= iceTemperatureThreshold2)
+    //    return iceColor;
 
     float4 landColor = float4(0, 0, 0, 0);
     if (isLandMastSet > 0)
@@ -109,10 +109,11 @@ float4 colorAtElevation(float height, float waterLevel, float temperature, float
         landColor = oceanColor(height, waterLevel, oceanColorStep1, oceanColor1, oceanColorStep2, oceanColor2, oceanColorStep3, oceanColor3, oceanColorStep4, oceanColor4);
     }
 
-    if (temperature < iceTemperatureThreshold1 && temperature > iceTemperatureThreshold2)
+    if (temperature < iceTemperatureThreshold1)
     {
-        float temperatureRatio = (temperature - iceTemperatureThreshold1) / (iceTemperatureThreshold2 - iceTemperatureThreshold1);
-        landColor = interpolateColor(temperatureRatio, iceColor, landColor);
+        float temperatureRatio = (iceTemperatureThreshold1 - temperature) / (iceTemperatureThreshold1 - iceTemperatureThreshold2);
+        landColor = (iceColor - landColor) * temperatureRatio + landColor;
+        //landColor = interpolateColor(temperatureRatio, iceColor, landColor);
     }
     return landColor;
 }
@@ -120,15 +121,15 @@ float4 colorAtElevation(float height, float waterLevel, float temperature, float
 #define MIN_TEMPERATURE -15
 #define MAX_TEMPERATURE 45
 
-#define LIGHT_BLUE fixed4(0.5, 0.5, 1, 1)
-#define DEEP_BLUE fixed4(0, 0, 1, 1)
-#define CYAN fixed4(0, 1, 1, 1)
-#define YELLOW fixed4(1, 1, 0, 1)
-#define RED fixed4(1, 0, 0, 1)
-#define DEEP_RED fixed4(0.5, 0, 0, 1)
+#define LIGHT_BLUE float4(0.5, 0.5, 1, 1)
+#define DEEP_BLUE float4(0, 0, 1, 1)
+#define CYAN float4(0, 1, 1, 1)
+#define YELLOW float4(1, 1, 0, 1)
+#define RED float4(1, 0, 0, 1)
+#define DEEP_RED float4(0.5, 0, 0, 1)
 
-#define DARK_BLUE fixed4(0, 0, 0.5, 1)
-#define SAND fixed4(0.77, 1, 0.57, 1)
+#define DARK_BLUE float4(0, 0, 0.5, 1)
+#define SAND float4(0.77, 1, 0.57, 1)
 
 float4 temperatureColor(float temperature)
 {

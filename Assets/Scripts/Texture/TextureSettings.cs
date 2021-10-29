@@ -131,4 +131,97 @@ public class TextureSettings
         highHumidityLightnessPercentage = 0.2f;
         erosionNoiseMerge = 0.5f;
     }
+
+    public void UpdateSurfaceMaterialProperties(Material surfaceMaterial, bool showTemperature)
+    {
+        if (surfaceMaterial == null)
+            return;
+
+        surfaceMaterial.SetInt("_Seed", surfaceNoiseSettings.seed);
+        surfaceMaterial.SetFloat("_XOffset", surfaceNoiseSettings.noiseOffset.x);
+        surfaceMaterial.SetFloat("_YOffset", surfaceNoiseSettings.noiseOffset.y);
+        surfaceMaterial.SetFloat("_ZOffset", surfaceNoiseSettings.noiseOffset.z);
+        surfaceMaterial.SetInt("_TemperatureSeed", TemperatureNoiseSeed);
+        surfaceMaterial.SetInt("_HumiditySeed", HumidityNoiseSeed);
+        surfaceMaterial.SetFloat("_Multiplier", surfaceNoiseSettings.multiplier);
+        surfaceMaterial.SetInt("_Octaves", surfaceNoiseSettings.octaves);
+        surfaceMaterial.SetFloat("_Lacunarity", surfaceNoiseSettings.lacunarity);
+        surfaceMaterial.SetFloat("_Persistence", surfaceNoiseSettings.persistence);
+        surfaceMaterial.SetFloat("_WaterLevel", waterLevel);
+        surfaceMaterial.SetFloat("_HeightRange", surfaceNoiseSettings.heightScale);
+        surfaceMaterial.SetFloat("_DrawType", showTemperature ? 3 : 0);
+        surfaceMaterial.SetInt("_RidgedNoise", surfaceNoiseSettings.ridged ? 1 : 0);
+        surfaceMaterial.SetFloat("_HeightExponent", surfaceNoiseSettings.heightExponent);
+        surfaceMaterial.SetFloat("_LayerStrength", surfaceNoiseSettings.layerStrength);
+        surfaceMaterial.SetInt("_DomainWarping", surfaceNoiseSettings.domainWarping ? 1 : 0);
+
+        surfaceMaterial.SetInt("_Seed2", surfaceNoiseSettings2.seed);
+        surfaceMaterial.SetFloat("_XOffset2", surfaceNoiseSettings2.noiseOffset.x);
+        surfaceMaterial.SetFloat("_YOffset2", surfaceNoiseSettings2.noiseOffset.y);
+        surfaceMaterial.SetFloat("_ZOffset2", surfaceNoiseSettings2.noiseOffset.z);
+        surfaceMaterial.SetFloat("_Multiplier2", surfaceNoiseSettings2.multiplier);
+        surfaceMaterial.SetInt("_Octaves2", surfaceNoiseSettings2.octaves);
+        surfaceMaterial.SetFloat("_Lacunarity2", surfaceNoiseSettings2.lacunarity);
+        surfaceMaterial.SetFloat("_Persistence2", surfaceNoiseSettings2.persistence);
+        surfaceMaterial.SetInt("_RidgedNoise2", surfaceNoiseSettings2.ridged ? 1 : 0);
+        surfaceMaterial.SetFloat("_HeightExponent2", surfaceNoiseSettings2.heightExponent);
+        surfaceMaterial.SetFloat("_LayerStrength2", surfaceNoiseSettings2.layerStrength);
+        surfaceMaterial.SetFloat("_HeightRange2", surfaceNoiseSettings2.heightScale);
+        surfaceMaterial.SetInt("_DomainWarping2", surfaceNoiseSettings2.domainWarping ? 1 : 0);
+
+        int landColorSteps = landColorStages.Length < land1Color.Length ? landColorStages.Length : land1Color.Length;
+        if (landColorSteps > 8) landColorSteps = 8;
+        surfaceMaterial.SetInt("_ColorSteps", landColorSteps);
+
+        for (int i = 1; i <= 8; i++)
+        {
+            float stage = 0;
+            Color color = Color.white;
+
+            if (i <= landColorSteps)
+            {
+                stage = landColorStages[i - 1];
+                color = land1Color[i - 1];
+            }
+            else
+            {
+                stage = landColorStages[landColorSteps - 1];
+                color = land1Color[landColorSteps - 1];
+            }
+            surfaceMaterial.SetFloat("_ColorStep" + i, stage);
+            surfaceMaterial.SetColor("_Color" + i, color);
+        }
+
+        int oceanColorSteps = oceanStages.Length < oceanColors.Length ? oceanStages.Length : oceanColors.Length;
+        if (oceanColorSteps > 4) oceanColorSteps = 4;
+        surfaceMaterial.SetInt("_OceanColorSteps", oceanColorSteps);
+
+        for (int i = 1; i <= 4; i++)
+        {
+            float stage = 0;
+            Color color = Color.white;
+
+            if (i <= oceanColorSteps)
+            {
+                stage = oceanStages[i - 1];
+                color = oceanColors[i - 1];
+            }
+            else
+            {
+                stage = oceanStages[oceanColorSteps - 1];
+                color = oceanColors[oceanColorSteps - 1];
+            }
+            surfaceMaterial.SetFloat("_OceanColorStep" + i, stage);
+            surfaceMaterial.SetColor("_OceanColor" + i, color);
+        }
+
+        surfaceMaterial.SetFloat("_IceTemperatureThreshold1", iceTemperatureThreshold1 > iceTemperatureThreshold2 ? iceTemperatureThreshold1 : iceTemperatureThreshold2);
+        surfaceMaterial.SetFloat("_IceTemperatureThreshold2", iceTemperatureThreshold1 < iceTemperatureThreshold2 ? iceTemperatureThreshold1 : iceTemperatureThreshold2);
+        surfaceMaterial.SetFloat("_DesertThreshold1", desertThreshold1 < desertThreshold2 ? desertThreshold1 : desertThreshold2);
+        surfaceMaterial.SetFloat("_DesertThreshold2", desertThreshold1 > desertThreshold2 ? desertThreshold1 : desertThreshold2);
+        //surfaceMaterial.SetFloat("_HighHumidityLightnessPercentage", );
+        surfaceMaterial.SetColor("_IceColor", iceColor);
+        surfaceMaterial.SetColor("_DesertColor", desertColor);
+        //surfaceMaterial.SetFloat("_NormalScale", 50);
+    }
 }

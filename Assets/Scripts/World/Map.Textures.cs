@@ -45,8 +45,9 @@ public partial class Map : MonoBehaviour
                 string fileNameExtension = System.IO.Path.GetExtension(savedFile);
                 AppData.instance.LastSavedImageFolder = fileNamePath;
 
-                int isEroded = planetSurfaceMaterial.GetInt("_IsEroded");
-                planetSurfaceMaterial.SetInt("_IsEroded", 0);
+                //int isEroded = planetSurfaceMaterial.GetInt("_IsEroded");
+                //planetSurfaceMaterial.SetInt("_IsEroded", 0);
+                GenerateHeightMap();
 
                 if (AppData.instance.SaveMainMap)
                 {
@@ -55,7 +56,6 @@ public partial class Map : MonoBehaviour
 
                 if (AppData.instance.SaveHeightMap)
                 {
-                    GenerateHeightMap();
                     if (mergedHeightMap != null)
                         ImageTools.SaveTextureFloatArray(mergedHeightMap, textureSettings.textureWidth, textureSettings.textureHeight, Path.Combine(fileNamePath, fileNameWithoutExtension + "-Heightmap" + fileNameExtension));
                     else if (originalHeightMap != null)
@@ -82,7 +82,7 @@ public partial class Map : MonoBehaviour
                     SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Rivers" + fileNameExtension), flowTexture);
                 }
 
-                planetSurfaceMaterial.SetInt("_IsEroded", isEroded);
+                //planetSurfaceMaterial.SetInt("_IsEroded", isEroded);
 
                 AppData.instance.Save();
             }
@@ -91,59 +91,80 @@ public partial class Map : MonoBehaviour
             cameraController.CloseContextMenu();
     }
 
+    RenderTexture exportRT = null;
     void SaveImageFile(string fileName, SphereShaderDrawType drawMode)
     {
         if (File.Exists(fileName))
             File.Delete(fileName);
 
+        float prevDrawMode = planetSurfaceMaterial.GetFloat("_DrawType");
         planetSurfaceMaterial.SetFloat("_DrawType", (int)drawMode);
-        //Texture source = flatMap.GetComponent<MeshRenderer>().material.mainTexture;
+
+        if (exportRT != null && (exportRT.width != textureSettings.textureWidth || exportRT.height != textureSettings.textureHeight))
+        {
+            Destroy(exportRT);
+            exportRT = null;
+        }
+
+        if (exportRT == null)
+        {
+            exportRT = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
+            exportRT.name = "Export Render Texture";
+            exportRT.enableRandomWrite = true;
+            exportRT.Create();
+        }
+
         Texture2D source;
-        RenderTextureFormat outputFormat = RenderTextureFormat.ARGB32;
         if (drawMode != SphereShaderDrawType.HeightMap)
-        {
             source = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA32, false);
-        }
         else
-        {
             source = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGB48, false);
-            outputFormat = RenderTextureFormat.DefaultHDR;
-        }
-        RenderTexture destination = RenderTexture.GetTemporary(textureSettings.textureWidth, textureSettings.textureHeight, 0, outputFormat);
-        Graphics.Blit(source, destination, planetSurfaceMaterial);
-        destination.Save(fileName);
-        RenderTexture.ReleaseTemporary(destination);
+
+        RenderTexture prevActive = RenderTexture.active;
+        RenderTexture.active = exportRT;
+        Graphics.Blit(source, exportRT, planetSurfaceMaterial, 2);
+        exportRT.Save(fileName);
+        RenderTexture.active = prevActive;
+        Destroy(exportRT);
+        exportRT = null;
+        planetSurfaceMaterial.SetFloat("_DrawType", prevDrawMode);
         UnityEngine.Object.Destroy(source);
-        UnityEngine.Object.Destroy(destination);
-        planetSurfaceMaterial.SetFloat("_DrawType", showTemperature ? (int)SphereShaderDrawType.Temperature : (int)SphereShaderDrawType.Land);
     }
 
     Texture2D ShaderToTexture(SphereShaderDrawType drawMode)
     {
-        Texture2D source;
-        RenderTextureFormat outputFormat = RenderTextureFormat.ARGB32;
-        if (drawMode != SphereShaderDrawType.HeightMap)
-        {
-            source = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA32, false);
-        }
-        else
-        {
-            source = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGB48, false);
-            outputFormat = RenderTextureFormat.DefaultHDR;
-        }
-        float prevDrawType = planetSurfaceMaterial.GetFloat("_DrawType");
-
+        float prevDrawMode = planetSurfaceMaterial.GetFloat("_DrawType");
         planetSurfaceMaterial.SetFloat("_DrawType", (int)drawMode);
-        RenderTexture destination = RenderTexture.GetTemporary(textureSettings.textureWidth, textureSettings.textureHeight, 0, outputFormat);
-        Graphics.Blit(source, destination, planetSurfaceMaterial, 2);
-        planetSurfaceMaterial.SetFloat("_DrawType", prevDrawType);
+
+        if (exportRT != null && (exportRT.width != textureSettings.textureWidth || exportRT.height != textureSettings.textureHeight))
+        {
+            Destroy(exportRT);
+            exportRT = null;
+        }
+
+        if (exportRT == null)
+        {
+            exportRT = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
+            exportRT.name = "Export Render Texture";
+            exportRT.enableRandomWrite = true;
+            exportRT.Create();
+        }
+
+        Texture2D source;
+        if (drawMode != SphereShaderDrawType.HeightMap)
+            source = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA32, false);
+        else
+            source = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGB48, false);
 
         RenderTexture prevActive = RenderTexture.active;
-        RenderTexture.active = destination;
+        RenderTexture.active = exportRT;
+        Graphics.Blit(source, exportRT, planetSurfaceMaterial, 2);
         source.ReadPixels(new Rect(0, 0, textureSettings.textureWidth, textureSettings.textureHeight), 0, 0);
         source.Apply();
         RenderTexture.active = prevActive;
-        RenderTexture.ReleaseTemporary(destination);
+        Destroy(exportRT);
+        exportRT = null;
+        planetSurfaceMaterial.SetFloat("_DrawType", prevDrawMode);
         return source;
     }
 
@@ -173,13 +194,6 @@ public partial class Map : MonoBehaviour
         {
             ApplyTransparency(mainMap, landMask);
         }
-
-        //float mainMapHeightToExtract = mainMap.height / 2f;
-        //float mainMapWidthToExtract = mainMap.width / 4f;
-        //int bottomY = Mathf.RoundToInt(mainMapHeightToExtract / 2);
-        //int topY = Mathf.RoundToInt(bottomY + mainMapHeightToExtract);
-        //int cropHeight = topY - bottomY;
-        //int cropWidth = Mathf.RoundToInt(mainMapWidthToExtract);
 
         string baseFolder = Path.Combine(savePath, saveFile, "Surface");
         if (!Directory.Exists(baseFolder))
@@ -424,92 +438,7 @@ public partial class Map : MonoBehaviour
         if (planetSurfaceMaterial == null)
             return;
 
-        planetSurfaceMaterial.SetInt("_Seed", textureSettings.surfaceNoiseSettings.seed);
-        planetSurfaceMaterial.SetFloat("_XOffset", textureSettings.surfaceNoiseSettings.noiseOffset.x);
-        planetSurfaceMaterial.SetFloat("_YOffset", textureSettings.surfaceNoiseSettings.noiseOffset.y);
-        planetSurfaceMaterial.SetFloat("_ZOffset", textureSettings.surfaceNoiseSettings.noiseOffset.z);
-        planetSurfaceMaterial.SetInt("_TemperatureSeed", textureSettings.TemperatureNoiseSeed);
-        planetSurfaceMaterial.SetInt("_HumiditySeed", textureSettings.HumidityNoiseSeed);
-        planetSurfaceMaterial.SetFloat("_Multiplier", textureSettings.surfaceNoiseSettings.multiplier);
-        planetSurfaceMaterial.SetInt("_Octaves", textureSettings.surfaceNoiseSettings.octaves);
-        planetSurfaceMaterial.SetFloat("_Lacunarity", textureSettings.surfaceNoiseSettings.lacunarity);
-        planetSurfaceMaterial.SetFloat("_Persistence", textureSettings.surfaceNoiseSettings.persistence);
-        planetSurfaceMaterial.SetFloat("_WaterLevel", textureSettings.waterLevel);
-        planetSurfaceMaterial.SetFloat("_HeightRange", textureSettings.surfaceNoiseSettings.heightScale);
-        planetSurfaceMaterial.SetFloat("_DrawType", showTemperature ? 3 : 0);
-        planetSurfaceMaterial.SetInt("_RidgedNoise", textureSettings.surfaceNoiseSettings.ridged ? 1 : 0);
-        planetSurfaceMaterial.SetFloat("_HeightExponent", textureSettings.surfaceNoiseSettings.heightExponent);
-        planetSurfaceMaterial.SetFloat("_LayerStrength", textureSettings.surfaceNoiseSettings.layerStrength);
-        planetSurfaceMaterial.SetInt("_DomainWarping", textureSettings.surfaceNoiseSettings.domainWarping ? 1 : 0);
-
-        planetSurfaceMaterial.SetInt("_Seed2", textureSettings.surfaceNoiseSettings2.seed);
-        planetSurfaceMaterial.SetFloat("_XOffset2", textureSettings.surfaceNoiseSettings2.noiseOffset.x);
-        planetSurfaceMaterial.SetFloat("_YOffset2", textureSettings.surfaceNoiseSettings2.noiseOffset.y);
-        planetSurfaceMaterial.SetFloat("_ZOffset2", textureSettings.surfaceNoiseSettings2.noiseOffset.z);
-        planetSurfaceMaterial.SetFloat("_Multiplier2", textureSettings.surfaceNoiseSettings2.multiplier);
-        planetSurfaceMaterial.SetInt("_Octaves2", textureSettings.surfaceNoiseSettings2.octaves);
-        planetSurfaceMaterial.SetFloat("_Lacunarity2", textureSettings.surfaceNoiseSettings2.lacunarity);
-        planetSurfaceMaterial.SetFloat("_Persistence2", textureSettings.surfaceNoiseSettings2.persistence);
-        planetSurfaceMaterial.SetInt("_RidgedNoise2", textureSettings.surfaceNoiseSettings2.ridged ? 1 : 0);
-        planetSurfaceMaterial.SetFloat("_HeightExponent2", textureSettings.surfaceNoiseSettings2.heightExponent);
-        planetSurfaceMaterial.SetFloat("_LayerStrength2", textureSettings.surfaceNoiseSettings2.layerStrength);
-        planetSurfaceMaterial.SetFloat("_HeightRange2", textureSettings.surfaceNoiseSettings2.heightScale);
-        planetSurfaceMaterial.SetInt("_DomainWarping2", textureSettings.surfaceNoiseSettings2.domainWarping ? 1 : 0);
-
-        int landColorSteps = textureSettings.landColorStages.Length < textureSettings.land1Color.Length ? textureSettings.landColorStages.Length : textureSettings.land1Color.Length;
-        if (landColorSteps > 8) landColorSteps = 8;
-        planetSurfaceMaterial.SetInt("_ColorSteps", landColorSteps);
-
-        for (int i = 1; i <= 8; i++)
-        {
-            float stage = 0;
-            Color color = Color.white;
-
-            if (i <= landColorSteps)
-            {
-                stage = textureSettings.landColorStages[i - 1];
-                color = textureSettings.land1Color[i - 1];
-            }
-            else
-            {
-                stage = textureSettings.landColorStages[landColorSteps - 1];
-                color = textureSettings.land1Color[landColorSteps - 1];
-            }
-            planetSurfaceMaterial.SetFloat("_ColorStep" + i, stage);
-            planetSurfaceMaterial.SetColor("_Color" + i, color);
-        }
-
-        int oceanColorSteps = textureSettings.oceanStages.Length < textureSettings.oceanColors.Length ? textureSettings.oceanStages.Length : textureSettings.oceanColors.Length;
-        if (oceanColorSteps > 4) oceanColorSteps = 4;
-        planetSurfaceMaterial.SetInt("_OceanColorSteps", oceanColorSteps);
-
-        for (int i = 1; i <= 4; i++)
-        {
-            float stage = 0;
-            Color color = Color.white;
-
-            if (i <= oceanColorSteps)
-            {
-                stage = textureSettings.oceanStages[i - 1];
-                color = textureSettings.oceanColors[i - 1];
-            }
-            else
-            {
-                stage = textureSettings.oceanStages[oceanColorSteps - 1];
-                color = textureSettings.oceanColors[oceanColorSteps - 1];
-            }
-            planetSurfaceMaterial.SetFloat("_OceanColorStep" + i, stage);
-            planetSurfaceMaterial.SetColor("_OceanColor" + i, color);
-        }
-
-        planetSurfaceMaterial.SetFloat("_IceTemperatureThreshold1", textureSettings.iceTemperatureThreshold1);
-        planetSurfaceMaterial.SetFloat("_IceTemperatureThreshold2", textureSettings.iceTemperatureThreshold2);
-        planetSurfaceMaterial.SetFloat("_DesertThreshold1", textureSettings.desertThreshold1);
-        planetSurfaceMaterial.SetFloat("_DesertThreshold2", textureSettings.desertThreshold2);
-        //planetSurfaceMaterial.SetFloat("_HighHumidityLightnessPercentage", );
-        planetSurfaceMaterial.SetColor("_IceColor", textureSettings.iceColor);
-        planetSurfaceMaterial.SetColor("_DesertColor", textureSettings.desertColor);
-        //planetSurfaceMaterial.SetFloat("_NormalScale", 50);
+        textureSettings.UpdateSurfaceMaterialProperties(planetSurfaceMaterial, showTemperature);
 
         if (mapSettings.UseImages)
         {
@@ -560,7 +489,7 @@ public partial class Map : MonoBehaviour
 
         if (heightmap != null)
         { 
-            planetSurfaceMaterial.SetTexture("_MainTex", heightmap);
+            planetSurfaceMaterial.SetTexture("_HeightMap", heightmap);
             if (mapSettings.UseImages)
                 planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
             else
@@ -1021,7 +950,7 @@ public partial class Map : MonoBehaviour
         //PlotRivers.instance.Run(ref erodedHeightMap, ref flowTexture);
         //flowTexture.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "flowMap.png"));
         //HeightMap2Texture();
-        //planetSurfaceMaterial.SetTexture("_MainTex", heightmap);
+        //planetSurfaceMaterial.SetTexture("_HeightMap", heightmap);
         planetSurfaceMaterial.SetTexture("_FlowTex", flowTextureRandom);
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
         //planetSurfaceMaterial.SetInt("_IsEroded", 1);
@@ -1500,7 +1429,7 @@ public partial class Map : MonoBehaviour
         }
 
         HeightMap2Texture();
-        planetSurfaceMaterial.SetTexture("_MainTex", heightmap);
+        planetSurfaceMaterial.SetTexture("_HeightMap", heightmap);
         planetSurfaceMaterial.SetInt("_IsEroded", 1);
     }
 

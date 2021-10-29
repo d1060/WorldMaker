@@ -36,7 +36,7 @@ Shader "Noise/PlanetarySurface"
         _DomainWarping2("Domain Warping2", Int) = 0
 
         //_Color ("Color", Color) = (1,1,1,1)
-        _MainTex("Heightmap", 2D) = "white" {}
+        _HeightMap("Heightmap", 2D) = "white" {}
         _IsHeightmapSet("Is Heightmap Set", Int) = 0
         _IsEroded("Is Eroded Heightmap", Int) = 0
         _MainMap("Main Map", 2D) = "white" {}
@@ -106,7 +106,7 @@ Shader "Noise/PlanetarySurface"
         #define LONGITUDE_STEP 0.000244140f
         #define LATITUDE_STEP 0.000488281f
 
-        sampler2D_float _MainTex;
+        sampler2D_float _HeightMap;
         int _IsHeightmapSet;
         int _IsEroded;
         sampler2D_float _MainMap;
@@ -118,7 +118,7 @@ Shader "Noise/PlanetarySurface"
 
         struct Input
         {
-            float2 uv_MainTex;
+            float2 uv_HeightMap;
             float3 worldNormal; INTERNAL_DATA
             float3 worldPos;
         };
@@ -210,19 +210,18 @@ Shader "Noise/PlanetarySurface"
 
             if (_IsHeightmapSet > 0 || _IsEroded > 0)
             {
-                //float4 c = pow(tex2D(_MainTex, IN.uv_MainTex), 1/2.2);
-                float4 c = tex2D(_MainTex, IN.uv_MainTex);
+                //float4 c = pow(tex2D(_HeightMap, IN.uv_HeightMap), 1/2.2);
+                float4 c = tex2D(_HeightMap, IN.uv_HeightMap);
                 height = (c.r + c.g + c.b) / 3;
             }
             else
             {
-                height = sphereHeight(IN.uv_MainTex, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping,
+                height = sphereHeight(IN.uv_HeightMap, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping,
                                                     offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2);
             }
 
             bool isAboveWater = height > _WaterLevel;
 
-            o.Alpha = 1;
             if (_DrawType == 1) // Drawing a Heightmap.
             {
                 o.Albedo = float4(height, height, height, 1);
@@ -260,7 +259,9 @@ Shader "Noise/PlanetarySurface"
             else
             {
                 // Temperature
-                float temperature = sphereNoise(IN.uv_MainTex, offset, _TemperatureSeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, 0, 0);
+                float temperature = sphereNoise(IN.uv_HeightMap, offset, _TemperatureSeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, 0, 0);
+                // Adjusts temperature with a sigmoid curve.
+                temperature = 1 / (1 + pow(20, -temperature));
 
                 temperature *= 20; // From 0 to 20
 
@@ -276,7 +277,7 @@ Shader "Noise/PlanetarySurface"
                     temperature -= 5;
                 }
 
-                float actualLatitude = (abs(IN.uv_MainTex.y - 0.5) * 2);
+                float actualLatitude = (abs(IN.uv_HeightMap.y - 0.5) * 2);
                 float latitudeTemperature = 0.9 - actualLatitude;
                 //latitudeTemperature = pow(latitudeTemperature, 0.5f);
                 latitudeTemperature *= 40; // From 0 to 10
@@ -284,7 +285,9 @@ Shader "Noise/PlanetarySurface"
                 temperature += latitudeTemperature; // -15 to 45
 
                 // Humidity
-                float humidity = sphereNoise(IN.uv_MainTex, offset, _HumiditySeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, 0, 0);
+                float humidity = sphereNoise(IN.uv_HeightMap, offset, _HumiditySeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, 0, 0);
+                // Adjusts humidity with a sigmoid curve.
+                humidity = 1 / (1 + pow(20, -humidity));
 
                 if (_DrawType == 3) // Drawing a Temperature mask.
                 {
@@ -306,8 +309,8 @@ Shader "Noise/PlanetarySurface"
                 }
                 else
                 {
-                    float2 prevLongitude = float2(IN.uv_MainTex.x - LONGITUDE_STEP, IN.uv_MainTex.y);
-                    float2 prevLatitude = float2(IN.uv_MainTex.x, IN.uv_MainTex.y - LATITUDE_STEP);
+                    float2 prevLongitude = float2(IN.uv_HeightMap.x - LONGITUDE_STEP, IN.uv_HeightMap.y);
+                    float2 prevLatitude = float2(IN.uv_HeightMap.x, IN.uv_HeightMap.y - LATITUDE_STEP);
                     if (prevLongitude.x < 0)
                         prevLongitude.x += 1;
                     if (prevLatitude.y < 0)
@@ -318,11 +321,11 @@ Shader "Noise/PlanetarySurface"
 
                     if (_IsHeightmapSet > 0 || _IsEroded > 0)
                     {
-                        //float4 prevLongitudeColor = pow(tex2D(_MainTex, prevLongitude), 1/2.2);
-                        float4 prevLongitudeColor = tex2D(_MainTex, prevLongitude);
+                        //float4 prevLongitudeColor = pow(tex2D(_HeightMap, prevLongitude), 1/2.2);
+                        float4 prevLongitudeColor = tex2D(_HeightMap, prevLongitude);
                         prevLongitudeHeight = (prevLongitudeColor.r + prevLongitudeColor.g + prevLongitudeColor.b) / 3;
-                        //float4 prevLatitudeColor = pow(tex2D(_MainTex, prevLatitude), 1/2.2);
-                        float4 prevLatitudeColor = tex2D(_MainTex, prevLatitude);
+                        //float4 prevLatitudeColor = pow(tex2D(_HeightMap, prevLatitude), 1/2.2);
+                        float4 prevLatitudeColor = tex2D(_HeightMap, prevLatitude);
                         prevLatitudeHeight = (prevLatitudeColor.r + prevLatitudeColor.g + prevLatitudeColor.b) / 3;
                     }
                     else
@@ -362,7 +365,7 @@ Shader "Noise/PlanetarySurface"
 
                         if (_IsFlowTexSet)
                         {
-                            flowColor = tex2D(_FlowTex, IN.uv_MainTex);
+                            flowColor = tex2D(_FlowTex, IN.uv_HeightMap);
                             if ((flowColor.r != 0 || flowColor.g != 0 || flowColor.b != 0) && isAboveWater)
                             {
                                 if (flowColor.a >= 1)
@@ -377,7 +380,7 @@ Shader "Noise/PlanetarySurface"
                         {
                             if (_IsMainmapSet)
                             {
-                                color = tex2D(_MainMap, IN.uv_MainTex);
+                                color = tex2D(_MainMap, IN.uv_HeightMap);
                             }
                             else
                             {
@@ -429,6 +432,7 @@ Shader "Noise/PlanetarySurface"
                     }
                 }
             }
+            o.Alpha = 1;
         }
         ENDCG
     }
