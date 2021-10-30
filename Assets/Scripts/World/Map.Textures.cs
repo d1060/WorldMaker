@@ -561,6 +561,7 @@ public partial class Map : MonoBehaviour
     }
 
     public ComputeShader heightMapComputeShader;
+    public ComputeShader maxMinComputeShader;
     public ComputeShader erosionShader;
     public ComputeShader heightmap2TextureShader;
     float[] erodedHeightMap;
@@ -612,12 +613,44 @@ public partial class Map : MonoBehaviour
             heightMapComputeShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 8f), Mathf.CeilToInt(textureSettings.textureHeight / 8f), 1);
 
             mapBuffer.GetData(originalHeightMap);
+
+            // Gets the Max and Min Heights.
+            float[] minMaxMap = new float[2];
+            minMaxMap[0] = float.MaxValue;
+            minMaxMap[1] = float.MinValue;
+
+            ComputeBuffer minMaxOutputsBuffer = new ComputeBuffer(minMaxMap.Length, sizeof(float));
+            minMaxOutputsBuffer.SetData(minMaxMap);
+            maxMinComputeShader.SetInt("mapWidth", textureSettings.textureWidth);
+            maxMinComputeShader.SetInt("mapHeight", textureSettings.textureHeight);
+            maxMinComputeShader.SetBuffer(0, "map", mapBuffer);
+            maxMinComputeShader.SetBuffer(0, "outputs", minMaxOutputsBuffer);
+
+            maxMinComputeShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 32f), Mathf.CeilToInt(textureSettings.textureHeight / 32f), 1);
+            maxMinComputeShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 32f), Mathf.CeilToInt(textureSettings.textureHeight / 32f), 1);
+
+            minMaxOutputsBuffer.GetData(minMaxMap);
+
+            MapData.instance.LowestHeight = minMaxMap[0];
+            MapData.instance.HighestHeight = minMaxMap[1];
+
+            minMaxOutputsBuffer.Release();
             mapBuffer.Release();
 
             Array.Copy(originalHeightMap, erodedHeightMap, originalHeightMap.Length);
             Array.Copy(originalHeightMap, mergedHeightMap, originalHeightMap.Length);
         }
     }
+
+    void GetMaxAndMinHeights(float[] array, ref float highest, ref float lowest)
+    {
+        for (int i = 0; i < array.Length; i++)
+        {
+            if (array[i] > highest) highest = array[i];
+            if (array[i] < lowest) lowest = array[i];
+        }
+    }
+
     void GenerateHumiditytMap()
     {
         humidityMap = new float[textureSettings.textureWidth * textureSettings.textureHeight];
@@ -1299,6 +1332,9 @@ public partial class Map : MonoBehaviour
                 float[] connectivityHeightMap = new float[erodedHeightMap.Length];
                 Array.Copy(erodedHeightMap, connectivityHeightMap, erodedHeightMap.Length);
 
+                float[] outputMap = new float[1];
+                outputMap[0] = 1;
+
                 ComputeBuffer heightBuffer = new ComputeBuffer(connectivityHeightMap.Length, sizeof(float));
                 heightBuffer.SetData(connectivityHeightMap);
 
@@ -1307,6 +1343,9 @@ public partial class Map : MonoBehaviour
 
                 ComputeBuffer distanceToWaterBuffer = new ComputeBuffer(distanceToWaterMap.Length, sizeof(float));
                 distanceToWaterBuffer.SetData(connectivityMap);
+
+                ComputeBuffer outputBuffer = new ComputeBuffer(outputMap.Length, sizeof(float));
+                outputBuffer.SetData(outputMap);
 
                 heightmapConnectivityShader.SetInt("mapWidth", textureSettings.textureWidth);
                 heightmapConnectivityShader.SetInt("mapHeight", textureSettings.textureHeight);
@@ -1318,15 +1357,24 @@ public partial class Map : MonoBehaviour
                 heightmapConnectivityShader.SetBuffer(0, "heightMap", heightBuffer);
                 heightmapConnectivityShader.SetBuffer(0, "distanceMap", distanceToWaterBuffer);
                 heightmapConnectivityShader.SetBuffer(0, "connectivityMap", connectivityIndexesBuffer);
+                heightmapConnectivityShader.SetBuffer(0, "output", outputBuffer);
 
                 for (int i = 0; i < numPasses; i++)
+                {
+                    outputMap[0] = 1;
+                    outputBuffer.SetData(outputMap);
                     heightmapConnectivityShader.Dispatch(0, numThreadsX, numThreadsY, 1);
+                    outputBuffer.GetData(outputMap);
+                    if (outputMap[0] == 1)
+                        break;
+                }
 
                 connectivityIndexesBuffer.GetData(connectivityMap);
 
                 heightBuffer.Release();
                 connectivityIndexesBuffer.Release();
                 distanceToWaterBuffer.Release();
+                outputBuffer.Release();
             }
             //connectivityMap.SaveConnectivityMap(textureSettings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityColors.png"));
         }

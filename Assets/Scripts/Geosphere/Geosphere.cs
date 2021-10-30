@@ -6,7 +6,6 @@ using UnityEditor;
 [ExecuteInEditMode]
 public class Geosphere : MonoBehaviour
 {
-    List<Mesh> meshes = new List<Mesh>();
     public Map mainMap;
     public float Radius = 200.0f;
     public int divisions = 5;
@@ -217,6 +216,7 @@ public class Geosphere : MonoBehaviour
             meshFilter.sharedMesh.triangles = tris;
             meshFilter.sharedMesh.uv = GetUVs();
             meshFilter.sharedMesh.normals = GetNormals();
+            meshFilter.sharedMesh.RecalculateTangents();
 #if UNITY_EDITOR
         };
 #endif

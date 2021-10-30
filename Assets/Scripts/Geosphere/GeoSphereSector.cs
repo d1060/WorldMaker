@@ -5,26 +5,14 @@ using UnityEngine;
 public class GeoSphereSector
 {
     float radius;
-    public Vector3 p1;
-    public Vector3 p2;
-    public Vector3 p3;
+    public Vector3[] p;
     public Vector3 center;
-    public Vector2 uv1;
-    public Vector2 uv2;
-    public Vector2 uv3;
-    public Vector3 p1Normal;
-    public Vector3 p2Normal;
-    public Vector3 p3Normal;
+    public Vector2[] uv;
+    public Vector3[] normal;
 
     public int level = 0;
     public int index = -1;
-    float baseProjection;
     List<GeoSphereSector> subFaces = new List<GeoSphereSector>();
-
-    float lowestLat; // From 0 to 1
-    float highestLat; // From 0 to 1
-    float lowestLon; // From 0 to 1
-    float highestLon; // From 0 to 1
 
     public GeoSphereSector(int index, float radius)
     {
@@ -47,52 +35,54 @@ public class GeoSphereSector
 
     public Vector3 Center { get { return center; } }
 
-    public GeoSphereSector(Vector3 v1, Vector3 v2, Vector3 v3)
+    public GeoSphereSector(float radius, Vector3 v1, Vector3 v2, Vector3 v3)
     {
+        this.radius = radius;
         Init(v1, v2, v3);
     }
 
     void Init(Vector3 v1, Vector3 v2, Vector3 v3)
     {
-        p1 = new Vector3(v1.x, v1.y, v1.z);
-        p2 = new Vector3(v2.x, v2.y, v2.z);
-        p3 = new Vector3(v3.x, v3.y, v3.z);
-        center = (p1 + p2 + p3) / 3;
+        p = new Vector3[] {
+            new Vector3(v1.x, v1.y, v1.z),
+            new Vector3(v2.x, v2.y, v2.z),
+            new Vector3(v3.x, v3.y, v3.z)
+        };
+
+        center = (p[0] + p[1] + p[2]) / 3;
 
         Vector3 vec1 = v2 - v1;
         vec1.Normalize();
         Vector3 vec2 = v3 - v1;
         vec2.Normalize();
 
-        p1Normal = v1;
-        p2Normal = v2;
-        p3Normal = v3;
+        normal = new Vector3[] { v1, v2, v3 };
 
-        p1Normal.Normalize();
-        p2Normal.Normalize();
-        p3Normal.Normalize();
+        normal[0].Normalize();
+        normal[1].Normalize();
+        normal[2].Normalize();
 
         /////////////////////
         // UV Calculations //
         /////////////////////
-        uv1 = p1.CartesianToPolarRatio(radius);
-        uv2 = p2.CartesianToPolarRatio(radius);
-        uv3 = p3.CartesianToPolarRatio(radius);
+        uv = new Vector2[] { p[0].CartesianToPolarRatio(radius),
+                             p[1].CartesianToPolarRatio(radius),
+                             p[2].CartesianToPolarRatio(radius) };
 
         // Adjust for the north and south poles.
         if (v1.x.IsAlmost(0) && v1.z.IsAlmost(0))
-            uv1.x = (uv2.x + uv3.x) / 2;
+            uv[0].x = (uv[1].x + uv[2].x) / 2;
         if (v2.x.IsAlmost(0) && v2.z.IsAlmost(0))
-            uv2.x = (uv1.x + uv3.x) / 2;
+            uv[1].x = (uv[0].x + uv[2].x) / 2;
         if (v3.x.IsAlmost(0) && v3.z.IsAlmost(0))
-            uv3.x = (uv1.x + uv2.x) / 2;
+            uv[2].x = (uv[0].x + uv[1].x) / 2;
 
-        Vector3 vecBase = p2 - p3; // X vector
+        Vector3 vecBase = p[1] - p[2]; // X vector
         Vector3 vecBaseUnit = vecBase;
 
-        Vector3 vec13 = p1 - p3;
+        Vector3 vec13 = p[0] - p[2];
         Vector3 bottomMidpoint = ((Vector3.Dot(vec13, vecBaseUnit) / Vector3.Dot(vecBaseUnit, vecBaseUnit)) * vecBaseUnit);
-        Vector3 vecHeight = p1 - bottomMidpoint; // Y vector
+        //Vector3 vecHeight = p[0] - bottomMidpoint; // Y vector
     }
 
     public void SplitFace(float radius, int newLevel)
@@ -100,8 +90,8 @@ public class GeoSphereSector
         subFaces.Clear();
 
         // Splits the sides.
-        List<Vector3> lineSplit12 = SplitLine(p1, p2, newLevel, radius);
-        List<Vector3> lineSplit13 = SplitLine(p1, p3, newLevel, radius);
+        List<Vector3> lineSplit12 = SplitLine(p[0], p[1], newLevel, radius);
+        List<Vector3> lineSplit13 = SplitLine(p[0], p[2], newLevel, radius);
 
         //Splits the bottoms for each "side" line.
         List<Vector3> prevLineSplit32 = new List<Vector3>();
@@ -110,7 +100,7 @@ public class GeoSphereSector
         {
             if (i == 0)
             {
-                GeoSphereSector tf = new GeoSphereSector(p1, lineSplit12[0], lineSplit13[0]);
+                GeoSphereSector tf = new GeoSphereSector(radius, p[0], lineSplit12[0], lineSplit13[0]);
                 subFaces.Add(tf);
                 prevLineSplit32.Clear();
                 prevLineSplit32.Add(lineSplit13[0]);
@@ -126,15 +116,15 @@ public class GeoSphereSector
 
                     if (a == 0)
                     {
-                        GeoSphereSector tf = new GeoSphereSector(lineSplit13[i - 1], lineSplit32[a], lineSplit13[i]);
+                        GeoSphereSector tf = new GeoSphereSector(radius, lineSplit13[i - 1], lineSplit32[a], lineSplit13[i]);
                         subFaces.Add(tf);
                     }
                     else
                     {
-                        GeoSphereSector tf = new GeoSphereSector(prevLineSplit32[a - 1], prevLineSplit32[a], lineSplit32[a - 1]);
+                        GeoSphereSector tf = new GeoSphereSector(radius, prevLineSplit32[a - 1], prevLineSplit32[a], lineSplit32[a - 1]);
                         subFaces.Add(tf);
 
-                        GeoSphereSector tf2 = new GeoSphereSector(lineSplit32[a - 1], prevLineSplit32[a], lineSplit32[a]);
+                        GeoSphereSector tf2 = new GeoSphereSector(radius, lineSplit32[a - 1], prevLineSplit32[a], lineSplit32[a]);
                         subFaces.Add(tf2);
                     }
                 }
@@ -151,9 +141,9 @@ public class GeoSphereSector
     {
         Vector3[] vertexes = new Vector3[3];
         int i = 0;
-        vertexes[i++] = p1;
-        vertexes[i++] = p2;
-        vertexes[i++] = p3;
+        vertexes[i++] = p[0];
+        vertexes[i++] = p[1];
+        vertexes[i++] = p[2];
         return vertexes;
     }
 
@@ -163,39 +153,48 @@ public class GeoSphereSector
         //{
         Vector3[] normals = new Vector3[3];
         int i = 0;
-        normals[i++] = p1Normal;
-        normals[i++] = p2Normal;
-        normals[i++] = p3Normal;
+        normals[i++] = normal[0];
+        normals[i++] = normal[1];
+        normals[i++] = normal[2];
         return normals;
     }
 
     public Vector2[] GetUVs()
     {
-        //Vector3 vec32 = p2 - p3; // X vector
-        //Vector3 bottomMidpoint = ((p2 + p3) / 2);
-        //Vector3 vec123 = p1 - bottomMidpoint; // Y vector
+        //Vector3 vec32 = p[1] - p[2]; // X vector
+        //Vector3 bottomMidpoint = ((p[1] + p[2]) / 2);
+        //Vector3 vec123 = p[0] - bottomMidpoint; // Y vector
 
         //if (level == 0 || subFaces.Count == 0)
         //{
-        uv1 = p1.CartesianToPolarRatio(1);
-        uv2 = p2.CartesianToPolarRatio(1);
-        uv3 = p3.CartesianToPolarRatio(1);
-        Vector3 pCenter = (p1 + p2 + p3) / 3;
+        uv[0] = p[0].CartesianToPolarRatio(1);
+        uv[1] = p[1].CartesianToPolarRatio(1);
+        uv[2] = p[2].CartesianToPolarRatio(1);
+
+        Vector3 pCenter = (p[0] + p[1] + p[2]) / 3;
         Vector2 uvCenter = pCenter.CartesianToPolarRatio(1);
 
-        if (uv1.x < 0.25f && uvCenter.x >= 0.75f) uv1.x += 1;
-        if (uv2.x < 0.25f && uvCenter.x >= 0.75f) uv2.x += 1;
-        if (uv3.x < 0.25f && uvCenter.x >= 0.75f) uv3.x += 1;
+        if (uv[0].x < 0.25f && uvCenter.x >= 0.75f) uv[0].x += 1;
+        if (uv[1].x < 0.25f && uvCenter.x >= 0.75f) uv[1].x += 1;
+        if (uv[2].x < 0.25f && uvCenter.x >= 0.75f) uv[2].x += 1;
 
-        if (uv1.x > 0.75f && uvCenter.x <= 0.25f) uv1.x -= 1;
-        if (uv2.x > 0.75f && uvCenter.x <= 0.25f) uv2.x -= 1;
-        if (uv3.x > 0.75f && uvCenter.x <= 0.25f) uv3.x -= 1;
+        if (uv[0].x > 0.75f && uvCenter.x <= 0.25f) uv[0].x -= 1;
+        if (uv[1].x > 0.75f && uvCenter.x <= 0.25f) uv[1].x -= 1;
+        if (uv[2].x > 0.75f && uvCenter.x <= 0.25f) uv[2].x -= 1;
+
+        // Adjust for the north and south poles.
+        if (p[0].y == radius || p[0].y == -radius)
+            uv[0].x = (uv[1].x + uv[2].x) / 2;
+        if (p[1].y == radius || p[1].y == -radius)
+            uv[1].x = (uv[0].x + uv[2].x) / 2;
+        if (p[2].y == radius || p[2].y == -radius)
+            uv[2].x = (uv[0].x + uv[1].x) / 2;
 
         Vector2[] uvs = new Vector2[3];
         int i = 0;
-        uvs[i++] = uv1;
-        uvs[i++] = uv2;
-        uvs[i++] = uv3;
+        uvs[i++] = uv[0];
+        uvs[i++] = uv[1];
+        uvs[i++] = uv[2];
 
         return uvs;
     }

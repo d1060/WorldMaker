@@ -1,0 +1,49 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+int mapWidth;
+int mapHeight;
+RWStructuredBuffer<float> map;
+RWStructuredBuffer<float> outputs;
+
+void checkHeight(int index)
+{
+    float height = map[index];
+
+    if (outputs[0] > height) outputs[0] = height;
+    if (outputs[1] < height) outputs[1] = height;
+}
+
+[numthreads(32,32,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    int index = id.x + id.y * mapWidth;
+    int leftX = id.x - 1;
+    int rightX = id.x + 1;
+    int topY = id.y - 1;
+    int bottomY = id.y + 1;
+
+    if (leftX < 0) leftX += mapWidth;
+    if (rightX >= mapWidth) rightX -= mapWidth;
+    if (bottomY >= mapHeight) bottomY = mapHeight - 1;
+    if (topY < 0) topY = 0;
+
+    int indexL = leftX + mapWidth * id.y;
+    int indexR = rightX + mapWidth * id.y;
+    int indexU = id.x + mapWidth * topY;
+    int indexD = id.x + mapWidth * bottomY;
+    int indexDL = leftX + mapWidth * bottomY;
+    int indexDR = rightX + mapWidth * bottomY;
+    int indexUL = leftX + mapWidth * topY;
+    int indexUR = rightX + mapWidth * topY;
+
+    checkHeight(index);
+    checkHeight(indexL);
+    checkHeight(indexR);
+    checkHeight(indexU);
+    checkHeight(indexD);
+    checkHeight(indexDL);
+    checkHeight(indexDR);
+    checkHeight(indexUL);
+    checkHeight(indexUR);
+}

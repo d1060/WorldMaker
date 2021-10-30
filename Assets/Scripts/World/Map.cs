@@ -161,6 +161,11 @@ public partial class Map : MonoBehaviour
     void OnApplicationQuit()
     {
         SaveCurrentTerrainTransformations();
+
+        planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+        planetSurfaceMaterial.SetInt("_IsEroded", 0);
+        planetSurfaceMaterial.SetInt("_IsHeightMapSet", 0);
+        planetSurfaceMaterial.SetInt("_IsLandMaskSet", 0);
     }
     #endregion
 
@@ -313,8 +318,12 @@ public partial class Map : MonoBehaviour
         TextMeshProUGUI textmeshPro = debugText.GetComponent<TextMeshProUGUI>();
         if (textmeshPro == null)
             return;
+
+        float longitude = ((cam.transform.position.x - transform.position.x) / mapWidth) + 0.5f;
+        float latitude = ((cam.transform.position.y - transform.position.y) / mapHeight) + 0.5f;
+
         textmeshPro.text =
-            "Height: " + (-cam.transform.position.z).ToString("####0.##") + ", Zoom Level: " + cameraController.ZoomLevel;
+            "Lon: " + longitude.ToString("####0.##") + ", Lat: " + latitude.ToString("####0.##");
     }
 
     public void Shift(float x)
@@ -386,6 +395,9 @@ public partial class Map : MonoBehaviour
         mergedHeightMap = null;
         planetSurfaceMaterial.SetInt("_IsEroded", 0);
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+
+        if (!keepSeed)
+            GenerateHeightMap();
 
         UpdateSurfaceMaterialProperties();
     }
@@ -617,11 +629,13 @@ public partial class Map : MonoBehaviour
     void SaveCurrentTerrainTransformations()
     {
         string tempDataFolder = Path.Combine(Application.persistentDataPath, "Temp", mapSettings.Seed.ToString());
-        if (!Directory.Exists(tempDataFolder))
-            Directory.CreateDirectory(tempDataFolder);
+        bool noFileExists = true;
 
         if (originalHeightMap != null)
         {
+            if (!Directory.Exists(tempDataFolder))
+                Directory.CreateDirectory(tempDataFolder);
+            noFileExists = false;
             originalHeightMap.SaveBytes(Path.Combine(tempDataFolder, "originalHeightMap.raw"));
         }
         else if (File.Exists(Path.Combine(tempDataFolder, "originalHeightMap.raw")))
@@ -629,6 +643,9 @@ public partial class Map : MonoBehaviour
 
         if (erodedHeightMap != null)
         {
+            if (!Directory.Exists(tempDataFolder))
+                Directory.CreateDirectory(tempDataFolder);
+            noFileExists = false;
             erodedHeightMap.SaveBytes(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
         }
         else if (File.Exists(Path.Combine(tempDataFolder, "erodedHeightMap.raw")))
@@ -636,6 +653,9 @@ public partial class Map : MonoBehaviour
 
         if (mergedHeightMap != null)
         {
+            if (!Directory.Exists(tempDataFolder))
+                Directory.CreateDirectory(tempDataFolder);
+            noFileExists = false;
             mergedHeightMap.SaveBytes(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
         }
         else if (File.Exists(Path.Combine(tempDataFolder, "mergedHeightMap.raw")))
@@ -643,6 +663,9 @@ public partial class Map : MonoBehaviour
 
         if (flowTexture != null)
         {
+            if (!Directory.Exists(tempDataFolder))
+                Directory.CreateDirectory(tempDataFolder);
+            noFileExists = false;
             flowTexture.SaveAsPNG(Path.Combine(tempDataFolder, "flow.png"));
         }
         else if (File.Exists(Path.Combine(tempDataFolder, "flow.png")))
@@ -650,6 +673,9 @@ public partial class Map : MonoBehaviour
 
         if (flowTextureRandom != null)
         {
+            if (!Directory.Exists(tempDataFolder))
+                Directory.CreateDirectory(tempDataFolder);
+            noFileExists = false;
             flowTextureRandom.SaveAsPNG(Path.Combine(tempDataFolder, "flowRandom.png"));
         }
         else if (File.Exists(Path.Combine(tempDataFolder, "flowRandom.png")))
@@ -657,10 +683,16 @@ public partial class Map : MonoBehaviour
 
         if (inciseFlowMap != null)
         {
+            if (!Directory.Exists(tempDataFolder))
+                Directory.CreateDirectory(tempDataFolder);
+            noFileExists = false;
             inciseFlowMap.SaveBytes(Path.Combine(tempDataFolder, "inciseFlow.raw"));
         }
         else if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
             File.Delete(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+
+        if (noFileExists && Directory.Exists(tempDataFolder))
+            Directory.Delete(tempDataFolder);
     }
 
     void LoadTerrainTransformations()
@@ -673,25 +705,31 @@ public partial class Map : MonoBehaviour
         bool updateFlow = false;
         if (File.Exists(Path.Combine(tempDataFolder, "originalHeightMap.raw")))
         {
-            originalHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "originalHeightMap.raw"));
+            originalHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "originalHeightMap.raw"), ref MapData.instance.LowestHeight, ref MapData.instance.HighestHeight);
             if (originalHeightMap != null && originalHeightMap.Length > 0)
                 updateMaterial = true;
         }
         if (File.Exists(Path.Combine(tempDataFolder, "erodedHeightMap.raw")))
         {
-            erodedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
+            float lowest = 0;
+            float highest = 0;
+            erodedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "erodedHeightMap.raw"), ref lowest, ref highest);
             if (erodedHeightMap != null && erodedHeightMap.Length > 0)
                 updateMaterial = true;
         }
         if (File.Exists(Path.Combine(tempDataFolder, "mergedHeightMap.raw")))
         {
-            mergedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
+            float lowest = 0;
+            float highest = 0;
+            mergedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "mergedHeightMap.raw"), ref lowest, ref highest);
             if (mergedHeightMap != null && mergedHeightMap.Length > 0)
                 updateMaterial = true;
         }
         if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
         {
-            inciseFlowMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+            float lowest = 0;
+            float highest = 0;
+            inciseFlowMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "inciseFlow.raw"), ref lowest, ref highest);
             if (inciseFlowMap != null && inciseFlowMap.Length > 0)
                 updateMaterial = true;
         }
@@ -725,18 +763,31 @@ public partial class Map : MonoBehaviour
         }
     }
 
-    float[] LoadFloatArrayFromFile(string fileName)
+    float[] LoadFloatArrayFromFile(string fileName, ref float lowestFloat, ref float highestFloat)
     {
-        long arrayLength = new System.IO.FileInfo(fileName).Length / sizeof(float);
-        float[] array = new float[arrayLength];
-
-        byte[] byteArray = File.ReadAllBytes(fileName);
-        int byteIndex = 0;
-        for (int i = 0; i < arrayLength; i++)
+        try
         {
-            array[i] = BitConverter.ToSingle(byteArray, byteIndex);
-            byteIndex += sizeof(float);
+            lowestFloat = float.MaxValue;
+            highestFloat = float.MinValue;
+
+            long arrayLength = new System.IO.FileInfo(fileName).Length / sizeof(float);
+            float[] array = new float[arrayLength];
+
+            byte[] byteArray = File.ReadAllBytes(fileName);
+            int byteIndex = 0;
+            for (int i = 0; i < arrayLength; i++)
+            {
+                array[i] = BitConverter.ToSingle(byteArray, byteIndex);
+                byteIndex += sizeof(float);
+                if (array[i] > highestFloat) highestFloat = array[i];
+                if (array[i] < lowestFloat) lowestFloat = array[i];
+            }
+            return array;
         }
-        return array;
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+            return null;
+        }
     }
 }

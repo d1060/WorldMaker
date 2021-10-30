@@ -105,6 +105,7 @@ Shader "Noise/PlanetarySurface"
 
         #define LONGITUDE_STEP 0.000244140f
         #define LATITUDE_STEP 0.000488281f
+        #define PI 3.14159265359
 
         sampler2D_float _HeightMap;
         int _IsHeightmapSet;
@@ -411,8 +412,8 @@ Shader "Noise/PlanetarySurface"
                             o.Metallic = _LandMetallic;
                             o.Smoothness = _LandGlossiness;
                             normal = float3(
-                                (prevLongitudeHeight - height) * _NormalScale + IN.worldNormal.x,
-                                (prevLatitudeHeight - height) * _NormalScale + IN.worldNormal.y,
+                                (prevLongitudeHeight - height) * _NormalScale,
+                                (prevLatitudeHeight - height) * _NormalScale,
                                 1);
                         }
                         normal = normalize(normal);

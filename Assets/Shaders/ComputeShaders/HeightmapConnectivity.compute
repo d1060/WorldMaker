@@ -10,6 +10,7 @@ float distanceWeight = 10;
 RWStructuredBuffer<float> heightMap;
 RWStructuredBuffer<float> distanceMap;
 RWStructuredBuffer<int> connectivityMap;
+RWStructuredBuffer<int> output;
 //RWStructuredBuffer<int> statusMap;
 
 float diagonalHeight(int index, float thisHeight)
@@ -43,6 +44,7 @@ void checkIsCloser(int neighborIndex, int myIndex, float neighborHeight, float m
         {
             lowestConnectedDistance = distanceThroughNeighbor;
             lowestConnectedIndex = neighborIndex;
+            output[0] = 0;
         }
     }
 }

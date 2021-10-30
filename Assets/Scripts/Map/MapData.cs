@@ -17,6 +17,8 @@ public class MapData
     public PlotRiversSettings plotRiversSettings;
     public InciseFlowSettings inciseFlowSettings;
     public bool IsSaved = false;
+    public float LowestHeight = 1;
+    public float HighestHeight = 0;
 
     #region Singleton
     static MapData myInstance = null;

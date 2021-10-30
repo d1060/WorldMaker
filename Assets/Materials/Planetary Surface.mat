@@ -75,7 +75,7 @@ Material:
     m_Floats:
     - _BumpScale: 1
     - _ColorStep1: 0.01
-    - _ColorStep2: 0.1
+    - _ColorStep2: 0.26784435
     - _ColorStep3: 0.6
     - _ColorStep4: 0.8
     - _ColorStep5: 0.95
@@ -85,21 +85,21 @@ Material:
     - _ColorSteps: 6
     - _Cutoff: 0.5
     - _DesertThreshold1: 10
-    - _DesertThreshold2: 50
+    - _DesertThreshold2: 15
     - _DetailNormalMapScale: 1
-    - _DomainWarping: 1
+    - _DomainWarping: 0
     - _DomainWarping2: 0
     - _DrawType: 0
     - _DstBlend: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.793
     - _GlossyReflections: 1
-    - _HeightExponent: 4.0984793
-    - _HeightExponent2: 1.0943954
-    - _HeightRange: 0.33027133
-    - _HeightRange2: 0.16659911
+    - _HeightExponent: 2.8358169
+    - _HeightExponent2: 1.717414
+    - _HeightRange: 0.36877266
+    - _HeightRange2: 0.18669486
     - _HighHumidityLightnessPercentage: 0.549
-    - _HumiditySeed: 148852
+    - _HumiditySeed: 403959
     - _IceTemperatureThreshold1: 0
     - _IceTemperatureThreshold2: -20
     - _IsEroded: 0
@@ -107,16 +107,16 @@ Material:
     - _IsHeightmapSet: 0
     - _IsLandmaskSet: 0
     - _IsMainmapSet: 0
-    - _Lacunarity: 1.8440442
-    - _Lacunarity2: 1.69
+    - _Lacunarity: 1.7030067
+    - _Lacunarity2: 1.8764929
     - _LandGlossiness: 0.219
     - _LandMetallic: 0
     - _LayerStrength: 1
-    - _LayerStrength2: 0.16782221
+    - _LayerStrength2: 1
     - _Metallic: 0
     - _Mode: 0
-    - _Multiplier: 7.997304
-    - _Multiplier2: 2.1928365
+    - _Multiplier: 2.91859
+    - _Multiplier2: 7.119885
     - _NormalScale: 50
     - _OcclusionStrength: 1
     - _OceanColorStep1: 0
@@ -124,27 +124,27 @@ Material:
     - _OceanColorStep3: 1
     - _OceanColorStep4: 1
     - _OceanColorSteps: 3
-    - _Octaves: 13
+    - _Octaves: 19
     - _Octaves2: 13
     - _Parallax: 0.02
-    - _Persistence: 0.60860103
-    - _Persistence2: 0.6938296
-    - _RidgedNoise: 1
-    - _RidgedNoise2: 0
-    - _Seed: 755785
-    - _Seed2: 44827
+    - _Persistence: 0.71948546
+    - _Persistence2: 0.7079654
+    - _RidgedNoise: 0
+    - _RidgedNoise2: 1
+    - _Seed: 282859
+    - _Seed2: 664260
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _TemperatureSeed: 793041
+    - _TemperatureSeed: 789154
     - _UVSec: 0
-    - _WaterLevel: 0.6738564
-    - _XOffset: 0.8457127
-    - _XOffset2: 0.21052966
-    - _YOffset: 0.061913423
-    - _YOffset2: 0.46282122
-    - _ZOffset: 0.65686876
-    - _ZOffset2: 0.58175844
+    - _WaterLevel: 0.5543726
+    - _XOffset: 0.47400188
+    - _XOffset2: 0.52016497
+    - _YOffset: 0.5737374
+    - _YOffset2: 0.6306507
+    - _ZOffset: 0.050538227
+    - _ZOffset2: 0.42110267
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}

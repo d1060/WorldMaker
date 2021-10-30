@@ -136,6 +136,7 @@
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
+    <None Include="Assets\Shaders\ComputeShaders\MaxMin.compute" />
     <None Include="Assets\Shaders\ComputeShaders\HeightmapConnectivity.compute" />
     <None Include="Assets\Libraries\Log.dll" />
     <None Include="Assets\Shaders\ComputeShaders\Heightmap.compute" />
