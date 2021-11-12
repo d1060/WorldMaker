@@ -12,7 +12,8 @@ using System.Linq;
 
 public partial class Map : MonoBehaviour
 {
-    Texture2D heightmap = null;
+    //Texture2D heightmap = null;
+    //Texture2D normalmap = null;
     Texture2D landmap = null;
     Texture2D landmask = null;
 
@@ -72,6 +73,11 @@ public partial class Map : MonoBehaviour
                     SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Normalmap" + fileNameExtension), SphereShaderDrawType.Normal);
                 }
 
+                if (AppData.instance.SaveMainMap && AppData.instance.SaveNormalMap)
+                {
+                    SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-MainNormalMap" + fileNameExtension), SphereShaderDrawType.LandNormal);
+                }
+
                 if (AppData.instance.SaveTemperature)
                 {
                     SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Temperature" + fileNameExtension), SphereShaderDrawType.Temperature);
@@ -109,6 +115,7 @@ public partial class Map : MonoBehaviour
         if (exportRT == null)
         {
             exportRT = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
+            exportRT.wrapMode = TextureWrapMode.Repeat;
             exportRT.name = "Export Render Texture";
             exportRT.enableRandomWrite = true;
             exportRT.Create();
@@ -145,6 +152,7 @@ public partial class Map : MonoBehaviour
         if (exportRT == null)
         {
             exportRT = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
+            exportRT.wrapMode = TextureWrapMode.Repeat;
             exportRT.name = "Export Render Texture";
             exportRT.enableRandomWrite = true;
             exportRT.Create();
@@ -326,6 +334,7 @@ public partial class Map : MonoBehaviour
         if (transparencyRT == null)
         {
             transparencyRT = new RenderTexture(baseTexture.width, baseTexture.height, 32, RenderTextureFormat.ARGBHalf);
+            transparencyRT.wrapMode = TextureWrapMode.Repeat;
             transparencyRT.name = "Transparency Render Texture";
             transparencyRT.enableRandomWrite = true;
             transparencyRT.Create();
@@ -374,6 +383,7 @@ public partial class Map : MonoBehaviour
 
             RenderTexture result = RenderTexture.GetTemporary(dimension, dimension);
             result.enableRandomWrite = true;
+            result.wrapMode = TextureWrapMode.Repeat;
             result.Create();
 
             equirectangular2CubemapShader.SetTexture(0, "Result", result);
@@ -442,12 +452,13 @@ public partial class Map : MonoBehaviour
 
         if (mapSettings.UseImages)
         {
-            if (mapSettings.HeightMapPath == "" || !File.Exists(mapSettings.HeightMapPath))
-                planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
-            else
+            //if (mapSettings.HeightMapPath == "" || !File.Exists(mapSettings.HeightMapPath))
+                //planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
+            //else
+            if (mapSettings.HeightMapPath != "" && File.Exists(mapSettings.HeightMapPath))
             {
                 UpdateSurfaceMaterialHeightMap();
-                planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
+                //planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
             }
 
             if (mapSettings.MainTexturePath == "" || !File.Exists(mapSettings.MainTexturePath))
@@ -468,7 +479,7 @@ public partial class Map : MonoBehaviour
         }
         else
         {
-            planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
+            //planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
             planetSurfaceMaterial.SetInt("_IsMainmapSet", 0);
             planetSurfaceMaterial.SetInt("_IsLandmaskSet", 0);
         }
@@ -493,21 +504,22 @@ public partial class Map : MonoBehaviour
 
         if (!isEroded && mapSettings.HeightMapPath != "" && File.Exists(mapSettings.HeightMapPath))
         {
-            heightmap = LoadAnyImageFile(mapSettings.HeightMapPath);
+            Texture2D heightmap = LoadAnyImageFile(mapSettings.HeightMapPath);
+            Graphics.Blit(heightmap, heightmapRT);
         }
 
-        if (heightmap != null)
+        if (heightmapRT != null)
         { 
-            planetSurfaceMaterial.SetTexture("_HeightMap", heightmap);
-            if (mapSettings.UseImages)
-                planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
-            else
-                planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
+            planetSurfaceMaterial.SetTexture("_HeightMap", heightmapRT);
+            //if (mapSettings.UseImages)
+            //    planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
+            //else
+            //    planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
         }
-        else
-            planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
+        //else
+        //    planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
 
-        if (isEroded && heightmap != null)
+        if (isEroded && heightmapRT != null)
             planetSurfaceMaterial.SetInt("_IsEroded", 1);
         else
             planetSurfaceMaterial.SetInt("_IsEroded", 0);
@@ -585,13 +597,14 @@ public partial class Map : MonoBehaviour
             heightMapComputeShader.SetFloat("xOffset", textureSettings.surfaceNoiseSettings.noiseOffset.x);
             heightMapComputeShader.SetFloat("yOffset", textureSettings.surfaceNoiseSettings.noiseOffset.y);
             heightMapComputeShader.SetFloat("zOffset", textureSettings.surfaceNoiseSettings.noiseOffset.z);
+            heightMapComputeShader.SetFloat("minHeight", MapData.instance.LowestHeight);
+            heightMapComputeShader.SetFloat("maxHeight", MapData.instance.HighestHeight);
             heightMapComputeShader.SetInt("mapWidth", textureSettings.textureWidth);
             heightMapComputeShader.SetInt("mapHeight", textureSettings.textureHeight);
             heightMapComputeShader.SetInt("octaves", textureSettings.surfaceNoiseSettings.octaves);
             heightMapComputeShader.SetFloat("lacunarity", textureSettings.surfaceNoiseSettings.lacunarity);
             heightMapComputeShader.SetFloat("persistence", textureSettings.surfaceNoiseSettings.persistence);
             heightMapComputeShader.SetFloat("multiplier", textureSettings.surfaceNoiseSettings.multiplier);
-            heightMapComputeShader.SetFloat("heightRange", textureSettings.surfaceNoiseSettings.heightScale);
             heightMapComputeShader.SetInt("ridgedNoise", textureSettings.surfaceNoiseSettings.ridged ? 1 : 0);
             heightMapComputeShader.SetFloat("heightExponent", textureSettings.surfaceNoiseSettings.heightExponent);
             heightMapComputeShader.SetFloat("layerStrength", textureSettings.surfaceNoiseSettings.layerStrength);
@@ -607,47 +620,46 @@ public partial class Map : MonoBehaviour
             heightMapComputeShader.SetInt("ridgedNoise2", textureSettings.surfaceNoiseSettings2.ridged ? 1 : 0);
             heightMapComputeShader.SetFloat("heightExponent2", textureSettings.surfaceNoiseSettings2.heightExponent);
             heightMapComputeShader.SetFloat("layerStrength2", textureSettings.surfaceNoiseSettings2.layerStrength);
-            heightMapComputeShader.SetFloat("heightRange2", textureSettings.surfaceNoiseSettings2.heightScale);
             heightMapComputeShader.SetFloat("domainWarping2", textureSettings.surfaceNoiseSettings2.domainWarping ? 1 : 0);
 
-            heightMapComputeShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 8f), Mathf.CeilToInt(textureSettings.textureHeight / 8f), 1);
+            heightMapComputeShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 16f), Mathf.CeilToInt(textureSettings.textureHeight / 16f), 1);
 
             mapBuffer.GetData(originalHeightMap);
 
             // Gets the Max and Min Heights.
-            float[] minMaxMap = new float[2];
-            minMaxMap[0] = float.MaxValue;
-            minMaxMap[1] = float.MinValue;
+            //float[] minMaxMap = new float[2];
+            //minMaxMap[0] = float.MaxValue;
+            //minMaxMap[1] = float.MinValue;
 
-            ComputeBuffer minMaxOutputsBuffer = new ComputeBuffer(minMaxMap.Length, sizeof(float));
-            minMaxOutputsBuffer.SetData(minMaxMap);
-            maxMinComputeShader.SetInt("mapWidth", textureSettings.textureWidth);
-            maxMinComputeShader.SetInt("mapHeight", textureSettings.textureHeight);
-            maxMinComputeShader.SetBuffer(0, "map", mapBuffer);
-            maxMinComputeShader.SetBuffer(0, "outputs", minMaxOutputsBuffer);
+            //ComputeBuffer minMaxOutputsBuffer = new ComputeBuffer(minMaxMap.Length, sizeof(float));
+            //minMaxOutputsBuffer.SetData(minMaxMap);
+            //maxMinComputeShader.SetInt("mapWidth", textureSettings.textureWidth);
+            //maxMinComputeShader.SetInt("mapHeight", textureSettings.textureHeight);
+            //maxMinComputeShader.SetBuffer(0, "map", mapBuffer);
+            //maxMinComputeShader.SetBuffer(0, "outputs", minMaxOutputsBuffer);
 
-            maxMinComputeShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 32f), Mathf.CeilToInt(textureSettings.textureHeight / 32f), 1);
-            maxMinComputeShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 32f), Mathf.CeilToInt(textureSettings.textureHeight / 32f), 1);
+            //maxMinComputeShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 32f), Mathf.CeilToInt(textureSettings.textureHeight / 32f), 1);
+            //maxMinComputeShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 32f), Mathf.CeilToInt(textureSettings.textureHeight / 32f), 1);
 
-            minMaxOutputsBuffer.GetData(minMaxMap);
+            //minMaxOutputsBuffer.GetData(minMaxMap);
 
-            MapData.instance.LowestHeight = minMaxMap[0];
-            MapData.instance.HighestHeight = minMaxMap[1];
+            //MapData.instance.LowestHeight = minMaxMap[0];
+            //MapData.instance.HighestHeight = minMaxMap[1];
 
-            minMaxOutputsBuffer.Release();
+            //minHeights.Add(MapData.instance.LowestHeight);
+            //maxHeights.Add(MapData.instance.HighestHeight);
+            //Debug.Log("Map Height Limits: " + minHeights.Average().ToString("###0.#####") + " to " + maxHeights.Average().ToString("###0.#####"));
+
+            //MapData.instance.LowestHeight = 0.15f;
+            //MapData.instance.HighestHeight = 0.5f;
+
+            //minMaxOutputsBuffer.Release();
             mapBuffer.Release();
 
             Array.Copy(originalHeightMap, erodedHeightMap, originalHeightMap.Length);
             Array.Copy(originalHeightMap, mergedHeightMap, originalHeightMap.Length);
-        }
-    }
 
-    void GetMaxAndMinHeights(float[] array, ref float highest, ref float lowest)
-    {
-        for (int i = 0; i < array.Length; i++)
-        {
-            if (array[i] > highest) highest = array[i];
-            if (array[i] < lowest) lowest = array[i];
+            HeightMap2Texture();
         }
     }
 
@@ -663,13 +675,14 @@ public partial class Map : MonoBehaviour
         heightMapComputeShader.SetFloat("xOffset", textureSettings.humidityNoiseSettings.noiseOffset.x);
         heightMapComputeShader.SetFloat("yOffset", textureSettings.humidityNoiseSettings.noiseOffset.y);
         heightMapComputeShader.SetFloat("zOffset", textureSettings.humidityNoiseSettings.noiseOffset.z);
+        heightMapComputeShader.SetFloat("minHeight", MapData.instance.LowestHeight);
+        heightMapComputeShader.SetFloat("maxHeight", MapData.instance.HighestHeight);
         heightMapComputeShader.SetInt("mapWidth", textureSettings.textureWidth);
         heightMapComputeShader.SetInt("mapHeight", textureSettings.textureHeight);
         heightMapComputeShader.SetInt("octaves", textureSettings.humidityNoiseSettings.octaves);
         heightMapComputeShader.SetFloat("lacunarity", textureSettings.humidityNoiseSettings.lacunarity);
         heightMapComputeShader.SetFloat("persistence", textureSettings.humidityNoiseSettings.persistence);
         heightMapComputeShader.SetFloat("multiplier", textureSettings.humidityNoiseSettings.multiplier);
-        heightMapComputeShader.SetFloat("heightRange", textureSettings.humidityNoiseSettings.heightScale);
         heightMapComputeShader.SetInt("ridgedNoise", textureSettings.humidityNoiseSettings.ridged ? 1 : 0);
         heightMapComputeShader.SetFloat("heightExponent", textureSettings.humidityNoiseSettings.heightExponent);
         heightMapComputeShader.SetFloat("layerStrength", 1);
@@ -685,7 +698,6 @@ public partial class Map : MonoBehaviour
         heightMapComputeShader.SetInt("ridgedNoise2", textureSettings.humidityNoiseSettings.ridged ? 1 : 0);
         heightMapComputeShader.SetFloat("heightExponent2", textureSettings.humidityNoiseSettings.heightExponent);
         heightMapComputeShader.SetFloat("layerStrength2", 0);
-        heightMapComputeShader.SetFloat("heightRange2", textureSettings.humidityNoiseSettings.heightScale);
         heightMapComputeShader.SetFloat("domainWarping2", 0);
 
         heightMapComputeShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 8f), Mathf.CeilToInt(textureSettings.textureHeight / 8f), 1);
@@ -731,7 +743,8 @@ public partial class Map : MonoBehaviour
 
             if (heightmapRT == null)
             {
-                heightmapRT = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
+                heightmapRT = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 16, RenderTextureFormat.ARGBHalf);
+                heightmapRT.wrapMode = TextureWrapMode.Repeat;
                 heightmapRT.name = "Heightmap Render Texture";
                 heightmapRT.enableRandomWrite = true;
                 heightmapRT.Create();
@@ -741,25 +754,27 @@ public partial class Map : MonoBehaviour
             heightmap2TextureShader.SetInt("mapWidth", textureSettings.textureWidth);
             heightmap2TextureShader.SetInt("mapHeight", textureSettings.textureHeight);
             heightmap2TextureShader.SetFloat("waterLevel", textureSettings.waterLevel);
+            heightmap2TextureShader.SetFloat("normalScale", 50);
             heightmap2TextureShader.SetFloat("erosionNoiseMerge", textureSettings.erosionNoiseMerge);
 
             heightmap2TextureShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 32f), Mathf.CeilToInt(textureSettings.textureHeight / 32f), 1);
 
-            if (heightmap == null || heightmap.width != textureSettings.textureWidth || heightmap.height != textureSettings.textureHeight)
-                heightmap = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
+            //if (heightmap == null || heightmap.width != textureSettings.textureWidth || heightmap.height != textureSettings.textureHeight)
+            //    heightmap = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
 
-            RenderTexture prevActive = RenderTexture.active;
-            RenderTexture.active = heightmapRT;
-            heightmap.ReadPixels(new Rect(0, 0, heightmapRT.width, heightmapRT.height), 0, 0);
-            RenderTexture.active = prevActive;
-            heightmap.Apply();
-            //heightmap.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "heightmap.png"));
+            //RenderTexture prevActive = RenderTexture.active;
+            //RenderTexture.active = heightmapRT;
+            //heightmap.ReadPixels(new Rect(0, 0, heightmapRT.width, heightmapRT.height), 0, 0);
+            //heightmap.Apply();
 
             mapBufferMerged.GetData(mergedHeightMap);
             mapBuffer.Release();
             mapBufferEroded.Release();
             mapBufferMerged.Release();
             inciseFlowMapBuffer.Release();
+
+            planetSurfaceMaterial.SetTexture("_HeightMap", heightmapRT);
+            planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
         }
         else
         {
@@ -783,10 +798,10 @@ public partial class Map : MonoBehaviour
                     colors[index] = color;
                 }
             }
-            if (heightmap == null || heightmap.width != textureSettings.textureWidth || heightmap.height != textureSettings.textureHeight)
-                heightmap = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
-            heightmap.SetPixels(colors);
-            heightmap.Apply();
+            //if (heightmap == null || heightmap.width != textureSettings.textureWidth || heightmap.height != textureSettings.textureHeight)
+            //    heightmap = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA64, false, true);
+            //heightmap.SetPixels(colors);
+            //heightmap.Apply();
         }
     }
 
@@ -826,10 +841,11 @@ public partial class Map : MonoBehaviour
     {
         planetSurfaceMaterial.SetInt("_IsMainMapSet", 0);
         planetSurfaceMaterial.SetInt("_IsLandMaskSet", 0);
-        planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
-        if (heightmap != null)
-            UnityEngine.Object.Destroy(heightmap);
-        heightmap = null;
+        //planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
+        heightmapRT.Release();
+        if (heightmapRT != null)
+            UnityEngine.Object.Destroy(heightmapRT);
+        heightmapRT = null;
         if (landmap != null)
             UnityEngine.Object.Destroy(landmap);
         landmap = null;
@@ -849,6 +865,7 @@ public partial class Map : MonoBehaviour
         flowMap = null;
         isInciseFlowApplied = false;
 
+        //GenerateHeightMap();
         planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
         planetSurfaceMaterial.SetInt("_IsEroded", 0);
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
@@ -920,9 +937,9 @@ public partial class Map : MonoBehaviour
         }
         else
         {
-            GenerateHeightMap();
-            if (connectivityMap == null) 
-                EstablishHeightmapConnectivity();
+            //GenerateHeightMap();
+            //if (connectivityMap == null) 
+            //    EstablishHeightmapConnectivity();
             CalculateLandMask();
 
             int actualNumberOfRiverSources = inciseFlowSettings.numberOfRivers;
@@ -963,6 +980,7 @@ public partial class Map : MonoBehaviour
             if (randomRiversRT == null)
             {
                 randomRiversRT = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
+                randomRiversRT.wrapMode = TextureWrapMode.Repeat;
                 randomRiversRT.name = "Heightmap Render Texture";
                 randomRiversRT.enableRandomWrite = true;
                 randomRiversRT.Create();
@@ -976,6 +994,8 @@ public partial class Map : MonoBehaviour
                 flowTexture.SetPixels(colors);
                 flowTexture.Apply();
             }
+
+            //float unNormalizedWaterLevel = (textureSettings.waterLevel * (MapData.instance.HighestHeight - MapData.instance.LowestHeight)) + MapData.instance.LowestHeight;
 
             randomPlotRivers.SetInt("mapWidth", textureSettings.textureWidth);
             randomPlotRivers.SetInt("mapHeight", textureSettings.textureHeight);
@@ -1027,6 +1047,8 @@ public partial class Map : MonoBehaviour
         landMask = new int[erodedHeightMap.Length];
         ComputeBuffer landMaskBuffer = new ComputeBuffer(landMask.Length, sizeof(int));
         landMaskBuffer.SetData(landMask);
+
+        //float unNormalizedWaterLevel = (textureSettings.waterLevel * (MapData.instance.HighestHeight - MapData.instance.LowestHeight)) + MapData.instance.LowestHeight;
 
         landMaskShader.SetInt("mapWidth", textureSettings.textureWidth);
         landMaskShader.SetInt("mapHeight", textureSettings.textureHeight);
@@ -1126,6 +1148,8 @@ public partial class Map : MonoBehaviour
             for (int i = 0; i < numPasses; i++)
                 inciseFlowFlowMap.Dispatch(0, numThreadsX, numThreadsY, 1);
 
+            //float unNormalizedWaterLevel = (textureSettings.waterLevel * (MapData.instance.HighestHeight - MapData.instance.LowestHeight)) + MapData.instance.LowestHeight;
+
             inciseFlowErosion.SetInt("mapWidth", textureSettings.textureWidth);
             inciseFlowErosion.SetInt("mapHeight", textureSettings.textureHeight);
             inciseFlowErosion.SetFloat("logBase", inciseFlowSettings.exponent);
@@ -1195,6 +1219,7 @@ public partial class Map : MonoBehaviour
         if (plotRiversRT == null)
         {
             plotRiversRT = new RenderTexture(textureSettings.textureWidth, textureSettings.textureHeight, 32, RenderTextureFormat.ARGBHalf);
+            plotRiversRT.wrapMode = TextureWrapMode.Repeat;
             plotRiversRT.name = "Heightmap Render Texture";
             plotRiversRT.enableRandomWrite = true;
             plotRiversRT.Create();
@@ -1346,6 +1371,8 @@ public partial class Map : MonoBehaviour
 
                 ComputeBuffer outputBuffer = new ComputeBuffer(outputMap.Length, sizeof(float));
                 outputBuffer.SetData(outputMap);
+
+                //float unNormalizedWaterLevel = (textureSettings.waterLevel * (MapData.instance.HighestHeight - MapData.instance.LowestHeight)) + MapData.instance.LowestHeight;
 
                 heightmapConnectivityShader.SetInt("mapWidth", textureSettings.textureWidth);
                 heightmapConnectivityShader.SetInt("mapHeight", textureSettings.textureHeight);
@@ -1502,174 +1529,7 @@ public partial class Map : MonoBehaviour
         }
 
         HeightMap2Texture();
-        planetSurfaceMaterial.SetTexture("_HeightMap", heightmap);
+        //planetSurfaceMaterial.SetTexture("_HeightMap", heightmap);
         planetSurfaceMaterial.SetInt("_IsEroded", 1);
-    }
-
-    public ComputeShader pluvialErosionOutflow;
-    public ComputeShader pluvialErosionVelocitymap;
-    public ComputeShader pluvialErosionErosion;
-    public ComputeShader pluvialErosionSediment;
-
-    IEnumerator PerformPluvialErosion()
-    {
-        bool useCPU = false;
-        int numPasses = 100;
-        int numRiverSources = 100;
-
-        SetupPluvialErodingPanel(numPasses);
-        ShowPluvialErodingPanel();
-        yield return null;
-
-        GenerateHeightMap();
-        inciseFlowMap = new float[erodedHeightMap.Length];
-        GenerateHumiditytMap();
-
-        if (useCPU)
-        {
-            PluvialErosion.instance.numPasses = numPasses;
-            PluvialErosion.instance.numRiverSources = numRiverSources;
-            PluvialErosion.instance.waterScale = 0.1f;
-            PluvialErosion.instance.waterFixedAmount = 0.1f;
-            PluvialErosion.instance.gravity = 10;
-            PluvialErosion.instance.sedimentCapacity = 10000f;
-            PluvialErosion.instance.minTiltAngle = 0.001f;
-            PluvialErosion.instance.sedimentDissolvingConstant = 1f;
-            PluvialErosion.instance.sedimentDepositionConstant = 1f;
-            PluvialErosion.instance.waterEvaporationRetention = 0.95f;
-            PluvialErosion.instance.maxErosionDepth = 0.1f;
-            PluvialErosion.instance.mapWidth = textureSettings.textureWidth;
-            PluvialErosion.instance.mapHeight = textureSettings.textureHeight;
-            PluvialErosion.instance.waterLevel = textureSettings.waterLevel;
-            PluvialErosion.instance.map = this;
-            PluvialErosion.instance.Init(ref erodedHeightMap, ref humidityMap);
-            for (int i = 0; i < numPasses; i++)
-            {
-                PluvialErosion.instance.ErodeStep(ref erodedHeightMap, ref humidityMap);
-
-                HeightMap2Texture();
-                UpdateSurfaceMaterialHeightMap(true);
-                UpdatePluvialErodingPanel(i + 1);
-                yield return null;
-            }
-        }
-        else
-        {
-            if (pluvialErosionOutflow != null && pluvialErosionVelocitymap != null && pluvialErosionErosion != null)
-            {
-                float[] riverSourcesMap = new float[textureSettings.textureWidth * textureSettings.textureHeight];
-                float[] waterHeightMap = new float[textureSettings.textureWidth * textureSettings.textureHeight];
-                float[] sedimentMap = new float[textureSettings.textureWidth * textureSettings.textureHeight];
-                float4[] outflowMap = new float4[textureSettings.textureWidth * textureSettings.textureHeight];
-                float2[] velocityMap = new float2[textureSettings.textureWidth * textureSettings.textureHeight];
-                System.Random random = new System.Random();
-
-                for (int i = 0; i < numRiverSources; i++)
-                {
-                    int randomX = random.Next(textureSettings.textureWidth);
-                    int randomY = random.Next(textureSettings.textureHeight);
-                    int index = randomY * textureSettings.textureWidth + randomX;
-                    float height = erodedHeightMap[index];
-                    if (height <= textureSettings.waterLevel)
-                    {
-                        i--;
-                        continue;
-                    }
-                    float riverSourceStrength = (float)(random.NextDouble());
-                    riverSourcesMap[index] = riverSourceStrength;
-                }
-
-                ComputeBuffer riverSourcesBuffer = new ComputeBuffer(riverSourcesMap.Length, sizeof(float));
-                ComputeBuffer heightMapBuffer = new ComputeBuffer(erodedHeightMap.Length, sizeof(float));
-                ComputeBuffer waterHeightBuffer = new ComputeBuffer(waterHeightMap.Length, sizeof(float));
-                ComputeBuffer sedimentBuffer = new ComputeBuffer(sedimentMap.Length, sizeof(float));
-                ComputeBuffer humidityBuffer = new ComputeBuffer(humidityMap.Length, sizeof(float));
-                ComputeBuffer outflowBuffer = new ComputeBuffer(outflowMap.Length, sizeof(float) * 4);
-                ComputeBuffer velocityBuffer = new ComputeBuffer(velocityMap.Length, sizeof(float) * 2);
-
-                riverSourcesBuffer.SetData(riverSourcesMap);
-                heightMapBuffer.SetData(erodedHeightMap);
-                waterHeightBuffer.SetData(waterHeightMap);
-                sedimentBuffer.SetData(sedimentMap);
-                humidityBuffer.SetData(humidityMap);
-                outflowBuffer.SetData(outflowMap);
-                velocityBuffer.SetData(velocityMap);
-
-                pluvialErosionOutflow.SetInt("mapWidth", textureSettings.textureWidth);
-                pluvialErosionOutflow.SetInt("mapHeight", textureSettings.textureHeight);
-                pluvialErosionOutflow.SetFloat("waterScale", 0.5f);
-                pluvialErosionOutflow.SetFloat("waterFixedAmount", 0.1f);
-                pluvialErosionOutflow.SetFloat("gravity", 200f);
-                pluvialErosionOutflow.SetBuffer(0, "riverSourcesMap", riverSourcesBuffer);
-                pluvialErosionOutflow.SetBuffer(0, "humidityMap", humidityBuffer);
-                pluvialErosionOutflow.SetBuffer(0, "heightMap", heightMapBuffer);
-                pluvialErosionOutflow.SetBuffer(0, "waterHeightMap", waterHeightBuffer);
-                pluvialErosionOutflow.SetBuffer(0, "outflowMap", outflowBuffer);
-
-                pluvialErosionVelocitymap.SetInt("mapWidth", textureSettings.textureWidth);
-                pluvialErosionVelocitymap.SetInt("mapHeight", textureSettings.textureHeight);
-                pluvialErosionVelocitymap.SetBuffer(0, "outflowMap", outflowBuffer);
-                pluvialErosionVelocitymap.SetBuffer(0, "waterHeightMap", waterHeightBuffer);
-                pluvialErosionVelocitymap.SetBuffer(0, "velocityMap", velocityBuffer);
-
-                pluvialErosionErosion.SetInt("mapWidth", textureSettings.textureWidth);
-                pluvialErosionErosion.SetInt("mapHeight", textureSettings.textureHeight);
-                pluvialErosionErosion.SetFloat("minTiltAngle", 0.001f);
-                pluvialErosionErosion.SetFloat("sedimentCapacity", 10f);
-                pluvialErosionErosion.SetFloat("maxErosionDepth", 1f);
-                pluvialErosionErosion.SetFloat("sedimentDissolvingConstant", 0.5f);
-                pluvialErosionErosion.SetFloat("sedimentDepositionConstant", 1f);
-                pluvialErosionErosion.SetBuffer(0, "sedimentMap", sedimentBuffer);
-                pluvialErosionErosion.SetBuffer(0, "heightMap", heightMapBuffer);
-                pluvialErosionErosion.SetBuffer(0, "velocityMap", velocityBuffer);
-                pluvialErosionErosion.SetBuffer(0, "waterHeightMap", waterHeightBuffer);
-
-                pluvialErosionSediment.SetInt("mapWidth", textureSettings.textureWidth);
-                pluvialErosionSediment.SetInt("mapHeight", textureSettings.textureHeight);
-                pluvialErosionSediment.SetFloat("waterEvaporationRetention", 0.85f);
-                pluvialErosionSediment.SetBuffer(0, "sedimentMap", sedimentBuffer);
-                pluvialErosionSediment.SetBuffer(0, "velocityMap", velocityBuffer);
-                pluvialErosionSediment.SetBuffer(0, "waterHeightMap", waterHeightBuffer);
-
-                int numThreadsX = Mathf.CeilToInt(textureSettings.textureWidth / 8f);
-                int numThreadsY = Mathf.CeilToInt(textureSettings.textureHeight / 8f);
-
-                for (int i = 0; i < numPasses; i++)
-                {
-                    pluvialErosionOutflow.Dispatch(0, numThreadsX, numThreadsY, 1);
-                    pluvialErosionVelocitymap.Dispatch(0, numThreadsX, numThreadsY, 1);
-                    pluvialErosionErosion.Dispatch(0, numThreadsX, numThreadsY, 1);
-                    pluvialErosionSediment.Dispatch(0, numThreadsX, numThreadsY, 1);
-
-                    heightMapBuffer.GetData(erodedHeightMap);
-
-                    HeightMap2Texture();
-                    UpdateSurfaceMaterialHeightMap(true);
-                    UpdatePluvialErodingPanel(i + 1);
-                    yield return null;
-                }
-
-                heightMapBuffer.GetData(erodedHeightMap);
-                waterHeightBuffer.GetData(waterHeightMap);
-                sedimentBuffer.GetData(sedimentMap);
-                humidityBuffer.GetData(humidityMap);
-                outflowBuffer.GetData(outflowMap);
-                velocityBuffer.GetData(velocityMap);
-
-                // Release buffers
-                riverSourcesBuffer.Release();
-                heightMapBuffer.Release();
-                waterHeightBuffer.Release();
-                sedimentBuffer.Release();
-                humidityBuffer.Release();
-                outflowBuffer.Release();
-                velocityBuffer.Release();
-            }
-        }
-        HeightMap2Texture();
-        UpdateSurfaceMaterialHeightMap(true);
-
-        HidePluvialErodingPanel();
-        yield return null;
     }
 }

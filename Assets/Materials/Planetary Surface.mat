@@ -87,15 +87,15 @@ Material:
     - _DesertThreshold1: 10
     - _DesertThreshold2: 15
     - _DetailNormalMapScale: 1
-    - _DomainWarping: 0
+    - _DomainWarping: 1
     - _DomainWarping2: 0
     - _DrawType: 0
     - _DstBlend: 0
     - _GlossMapScale: 1
-    - _Glossiness: 0.793
+    - _Glossiness: 0.801
     - _GlossyReflections: 1
-    - _HeightExponent: 2.8358169
-    - _HeightExponent2: 1.717414
+    - _HeightExponent: 1.4876152
+    - _HeightExponent2: 5
     - _HeightRange: 0.36877266
     - _HeightRange2: 0.18669486
     - _HighHumidityLightnessPercentage: 0.549
@@ -107,16 +107,16 @@ Material:
     - _IsHeightmapSet: 0
     - _IsLandmaskSet: 0
     - _IsMainmapSet: 0
-    - _Lacunarity: 1.7030067
-    - _Lacunarity2: 1.8764929
+    - _Lacunarity: 1.5216224
+    - _Lacunarity2: 1.6559017
     - _LandGlossiness: 0.219
     - _LandMetallic: 0
     - _LayerStrength: 1
     - _LayerStrength2: 1
     - _Metallic: 0
     - _Mode: 0
-    - _Multiplier: 2.91859
-    - _Multiplier2: 7.119885
+    - _Multiplier: 2.3308828
+    - _Multiplier2: 3.7898452
     - _NormalScale: 50
     - _OcclusionStrength: 1
     - _OceanColorStep1: 0
@@ -124,11 +124,11 @@ Material:
     - _OceanColorStep3: 1
     - _OceanColorStep4: 1
     - _OceanColorSteps: 3
-    - _Octaves: 19
-    - _Octaves2: 13
+    - _Octaves: 12
+    - _Octaves2: 15
     - _Parallax: 0.02
-    - _Persistence: 0.71948546
-    - _Persistence2: 0.7079654
+    - _Persistence: 0.8322346
+    - _Persistence2: 0.7079656
     - _RidgedNoise: 0
     - _RidgedNoise2: 1
     - _Seed: 282859
@@ -138,7 +138,7 @@ Material:
     - _SrcBlend: 1
     - _TemperatureSeed: 789154
     - _UVSec: 0
-    - _WaterLevel: 0.5543726
+    - _WaterLevel: 0.53476465
     - _XOffset: 0.47400188
     - _XOffset2: 0.52016497
     - _YOffset: 0.5737374

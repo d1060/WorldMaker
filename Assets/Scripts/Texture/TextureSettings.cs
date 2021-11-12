@@ -53,6 +53,10 @@ public class TextureSettings
 
     [Range(0, 1)]
     public float waterLevel = 0.6f;
+    [Range(0, 1)]
+    public float minHeight = 0.15f;
+    [Range(0, 1)]
+    public float maxHeight = 0.5f;
     [Header("Terrain Settings")]
     public NoiseSettings surfaceNoiseSettings;
     public NoiseSettings surfaceNoiseSettings2;
@@ -76,7 +80,6 @@ public class TextureSettings
     public float HeightExponent { get { return selectedLayer == 1 ? surfaceNoiseSettings.heightExponent : surfaceNoiseSettings2.heightExponent; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.heightExponent = value; else surfaceNoiseSettings2.heightExponent = value; } }
     public bool Ridged { get { return selectedLayer == 1 ? surfaceNoiseSettings.ridged : surfaceNoiseSettings2.ridged; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.ridged = value; else surfaceNoiseSettings2.ridged = value; } }
     public bool DomainWarping { get { return selectedLayer == 1 ? surfaceNoiseSettings.domainWarping : surfaceNoiseSettings2.domainWarping; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.domainWarping = value; else surfaceNoiseSettings2.domainWarping = value; } }
-    public float HeightScale { get { return selectedLayer == 1 ? surfaceNoiseSettings.heightScale : surfaceNoiseSettings2.heightScale; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.heightScale = value; else surfaceNoiseSettings2.heightScale = value; } }
     public int SelectedLayer { get { return selectedLayer; } set { selectedLayer = value; } }
 
     public void Clear()
@@ -141,6 +144,8 @@ public class TextureSettings
         surfaceMaterial.SetFloat("_XOffset", surfaceNoiseSettings.noiseOffset.x);
         surfaceMaterial.SetFloat("_YOffset", surfaceNoiseSettings.noiseOffset.y);
         surfaceMaterial.SetFloat("_ZOffset", surfaceNoiseSettings.noiseOffset.z);
+        surfaceMaterial.SetFloat("_MinHeight", MapData.instance.LowestHeight);
+        surfaceMaterial.SetFloat("_MaxHeight", MapData.instance.HighestHeight);
         surfaceMaterial.SetInt("_TemperatureSeed", TemperatureNoiseSeed);
         surfaceMaterial.SetInt("_HumiditySeed", HumidityNoiseSeed);
         surfaceMaterial.SetFloat("_Multiplier", surfaceNoiseSettings.multiplier);
@@ -148,7 +153,6 @@ public class TextureSettings
         surfaceMaterial.SetFloat("_Lacunarity", surfaceNoiseSettings.lacunarity);
         surfaceMaterial.SetFloat("_Persistence", surfaceNoiseSettings.persistence);
         surfaceMaterial.SetFloat("_WaterLevel", waterLevel);
-        surfaceMaterial.SetFloat("_HeightRange", surfaceNoiseSettings.heightScale);
         surfaceMaterial.SetFloat("_DrawType", showTemperature ? 3 : 0);
         surfaceMaterial.SetInt("_RidgedNoise", surfaceNoiseSettings.ridged ? 1 : 0);
         surfaceMaterial.SetFloat("_HeightExponent", surfaceNoiseSettings.heightExponent);
@@ -166,7 +170,6 @@ public class TextureSettings
         surfaceMaterial.SetInt("_RidgedNoise2", surfaceNoiseSettings2.ridged ? 1 : 0);
         surfaceMaterial.SetFloat("_HeightExponent2", surfaceNoiseSettings2.heightExponent);
         surfaceMaterial.SetFloat("_LayerStrength2", surfaceNoiseSettings2.layerStrength);
-        surfaceMaterial.SetFloat("_HeightRange2", surfaceNoiseSettings2.heightScale);
         surfaceMaterial.SetInt("_DomainWarping2", surfaceNoiseSettings2.domainWarping ? 1 : 0);
 
         int landColorSteps = landColorStages.Length < land1Color.Length ? landColorStages.Length : land1Color.Length;

@@ -101,7 +101,7 @@ public class CameraController : MonoBehaviour
             }
             if (!isClickingContextMenu)
             {
-                Debug.Log("Camera Controller: Close Context Menu - Not clicking on Context Menu.");
+                //Debug.Log("Camera Controller: Close Context Menu - Not clicking on Context Menu.");
                 CloseContextMenu();
             }
         }
@@ -154,12 +154,12 @@ public class CameraController : MonoBehaviour
         {
             if (!IsClickGoingToHitAWaypointMarker())
             {
-                Debug.Log("Camera Controller: Open Context Menu.");
+                //Debug.Log("Camera Controller: Open Context Menu.");
                 OpenContextMenu();
             }
             else
             {
-                Debug.Log("Camera Controller: Close Context Menu - Not going to hit a waypoint Marker.");
+                //Debug.Log("Camera Controller: Close Context Menu - Not going to hit a waypoint Marker.");
                 CloseContextMenu();
             }
         }

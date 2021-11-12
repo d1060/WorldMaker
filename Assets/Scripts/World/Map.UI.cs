@@ -230,6 +230,9 @@ public partial class Map : MonoBehaviour
             {
                 mapSettings.Seed = iValue;
                 GenerateSeeds();
+
+                UndoErosion();
+                //GenerateHeightMap();
                 UpdateSurfaceMaterialProperties();
             }
             MapData.instance.Save();
@@ -465,8 +468,12 @@ public partial class Map : MonoBehaviour
             cyclicalNoiseTypeUpdate = false;
         }
         if (!firstUpdate)
+        {
+            UndoErosion();
+            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
-        MapData.instance.Save();
+            MapData.instance.Save();
+        }
     }
 
     public void SetRidgedNoiseType(bool ridged)
@@ -479,8 +486,12 @@ public partial class Map : MonoBehaviour
             cyclicalNoiseTypeUpdate = false;
         }
         if (!firstUpdate)
+        {
+            UndoErosion();
+            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
-        MapData.instance.Save();
+            MapData.instance.Save();
+        }
     }
 
     public void SetFBMNoiseType(bool fbmNoise)
@@ -493,8 +504,12 @@ public partial class Map : MonoBehaviour
             cyclicalNoiseTypeUpdate = false;
         }
         if (!firstUpdate)
+        {
+            UndoErosion();
+            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
-        MapData.instance.Save();
+            MapData.instance.Save();
+        }
     }
 
     public void SetDomainWarpingNoiseType(bool domainWarping)
@@ -507,8 +522,12 @@ public partial class Map : MonoBehaviour
             cyclicalNoiseTypeUpdate = false;
         }
         if (!firstUpdate)
+        {
+            UndoErosion();
+            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
-        MapData.instance.Save();
+            MapData.instance.Save();
+        }
     }
     public void SetTextureHeight(string value)
     {
@@ -546,88 +565,145 @@ public partial class Map : MonoBehaviour
         UpdateNoiseLayerFields();
     }
 
-    public void NewHeightScale(float value)
-    {
-        textureSettings.HeightScale = value;
-        MapData.instance.textureSettings = textureSettings;
-        if (!firstUpdate)
-            UpdateSurfaceMaterialProperties();
-        MapData.instance.Save();
-    }
-
     public void NewMapDetail(float value)
     {
         textureSettings.Detail = value;
-        MapData.instance.textureSettings = textureSettings;
         if (!firstUpdate)
+        {
+            MapData.instance.textureSettings = textureSettings;
+            minHeights.Clear();
+            maxHeights.Clear();
+
+            UndoErosion();
+            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
-        MapData.instance.Save();
+            MapData.instance.Save();
+        }
     }
 
     public void NewMapScaling(float value)
     {
         textureSettings.Scale = value;
-        MapData.instance.textureSettings = textureSettings;
         if (!firstUpdate)
+        {
+            MapData.instance.textureSettings = textureSettings;
+            UndoErosion();
+            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
-        MapData.instance.Save();
+            MapData.instance.Save();
+        }
     }
 
     public void NewSmoothness(float value)
     {
         textureSettings.Persistence = value;
-        MapData.instance.textureSettings = textureSettings;
         if (!firstUpdate)
+        {
+            MapData.instance.textureSettings = textureSettings;
+            UndoErosion();
+            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
-        MapData.instance.Save();
+            MapData.instance.Save();
+        }
     }
 
     public void NewLandMasses(float value)
     {
         textureSettings.Multiplier = value;
-        MapData.instance.textureSettings = textureSettings;
         if (!firstUpdate)
+        {
+            MapData.instance.textureSettings = textureSettings;
+            UndoErosion();
+            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
-        MapData.instance.Save();
+            MapData.instance.Save();
+        }
     }
 
     public void NewLayerStrength(float value)
     {
         textureSettings.LayerStrength = value;
-        MapData.instance.textureSettings = textureSettings;
         if (!firstUpdate)
+        {
+            MapData.instance.textureSettings = textureSettings;
+            UndoErosion();
+            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
-        MapData.instance.Save();
+            MapData.instance.Save();
+        }
     }
 
     public void NewHeightExponent(float value)
     {
         textureSettings.HeightExponent = value;
-        MapData.instance.textureSettings = textureSettings;
         if (!firstUpdate)
+        {
+            MapData.instance.textureSettings = textureSettings;
+            UndoErosion();
+            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
-        MapData.instance.Save();
+            MapData.instance.Save();
+        }
     }
 
     public void NewWaterLevel(float value)
     {
         textureSettings.waterLevel = value;
-        MapData.instance.textureSettings = textureSettings;
         if (!firstUpdate)
+        {
+            MapData.instance.textureSettings = textureSettings;
+            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties(false);
-        MapData.instance.Save();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewHeightLimit(float value)
+    {
+        float value1 = GetUISlider(setupPanelTransform, "Height Limits Slider 1");
+        float value2 = GetUISlider(setupPanelTransform, "Height Limits Slider 2");
+
+        if (value1 <= value2)
+        {
+            textureSettings.minHeight = value1;
+            textureSettings.maxHeight = value2;
+        }
+        else
+        {
+            textureSettings.minHeight = value2;
+            textureSettings.maxHeight = value1;
+        }
+
+        if (!firstUpdate)
+        {
+            MapData.instance.LowestHeight = textureSettings.minHeight;
+            MapData.instance.HighestHeight = textureSettings.maxHeight;
+            MapData.instance.textureSettings = textureSettings;
+
+            //GenerateHeightMap();
+            UpdateSurfaceMaterialProperties(false);
+
+            MapData.instance.Save();
+        }
     }
 
     public void SliderDeselect()
     {
-        if (!firstUpdate)
-            UpdateSurfaceMaterialProperties();
+        //if (!firstUpdate)
+        //{
+        //    UndoErosion();
+        //    GenerateHeightMap();
+        //    UpdateSurfaceMaterialProperties();
+        //}
     }
 
     public void WaterLevelDeselect()
     {
         if (!firstUpdate)
+        {
+            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties(false);
+        }
     }
     #endregion
 
@@ -1218,6 +1294,8 @@ public partial class Map : MonoBehaviour
             // Setup the Landmask Field
             UpdateUIInputField(setupPanelTransform, "LandMask Text Box", System.IO.Path.GetFileName(mapSettings.LandMaskPath));
             UpdateUISlider(setupPanelTransform, "Water Level Slider", textureSettings.waterLevel);
+            UpdateUISlider(setupPanelTransform, "Height Limits Slider 1", MapData.instance.LowestHeight);
+            UpdateUISlider(setupPanelTransform, "Height Limits Slider 2", MapData.instance.HighestHeight);
             UpdateUIToggle(setupPanelTransform, "Toggle Keep Seed", AppData.instance.KeepSeedOnRegenerate);
             UpdateUIToggle(setupPanelTransform, "Toggle Auto Regenerate", AppData.instance.AutoRegenerate);
             UpdateUIToggle(setupPanelTransform, "Toggle Use Images", mapSettings.UseImages);
@@ -1323,7 +1401,6 @@ public partial class Map : MonoBehaviour
             UpdateUISlider(noisePanelTransform, "Smoothness Slider", textureSettings.Persistence);
             UpdateUISlider(noisePanelTransform, "Landmasses Slider", textureSettings.Multiplier);
             UpdateUISlider(noisePanelTransform, "Height Exponent Slider", textureSettings.HeightExponent);
-            UpdateUISlider(noisePanelTransform, "Height Range Slider", textureSettings.HeightScale);
         }
     }
 
@@ -1456,6 +1533,30 @@ public partial class Map : MonoBehaviour
         {
             slider.value = sliderValue;
         }
+    }
+
+    private float GetUISlider(Transform panelTransform, string sliderName)
+    {
+        Transform sliderTransform = null;
+        foreach (Transform setupPanelChildTransform in panelTransform.transform)
+        {
+            if (setupPanelChildTransform.name == sliderName)
+            {
+                sliderTransform = setupPanelChildTransform;
+                break;
+            }
+        }
+
+        if (sliderTransform == null)
+            return 0;
+
+        GameObject sliderGO = sliderTransform.gameObject;
+        Slider slider = sliderGO.GetComponent<Slider>();
+
+        if (slider == null)
+            return 0;
+
+        return slider.value;
     }
 
     private void UpdateUIToggle(Transform panelTransform, string toggleName, bool toggleValue)

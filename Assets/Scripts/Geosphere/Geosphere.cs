@@ -216,7 +216,7 @@ public class Geosphere : MonoBehaviour
             meshFilter.sharedMesh.triangles = tris;
             meshFilter.sharedMesh.uv = GetUVs();
             meshFilter.sharedMesh.normals = GetNormals();
-            meshFilter.sharedMesh.RecalculateTangents();
+            meshFilter.sharedMesh.tangents = GetTangents();
 #if UNITY_EDITOR
         };
 #endif
@@ -260,6 +260,16 @@ public class Geosphere : MonoBehaviour
             uvs.AddRange(geoSphereSector.GetSubFacesUVs());
         }
         return uvs.ToArray();
+    }
+
+    Vector4[] GetTangents()
+    {
+        List<Vector4> tangents = new List<Vector4>();
+        foreach (GeoSphereSector geoSphereSector in sectors)
+        {
+            tangents.AddRange(geoSphereSector.GetSubFacesTangents());
+        }
+        return tangents.ToArray();
     }
 
     Vector3[] GetNormals()

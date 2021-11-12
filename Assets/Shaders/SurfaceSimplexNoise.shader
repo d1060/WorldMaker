@@ -11,13 +11,14 @@ Shader "Noise/PlanetarySurface"
         _XOffset("X Offset", Range(0, 1)) = 0
         _YOffset("Y Offset", Range(0, 1)) = 0
         _ZOffset("Z Offset", Range(0, 1)) = 0
+        _MinHeight("Min Height", Range(0, 1)) = 0.15
+        _MaxHeight("Max Height", Range(0, 1)) = 0.5
         _Multiplier("Noise Multiplier", Range(0.5, 10)) = 1
         _Octaves("Number of Octaves", Range(1, 30)) = 10
         _Lacunarity("Lacunarity", Range(1, 2)) = 1.5
         _Persistence("Persistance", Range(0, 1)) = 0.7
         _LayerStrength("Layer Strength", Range(0, 1)) = 1
         _HeightExponent("Height Exponent", Range(0, 10)) = 1
-        _HeightRange("Height Range", Range(0, 1)) = 0.35
         _RidgedNoise("Ridged Noise", Int) = 0
         _DomainWarping("Domain Warping", Int) = 0
 
@@ -32,7 +33,6 @@ Shader "Noise/PlanetarySurface"
         _LayerStrength2("Layer Strength 2", Range(0, 1)) = 1
         _HeightExponent2("Height Exponent 2", Range(0, 10)) = 1
         _RidgedNoise2("Ridged Noise 2", Int) = 0
-        _HeightRange2("Height Range 2", Range(0, 1)) = 0.35
         _DomainWarping2("Domain Warping2", Int) = 0
 
         //_Color ("Color", Color) = (1,1,1,1)
@@ -141,6 +141,8 @@ Shader "Noise/PlanetarySurface"
         float _XOffset2;
         float _YOffset2;
         float _ZOffset2;
+        float _MinHeight;
+        float _MaxHeight;
         float _Multiplier2;
         int _Octaves2;
         float _Lacunarity2;
@@ -148,7 +150,6 @@ Shader "Noise/PlanetarySurface"
         float _LayerStrength2;
         float _HeightExponent2;
         int _RidgedNoise2;
-        float _HeightRange2;
         //fixed4 _Color;
 
         float _WaterLevel;
@@ -186,7 +187,6 @@ Shader "Noise/PlanetarySurface"
         fixed4 _IceColor;
         fixed4 _DesertColor;
         float _NormalScale;
-        float _HeightRange;
 
         float _DrawType;
         float _XOffset;
@@ -205,20 +205,25 @@ Shader "Noise/PlanetarySurface"
 
         void surf(Input IN, inout SurfaceOutputStandard o)
         {
+            float2 uv = IN.uv_HeightMap;
+            if (uv.x > 2) uv.x -= 2;
+            else if (uv.x > 1) uv.x -= 1;
+
             float height = 0;
             float3 offset = float3(_XOffset, _YOffset, _ZOffset);
             float3 offset2 = float3(_XOffset2, _YOffset2, _ZOffset2);
 
             if (_IsHeightmapSet > 0 || _IsEroded > 0)
             {
-                //float4 c = pow(tex2D(_HeightMap, IN.uv_HeightMap), 1/2.2);
-                float4 c = tex2D(_HeightMap, IN.uv_HeightMap);
+                //float4 c = pow(tex2D(_HeightMap, uv), 1/2.2);
+                float4 c = tex2D(_HeightMap, uv);
                 height = (c.r + c.g + c.b) / 3;
             }
             else
             {
-                height = sphereHeight(IN.uv_HeightMap, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping,
-                                                    offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2);
+                height = sphereHeight(uv, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping,
+                                                    offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2);
+                height = (height - _MinHeight) / (_MaxHeight - _MinHeight);
             }
 
             bool isAboveWater = height > _WaterLevel;
@@ -260,7 +265,10 @@ Shader "Noise/PlanetarySurface"
             else
             {
                 // Temperature
-                float temperature = sphereNoise(IN.uv_HeightMap, offset, _TemperatureSeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, 0, 0);
+                float temperature = sphereNoise(uv, offset, _TemperatureSeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, 0, 0);
+                temperature -= 0.5;
+                temperature *= 10;
+                temperature += 0.5;
                 // Adjusts temperature with a sigmoid curve.
                 temperature = 1 / (1 + pow(20, -temperature));
 
@@ -278,7 +286,7 @@ Shader "Noise/PlanetarySurface"
                     temperature -= 5;
                 }
 
-                float actualLatitude = (abs(IN.uv_HeightMap.y - 0.5) * 2);
+                float actualLatitude = (abs(uv.y - 0.5) * 2);
                 float latitudeTemperature = 0.9 - actualLatitude;
                 //latitudeTemperature = pow(latitudeTemperature, 0.5f);
                 latitudeTemperature *= 40; // From 0 to 10
@@ -286,7 +294,7 @@ Shader "Noise/PlanetarySurface"
                 temperature += latitudeTemperature; // -15 to 45
 
                 // Humidity
-                float humidity = sphereNoise(IN.uv_HeightMap, offset, _HumiditySeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, 0, 0);
+                float humidity = sphereNoise(uv, offset, _HumiditySeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, 0, 0);
                 // Adjusts humidity with a sigmoid curve.
                 humidity = 1 / (1 + pow(20, -humidity));
 
@@ -310,15 +318,19 @@ Shader "Noise/PlanetarySurface"
                 }
                 else
                 {
-                    float2 prevLongitude = float2(IN.uv_HeightMap.x - LONGITUDE_STEP, IN.uv_HeightMap.y);
-                    float2 prevLatitude = float2(IN.uv_HeightMap.x, IN.uv_HeightMap.y - LATITUDE_STEP);
-                    if (prevLongitude.x < 0)
-                        prevLongitude.x += 1;
-                    if (prevLatitude.y < 0)
-                        prevLatitude.y = 0;
+                    float2 prevLongitude = float2(uv.x - LONGITUDE_STEP, uv.y);
+                    float2 prevLatitude = float2(uv.x, uv.y - LATITUDE_STEP);
+                    //float2 nextLongitude = float2(uv.x + LONGITUDE_STEP, uv.y);
+                    //float2 nextLatitude = float2(uv.x, uv.y + LATITUDE_STEP);
+                    if (prevLongitude.x < 0) prevLongitude.x += 1;
+                    if (prevLatitude.y < 0)  prevLatitude.y = 0;
+                    //if (nextLongitude.x > 0) nextLongitude.x -= 1;
+                    //if (nextLatitude.y > 1)  nextLatitude.y = 1;
 
                     float prevLongitudeHeight = 0;
                     float prevLatitudeHeight = 0;
+                    //float nextLongitudeHeight = 0;
+                    //float nextLatitudeHeight = 0;
 
                     if (_IsHeightmapSet > 0 || _IsEroded > 0)
                     {
@@ -328,12 +340,25 @@ Shader "Noise/PlanetarySurface"
                         //float4 prevLatitudeColor = pow(tex2D(_HeightMap, prevLatitude), 1/2.2);
                         float4 prevLatitudeColor = tex2D(_HeightMap, prevLatitude);
                         prevLatitudeHeight = (prevLatitudeColor.r + prevLatitudeColor.g + prevLatitudeColor.b) / 3;
+
+                        //float4 nextLongitudeColor = tex2D(_HeightMap, nextLongitude);
+                        //nextLongitudeHeight = (nextLongitudeColor.r + nextLongitudeColor.g + nextLongitudeColor.b) / 3;
+
+                        //float4 nextLatitudeColor = tex2D(_HeightMap, nextLatitude);
+                        //nextLatitudeHeight = (nextLatitudeColor.r + nextLatitudeColor.g + nextLatitudeColor.b) / 3;
                     }
                     else
                     {
-                        prevLongitudeHeight = sphereHeight(prevLongitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise > 0, _HeightExponent, _LayerStrength, _DomainWarping > 0, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2 > 0, _HeightExponent2, _LayerStrength2, _DomainWarping2 > 0);
-                        prevLatitudeHeight = sphereHeight(prevLatitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _HeightRange, _RidgedNoise > 0, _HeightExponent, _LayerStrength, _DomainWarping > 0, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _HeightRange2, _RidgedNoise2 > 0, _HeightExponent2, _LayerStrength2, _DomainWarping2 > 0);
+                        prevLongitudeHeight = sphereHeight(prevLongitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise > 0, _HeightExponent, _LayerStrength, _DomainWarping > 0, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2 > 0, _HeightExponent2, _LayerStrength2, _DomainWarping2 > 0);
+                        prevLatitudeHeight = sphereHeight(prevLatitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise > 0, _HeightExponent, _LayerStrength, _DomainWarping > 0, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2 > 0, _HeightExponent2, _LayerStrength2, _DomainWarping2 > 0);
+                        //nextLongitudeHeight = sphereHeight(nextLongitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise > 0, _HeightExponent, _LayerStrength, _DomainWarping > 0, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2 > 0, _HeightExponent2, _LayerStrength2, _DomainWarping2 > 0);
+                        //nextLatitudeHeight = sphereHeight(nextLatitude, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise > 0, _HeightExponent, _LayerStrength, _DomainWarping > 0, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2 > 0, _HeightExponent2, _LayerStrength2, _DomainWarping2 > 0);
+                        prevLongitudeHeight = (prevLongitudeHeight - _MinHeight) / (_MaxHeight - _MinHeight);
+                        prevLatitudeHeight = (prevLatitudeHeight - _MinHeight) / (_MaxHeight - _MinHeight);
                     }
+
+                    float verticalDeltaHeight = prevLatitudeHeight - height;
+                    float horizontalDeltaHeight = prevLongitudeHeight - height;
 
                     if (_DrawType == 4) // Drawing a Normal mask.
                     {
@@ -349,10 +374,10 @@ Shader "Noise/PlanetarySurface"
                         else
                         {
                             float4 normalColor = float4(
-                                (prevLongitudeHeight - height) * _NormalScale + 0.5,
-                                (prevLatitudeHeight - height) * _NormalScale + 0.5,
+                                horizontalDeltaHeight * _NormalScale + 0.5,
+                                verticalDeltaHeight * _NormalScale + 0.5,
                                 1,
-                                (prevLongitudeHeight - height) * _NormalScale + 0.5);
+                                horizontalDeltaHeight * _NormalScale + 0.5);
 
                             o.Albedo = normalColor;
                         }
@@ -366,7 +391,7 @@ Shader "Noise/PlanetarySurface"
 
                         if (_IsFlowTexSet)
                         {
-                            flowColor = tex2D(_FlowTex, IN.uv_HeightMap);
+                            flowColor = tex2D(_FlowTex, uv);
                             if ((flowColor.r != 0 || flowColor.g != 0 || flowColor.b != 0) && isAboveWater)
                             {
                                 if (flowColor.a >= 1)
@@ -381,7 +406,7 @@ Shader "Noise/PlanetarySurface"
                         {
                             if (_IsMainmapSet)
                             {
-                                color = tex2D(_MainMap, IN.uv_HeightMap);
+                                color = tex2D(_MainMap, uv);
                             }
                             else
                             {
@@ -411,9 +436,10 @@ Shader "Noise/PlanetarySurface"
                         {
                             o.Metallic = _LandMetallic;
                             o.Smoothness = _LandGlossiness;
+
                             normal = float3(
-                                (prevLongitudeHeight - height) * _NormalScale,
-                                (prevLatitudeHeight - height) * _NormalScale,
+                                horizontalDeltaHeight * _NormalScale + 0.5,
+                                verticalDeltaHeight * _NormalScale + 0.5,
                                 1);
                         }
                         normal = normalize(normal);
@@ -427,7 +453,7 @@ Shader "Noise/PlanetarySurface"
                         {
                             float3 lightRay = float3(1.25, 1.25, 0.7);
                             float projection = dot(normal, lightRay);
-                            color *= projection * 1.5;
+                            color *= projection * 0.75;
                             o.Albedo = color;
                         }
                     }

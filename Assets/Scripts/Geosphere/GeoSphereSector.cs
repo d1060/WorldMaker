@@ -9,6 +9,8 @@ public class GeoSphereSector
     public Vector3 center;
     public Vector2[] uv;
     public Vector3[] normal;
+    public Vector4[] tangent;
+    Vector2 uvCenter;
 
     public int level = 0;
     public int index = -1;
@@ -57,6 +59,7 @@ public class GeoSphereSector
         vec2.Normalize();
 
         normal = new Vector3[] { v1, v2, v3 };
+        tangent = new Vector4[3];
 
         normal[0].Normalize();
         normal[1].Normalize();
@@ -65,17 +68,32 @@ public class GeoSphereSector
         /////////////////////
         // UV Calculations //
         /////////////////////
-        uv = new Vector2[] { p[0].CartesianToPolarRatio(radius),
-                             p[1].CartesianToPolarRatio(radius),
-                             p[2].CartesianToPolarRatio(radius) };
+        uv = new Vector2[] { p[0].CartesianToPolarRatio(1),
+                             p[1].CartesianToPolarRatio(1),
+                             p[2].CartesianToPolarRatio(1) };
+
+        Vector3 pCenter = (p[0] + p[1] + p[2]) / 3;
+        uvCenter = pCenter.CartesianToPolarRatio(1);
+
+        if (uv[0].x < 0.25f && uvCenter.x >= 0.75f) uv[0].x += 1;
+        if (uv[1].x < 0.25f && uvCenter.x >= 0.75f) uv[1].x += 1;
+        if (uv[2].x < 0.25f && uvCenter.x >= 0.75f) uv[2].x += 1;
+
+        if (uv[0].x > 0.75f && uvCenter.x <= 0.25f) uv[0].x -= 1;
+        if (uv[1].x > 0.75f && uvCenter.x <= 0.25f) uv[1].x -= 1;
+        if (uv[2].x > 0.75f && uvCenter.x <= 0.25f) uv[2].x -= 1;
 
         // Adjust for the north and south poles.
-        if (v1.x.IsAlmost(0) && v1.z.IsAlmost(0))
+        if (p[0].y == radius || p[0].y == -radius)
             uv[0].x = (uv[1].x + uv[2].x) / 2;
-        if (v2.x.IsAlmost(0) && v2.z.IsAlmost(0))
+        if (p[1].y == radius || p[1].y == -radius)
             uv[1].x = (uv[0].x + uv[2].x) / 2;
-        if (v3.x.IsAlmost(0) && v3.z.IsAlmost(0))
+        if (p[2].y == radius || p[2].y == -radius)
             uv[2].x = (uv[0].x + uv[1].x) / 2;
+
+        tangent[0] = GetTangent(normal[0], p[0], center, uv[0]);
+        tangent[1] = GetTangent(normal[1], p[1], center, uv[1]);
+        tangent[2] = GetTangent(normal[2], p[2], center, uv[2]);
 
         Vector3 vecBase = p[1] - p[2]; // X vector
         Vector3 vecBaseUnit = vecBase;
@@ -159,37 +177,18 @@ public class GeoSphereSector
         return normals;
     }
 
+    public Vector4[] GetTangents()
+    {
+        Vector4[] tangents = new Vector4[3];
+        int i = 0;
+        tangents[i++] = tangent[0];
+        tangents[i++] = tangent[1];
+        tangents[i++] = tangent[2];
+        return tangents;
+    }
+
     public Vector2[] GetUVs()
     {
-        //Vector3 vec32 = p[1] - p[2]; // X vector
-        //Vector3 bottomMidpoint = ((p[1] + p[2]) / 2);
-        //Vector3 vec123 = p[0] - bottomMidpoint; // Y vector
-
-        //if (level == 0 || subFaces.Count == 0)
-        //{
-        uv[0] = p[0].CartesianToPolarRatio(1);
-        uv[1] = p[1].CartesianToPolarRatio(1);
-        uv[2] = p[2].CartesianToPolarRatio(1);
-
-        Vector3 pCenter = (p[0] + p[1] + p[2]) / 3;
-        Vector2 uvCenter = pCenter.CartesianToPolarRatio(1);
-
-        if (uv[0].x < 0.25f && uvCenter.x >= 0.75f) uv[0].x += 1;
-        if (uv[1].x < 0.25f && uvCenter.x >= 0.75f) uv[1].x += 1;
-        if (uv[2].x < 0.25f && uvCenter.x >= 0.75f) uv[2].x += 1;
-
-        if (uv[0].x > 0.75f && uvCenter.x <= 0.25f) uv[0].x -= 1;
-        if (uv[1].x > 0.75f && uvCenter.x <= 0.25f) uv[1].x -= 1;
-        if (uv[2].x > 0.75f && uvCenter.x <= 0.25f) uv[2].x -= 1;
-
-        // Adjust for the north and south poles.
-        if (p[0].y == radius || p[0].y == -radius)
-            uv[0].x = (uv[1].x + uv[2].x) / 2;
-        if (p[1].y == radius || p[1].y == -radius)
-            uv[1].x = (uv[0].x + uv[2].x) / 2;
-        if (p[2].y == radius || p[2].y == -radius)
-            uv[2].x = (uv[0].x + uv[1].x) / 2;
-
         Vector2[] uvs = new Vector2[3];
         int i = 0;
         uvs[i++] = uv[0];
@@ -233,6 +232,18 @@ public class GeoSphereSector
             uvs.AddRange(face.GetUVs());
         }
         return uvs.ToArray();
+    }
+
+    public Vector4[] GetSubFacesTangents()
+    {
+        if (subFaces.Count == 0)
+            return GetTangents();
+        List<Vector4> tangents = new List<Vector4>();
+        foreach (GeoSphereSector face in subFaces)
+        {
+            tangents.AddRange(face.GetTangents());
+        }
+        return tangents.ToArray();
     }
 
     List<Vector3> SplitLine(Vector3 v1, Vector3 v2, int level, float radius)
@@ -279,5 +290,28 @@ public class GeoSphereSector
             }
         }
         return closestPoint;
+    }
+
+    // Tangents point up. Pole tangents equal the triangle center tangent.
+    Vector4 GetTangent(Vector3 normal, Vector3 point, Vector3 center, Vector2 uv)
+    {
+        Vector4 t;
+        if (point.y != radius && point.y != -radius)
+        {
+            Vector2 dir = new Vector2(point.z, -point.x);
+            dir.Normalize();
+
+            t = new Vector4( dir.x, 0, dir.y, 1 );
+        }
+        else
+        {
+            // for the poles, uses the center instead of the point.
+            Vector2 dir = new Vector2(center.z, -center.x);
+            dir.Normalize();
+
+            t = new Vector4( dir.x, 0, dir.y, 1 );
+        }
+        t.Normalize();
+        return t;
     }
 }

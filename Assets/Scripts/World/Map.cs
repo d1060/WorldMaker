@@ -44,6 +44,9 @@ public partial class Map : MonoBehaviour
     GameObject terrainBrush;
     WaypointController waypointController = null;
 
+    List<float> minHeights = new List<float>();
+    List<float> maxHeights = new List<float>();
+
     public bool ShowBorders { get { return showBorders; } }
     public bool ShowTemperature { get { return showTemperature; } }
     public bool ShowGlobe { get { return showGlobe; } }
@@ -75,6 +78,8 @@ public partial class Map : MonoBehaviour
             inciseFlowSettings = MapData.instance.inciseFlowSettings;
         }
         GranuralizedGeoSphere.instance.Init(50);
+        MapData.instance.LowestHeight = textureSettings.minHeight;
+        MapData.instance.HighestHeight = textureSettings.maxHeight;
 
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
         planetSurfaceMaterial.SetInt("_IsEroded", 0);
@@ -87,6 +92,7 @@ public partial class Map : MonoBehaviour
         UpdateMenuFields();
         UpdateRecentWorldsPanel();
         GenerateSeeds();
+        //GenerateHeightMap();
         UpdateSurfaceMaterialProperties(false);
         LoadTerrainTransformations();
 
@@ -164,7 +170,7 @@ public partial class Map : MonoBehaviour
 
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
         planetSurfaceMaterial.SetInt("_IsEroded", 0);
-        planetSurfaceMaterial.SetInt("_IsHeightMapSet", 0);
+        planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
         planetSurfaceMaterial.SetInt("_IsLandMaskSet", 0);
     }
     #endregion
@@ -705,31 +711,31 @@ public partial class Map : MonoBehaviour
         bool updateFlow = false;
         if (File.Exists(Path.Combine(tempDataFolder, "originalHeightMap.raw")))
         {
-            originalHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "originalHeightMap.raw"), ref MapData.instance.LowestHeight, ref MapData.instance.HighestHeight);
+            originalHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "originalHeightMap.raw"));
             if (originalHeightMap != null && originalHeightMap.Length > 0)
                 updateMaterial = true;
         }
         if (File.Exists(Path.Combine(tempDataFolder, "erodedHeightMap.raw")))
         {
-            float lowest = 0;
-            float highest = 0;
-            erodedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "erodedHeightMap.raw"), ref lowest, ref highest);
+            //float lowest = 0;
+            //float highest = 0;
+            erodedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
             if (erodedHeightMap != null && erodedHeightMap.Length > 0)
                 updateMaterial = true;
         }
         if (File.Exists(Path.Combine(tempDataFolder, "mergedHeightMap.raw")))
         {
-            float lowest = 0;
-            float highest = 0;
-            mergedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "mergedHeightMap.raw"), ref lowest, ref highest);
+            //float lowest = 0;
+            //float highest = 0;
+            mergedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
             if (mergedHeightMap != null && mergedHeightMap.Length > 0)
                 updateMaterial = true;
         }
         if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
         {
-            float lowest = 0;
-            float highest = 0;
-            inciseFlowMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "inciseFlow.raw"), ref lowest, ref highest);
+            //float lowest = 0;
+            //float highest = 0;
+            inciseFlowMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "inciseFlow.raw"));
             if (inciseFlowMap != null && inciseFlowMap.Length > 0)
                 updateMaterial = true;
         }
@@ -763,12 +769,12 @@ public partial class Map : MonoBehaviour
         }
     }
 
-    float[] LoadFloatArrayFromFile(string fileName, ref float lowestFloat, ref float highestFloat)
+    float[] LoadFloatArrayFromFile(string fileName)
     {
         try
         {
-            lowestFloat = float.MaxValue;
-            highestFloat = float.MinValue;
+            //lowestFloat = float.MaxValue;
+            //highestFloat = float.MinValue;
 
             long arrayLength = new System.IO.FileInfo(fileName).Length / sizeof(float);
             float[] array = new float[arrayLength];
@@ -779,8 +785,8 @@ public partial class Map : MonoBehaviour
             {
                 array[i] = BitConverter.ToSingle(byteArray, byteIndex);
                 byteIndex += sizeof(float);
-                if (array[i] > highestFloat) highestFloat = array[i];
-                if (array[i] < lowestFloat) lowestFloat = array[i];
+                //if (array[i] > highestFloat) highestFloat = array[i];
+                //if (array[i] < lowestFloat) lowestFloat = array[i];
             }
             return array;
         }
