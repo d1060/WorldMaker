@@ -380,7 +380,7 @@ public partial class Map : MonoBehaviour
         ReGenerateWorld(AppData.instance.KeepSeedOnRegenerate);
     }
 
-    public void ReGenerateWorld(bool keepSeed)
+    public void ReGenerateWorld(bool keepSeed, bool reGenerateHeightMap = false)
     {
         WaypointController.ClearAll();
 
@@ -396,14 +396,17 @@ public partial class Map : MonoBehaviour
 
         EventSystem eventSystem = cameraController.eventSystemObject.GetComponent<EventSystem>();
         eventSystem.SetSelectedGameObject(null);
-        erodedHeightMap = null;
-        originalHeightMap = null;
-        mergedHeightMap = null;
-        planetSurfaceMaterial.SetInt("_IsEroded", 0);
-        planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
 
-        if (!keepSeed)
+        if (!keepSeed || reGenerateHeightMap)
+        {
+            erodedHeightMap = null;
+            originalHeightMap = null;
+            mergedHeightMap = null;
+            planetSurfaceMaterial.SetInt("_IsEroded", 0);
+            planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+
             GenerateHeightMap();
+        }
 
         UpdateSurfaceMaterialProperties();
     }

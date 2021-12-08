@@ -484,7 +484,7 @@ public partial class Map : MonoBehaviour
             planetSurfaceMaterial.SetInt("_IsLandmaskSet", 0);
         }
 
-        if (resetEroded)
+        if (resetEroded && !mapSettings.UseImages)
         {
             erodedHeightMap = null;
             originalHeightMap = null;
@@ -505,7 +505,45 @@ public partial class Map : MonoBehaviour
         if (!isEroded && mapSettings.HeightMapPath != "" && File.Exists(mapSettings.HeightMapPath))
         {
             Texture2D heightmap = LoadAnyImageFile(mapSettings.HeightMapPath);
+
+            if (heightmapRT != null && (heightmapRT.width != heightmap.width || heightmapRT.height != heightmap.height))
+            {
+                Destroy(heightmapRT);
+                heightmapRT = null;
+            }
+
+            if (heightmapRT == null)
+            {
+                heightmapRT = new RenderTexture(heightmap.width, heightmap.height, 16, RenderTextureFormat.ARGBHalf);
+                heightmapRT.wrapMode = TextureWrapMode.Repeat;
+                heightmapRT.name = "Heightmap Render Texture";
+                heightmapRT.enableRandomWrite = true;
+                heightmapRT.Create();
+            }
+
             Graphics.Blit(heightmap, heightmapRT);
+
+            Texture2HeightMap(ref heightmapRT, ref originalHeightMap);
+
+            if (erodedHeightMap == null || erodedHeightMap.Length != heightmapRT.width * heightmapRT.height)
+                erodedHeightMap = new float[heightmapRT.width * heightmapRT.height];
+            Array.Copy(originalHeightMap, erodedHeightMap, originalHeightMap.Length);
+
+            if (mergedHeightMap == null || mergedHeightMap.Length != heightmapRT.width * heightmapRT.height)
+                mergedHeightMap = new float[heightmapRT.width * heightmapRT.height];
+            Array.Copy(originalHeightMap, mergedHeightMap, originalHeightMap.Length);
+
+            if (textureSettings.textureWidth != heightmapRT.width)
+            {
+                textureSettings.textureWidth = heightmapRT.width;
+                UpdateUIInputField(setupPanelTransform, "Texture Width Text Box", TextureWidth);
+            }
+
+            if (textureSettings.textureHeight != heightmapRT.height)
+            {
+                textureSettings.textureHeight = heightmapRT.height;
+                UpdateUIInputField(setupPanelTransform, "Texture Height Text Box", TextureHeight);
+            }
         }
 
         if (heightmapRT != null)
@@ -576,6 +614,7 @@ public partial class Map : MonoBehaviour
     public ComputeShader maxMinComputeShader;
     public ComputeShader erosionShader;
     public ComputeShader heightmap2TextureShader;
+    public ComputeShader texture2HeightmapShader;
     float[] erodedHeightMap;
     float[] originalHeightMap;
     float[] mergedHeightMap;
@@ -805,6 +844,27 @@ public partial class Map : MonoBehaviour
         }
     }
 
+    void Texture2HeightMap(ref RenderTexture heightmapTexture, ref float[] heightMap)
+    {
+        if (texture2HeightmapShader == null)
+            return;
+
+        heightMap = new float[heightmapTexture.width * heightmapTexture.height];
+
+        ComputeBuffer mapBuffer = new ComputeBuffer(heightMap.Length, sizeof(float));
+        mapBuffer.SetData(heightMap);
+        texture2HeightmapShader.SetBuffer(0, "heightMap", mapBuffer);
+
+        texture2HeightmapShader.SetTexture(0, "renderTexture", heightmapTexture);
+        texture2HeightmapShader.SetInt("mapWidth", heightmapTexture.width);
+        texture2HeightmapShader.SetInt("mapHeight", heightmapTexture.height);
+
+        texture2HeightmapShader.Dispatch(0, Mathf.CeilToInt(heightmapTexture.width / 32f), Mathf.CeilToInt(heightmapTexture.height / 32f), 1);
+
+        mapBuffer.GetData(heightMap);
+        mapBuffer.Release();
+    }
+
     public void RunErosionCycleFromButton()
     {
         StartCoroutine(PerformErosionCycle());
@@ -869,6 +929,12 @@ public partial class Map : MonoBehaviour
         planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
         planetSurfaceMaterial.SetInt("_IsEroded", 0);
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+
+        if (mapSettings.UseImages && heightmapRT != null)
+        {
+            UpdateSurfaceMaterialHeightMap();
+            planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
+        }
     }
 
     Texture2D flowTexture;
@@ -1251,6 +1317,7 @@ public partial class Map : MonoBehaviour
             //flowTexture.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "flowTexture1.png"));
             flowMapBuffer.Release();
         }
+
         if (inciseFlowSettings.plotRiversRandomly)
         {
             //GenerateHeightMap();

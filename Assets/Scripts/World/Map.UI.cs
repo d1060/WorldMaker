@@ -1091,13 +1091,7 @@ public partial class Map : MonoBehaviour
         if (!firstUpdate)
         {
             MapData.instance.Save();
-            if (mapSettings.UseImages)
-            {
-                UpdateSurfaceMaterialHeightMap();
-                UpdateSurfaceMaterialMainMap();
-                UpdateSurfaceMaterialLandMask();
-            }
-            ReGenerateWorld(true);
+            ReGenerateWorld(true, !useImages);
         }
     }
 

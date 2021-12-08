@@ -1,0 +1,22 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+int mapWidth;
+int mapHeight;
+RWTexture2D<float4> renderTexture;
+RWStructuredBuffer<float> heightMap;
+
+[numthreads(32,32,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+        return;
+
+    int index = id.x + id.y * mapWidth;
+
+    float4 rtColor = renderTexture[id.xy];
+
+    heightMap[index] = (rtColor.x + rtColor.y + rtColor.z) / 3;
+}
