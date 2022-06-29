@@ -444,6 +444,12 @@ public partial class Map : MonoBehaviour
                 width = SystemInfo.maxTextureSize;
                 UpdateUIInputField(setupPanelTransform, "Texture Width Text Box", width.ToString());
             }
+
+            if (textureSettings.textureWidth != width)
+            {
+                ResetEroded();
+            }
+
             textureSettings.textureWidth = width;
             MapData.instance.Save();
         }
@@ -546,6 +552,12 @@ public partial class Map : MonoBehaviour
                 height = SystemInfo.maxTextureSize;
                 UpdateUIInputField(setupPanelTransform, "Texture Height Text Box", height.ToString());
             }
+
+            if (textureSettings.textureHeight != height)
+            {
+                ResetEroded();
+            }
+
             textureSettings.textureHeight = height;
             MapData.instance.Save();
         }

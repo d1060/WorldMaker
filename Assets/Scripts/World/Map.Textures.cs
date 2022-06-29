@@ -486,15 +486,20 @@ public partial class Map : MonoBehaviour
 
         if (resetEroded && !mapSettings.UseImages)
         {
-            erodedHeightMap = null;
-            originalHeightMap = null;
-            mergedHeightMap = null;
-            //drainageIndexesMap = null;
-            connectivityMap = null;
-            //basinsHeightMap = null;
-            planetSurfaceMaterial.SetInt("_IsEroded", 0);
-            planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+            ResetEroded();
         }
+    }
+
+    public void ResetEroded()
+    {
+        erodedHeightMap = null;
+        originalHeightMap = null;
+        mergedHeightMap = null;
+        //drainageIndexesMap = null;
+        connectivityMap = null;
+        //basinsHeightMap = null;
+        planetSurfaceMaterial.SetInt("_IsEroded", 0);
+        planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
     }
 
     public void UpdateSurfaceMaterialHeightMap(bool isEroded = false)
@@ -916,9 +921,7 @@ public partial class Map : MonoBehaviour
 
     public void UndoErosion()
     {
-        erodedHeightMap = null;
-        originalHeightMap = null;
-        mergedHeightMap = null;
+        ResetEroded();
         flowTexture = null;
         flowTextureRandom = null;
         inciseFlowMap = null;
@@ -927,8 +930,6 @@ public partial class Map : MonoBehaviour
 
         //GenerateHeightMap();
         planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
-        planetSurfaceMaterial.SetInt("_IsEroded", 0);
-        planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
 
         if (mapSettings.UseImages && heightmapRT != null)
         {
@@ -1434,7 +1435,7 @@ public partial class Map : MonoBehaviour
                 connectivityIndexesBuffer.SetData(connectivityMap);
 
                 ComputeBuffer distanceToWaterBuffer = new ComputeBuffer(distanceToWaterMap.Length, sizeof(float));
-                distanceToWaterBuffer.SetData(connectivityMap);
+                distanceToWaterBuffer.SetData(distanceToWaterMap);
 
                 ComputeBuffer outputBuffer = new ComputeBuffer(outputMap.Length, sizeof(float));
                 outputBuffer.SetData(outputMap);

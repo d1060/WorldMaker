@@ -4,9 +4,9 @@
             "TypeName": "World Names",
             "Type": 0,
             "Syllabes": [
-                { "List": [ "El", "Cen", "My", "Ar", "Kar", "U", "E", "Ska", "Vel", "Ver", "An", "Cy", "Rho", "Fal", "Gara", "Nu", "Y", "Lan" ] },
-                { "List": [ "der", "try", "thr", "d", "pen", "ta", "ran", "ti", "er", "", "gar" ] },
-                { "List": [ "an", "a", "ia", "yn", "tor", "zia", "ren", "gua", "gna", "ne", "reen", "d" ] }
+                { "List": [ "El", "En", "Cen", "My", "Ar", "Kar", "U", "E", "Ska", "Vel", "Ver", "An", "Cy", "Rho", "Fal", "Gara", "Nu", "No", "Y", "Lan", "Zei", "Zy" ] },
+                { "List": [ "der", "dar", "try", "thr", "d", "pen", "ta", "ran", "ti", "er", "", "gar", "lar", "var", "ver", "vor" ] },
+                { "List": [ "an", "a", "ia", "yn", "tor", "zia", "ren", "gua", "gna", "ne", "reen", "d", "i", "e" ] }
             ]
         },
         {

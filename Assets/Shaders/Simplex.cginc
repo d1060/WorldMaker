@@ -39,6 +39,10 @@ float3 grad3(int hash)
     return grad3lut[hash & 15];
 }
 
+#define SPHERE_PI 3.14159265359f
+#define SQRT_3_4 0.8660254f
+
+// Returns a Simplex Noise from 0 to 1.
 float simplexNoise(float3 input, int simplexSeed)
 {
     float n0, n1, n2, n3;
@@ -119,11 +123,14 @@ float simplexNoise(float3 input, int simplexSeed)
     }
 
     noise = 20.0f * (n0 + n1 + n2 + n3);
+	
+	noise /= SQRT_3_4; // 3D Simplex Noise ranges from -Sqrt(3/4) to +Sqrt(3/4)
+	noise += 1;
+    noise /= 2;
+	noise = saturate(noise); // Never below 0, never above 1.
+	
     return noise;
 }
-
-#define SPHERE_PI 3.14159265359f
-#define SQRT_3_4 0.8660254f
 
 float3 UvToSphere(float2 coords)
 {
@@ -160,25 +167,24 @@ float sphereNoise(float2 coords, float3 offset, int seed, float multiplier, int 
             float3 sphereCoordsOffset3 = float3(offset.x * 1.25, offset.z * 1.25, offset.y * 1.25);
 
             float3 qCoords = float3(
-                simplexNoise(sphereCoords + sphereCoordsOffset1, seed) / SQRT_3_4,
-                simplexNoise(sphereCoords + sphereCoordsOffset2, seed) / SQRT_3_4,
-                simplexNoise(sphereCoords + sphereCoordsOffset3, seed) / SQRT_3_4
+                simplexNoise(sphereCoords + sphereCoordsOffset1, seed),
+                simplexNoise(sphereCoords + sphereCoordsOffset2, seed),
+                simplexNoise(sphereCoords + sphereCoordsOffset3, seed)
                 );
 
-            noiseValue = simplexNoise(sphereCoords + qCoords + 1, seed) / SQRT_3_4; // 3D Simplex Noise ranges from -Sqrt(3/4) to +Sqrt(3/4)
+            noiseValue = simplexNoise(sphereCoords + qCoords + 1, seed); // 3D Simplex Noise ranges from -Sqrt(3/4) to +Sqrt(3/4)
         }
         else
-            noiseValue = simplexNoise(sphereCoords, seed) / SQRT_3_4; // 3D Simplex Noise ranges from -Sqrt(3/4) to +Sqrt(3/4)
+            noiseValue = simplexNoise(sphereCoords, seed); // 3D Simplex Noise ranges from -Sqrt(3/4) to +Sqrt(3/4)
 
-        if (ridged)
+        if (ridged > 0)
         {
-            noiseValue = 1 - abs(noiseValue);
+            noiseValue -= 0.5;
+			noiseValue = abs(noiseValue);
+			noiseValue *= 2;
+			noiseValue = 1 - noiseValue;
         }
-        else
-        {
-            noiseValue += 1;
-            noiseValue /= 2;
-        }
+
         noiseValue *= amplitude;
         val += noiseValue;
         maxValue += amplitude;

@@ -19,7 +19,9 @@ public class GradientSliderHandleColorBox : MonoBehaviour, IPointerDownHandler, 
     public bool inverseHeights;
     public GradientSlider sliderParent;
     bool markedForDestroy = false;
-    
+    GameObject gameObjectColorPicker = null;
+
+
     public bool MarkedForDestroy { get { return markedForDestroy; } set { markedForDestroy = value; } }
 
     // Start is called before the first frame update
@@ -50,10 +52,15 @@ public class GradientSliderHandleColorBox : MonoBehaviour, IPointerDownHandler, 
             return;
         }
 
+        bool isColorPickerUp = gameObjectColorPicker != null;
+
         DestroyAllOtherColorPickers();
 
+        if (isColorPickerUp)
+            return;
+
         // Opens up the color picker.
-        GameObject gameObjectColorPicker = GameObject.Instantiate(colorPickerPrefab, transform);
+        gameObjectColorPicker = GameObject.Instantiate(colorPickerPrefab, transform);
         gameObjectColorPicker.name = "Color Picker";
         gameObjectColorPicker.transform.rotation = Quaternion.identity;
         gameObjectColorPicker.transform.localPosition = new Vector3(80, 0, 0);

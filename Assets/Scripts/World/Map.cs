@@ -715,6 +715,12 @@ public partial class Map : MonoBehaviour
         if (File.Exists(Path.Combine(tempDataFolder, "originalHeightMap.raw")))
         {
             originalHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "originalHeightMap.raw"));
+            if (originalHeightMap.Length > 0 && originalHeightMap.Length != textureSettings.textureWidth * textureSettings.textureHeight)
+            {
+                originalHeightMap = null;
+                File.Delete(Path.Combine(tempDataFolder, "originalHeightMap.raw"));
+            }
+
             if (originalHeightMap != null && originalHeightMap.Length > 0)
                 updateMaterial = true;
         }
@@ -723,6 +729,12 @@ public partial class Map : MonoBehaviour
             //float lowest = 0;
             //float highest = 0;
             erodedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
+            if (erodedHeightMap.Length > 0 && erodedHeightMap.Length != textureSettings.textureWidth * textureSettings.textureHeight)
+            {
+                erodedHeightMap = null;
+                File.Delete(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
+            }
+
             if (erodedHeightMap != null && erodedHeightMap.Length > 0)
                 updateMaterial = true;
         }
@@ -731,6 +743,12 @@ public partial class Map : MonoBehaviour
             //float lowest = 0;
             //float highest = 0;
             mergedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
+            if (mergedHeightMap.Length > 0 && mergedHeightMap.Length != textureSettings.textureWidth * textureSettings.textureHeight)
+            {
+                mergedHeightMap = null;
+                File.Delete(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
+            }
+
             if (mergedHeightMap != null && mergedHeightMap.Length > 0)
                 updateMaterial = true;
         }
@@ -739,6 +757,12 @@ public partial class Map : MonoBehaviour
             //float lowest = 0;
             //float highest = 0;
             inciseFlowMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+            if (inciseFlowMap.Length > 0 && inciseFlowMap.Length != textureSettings.textureWidth * textureSettings.textureHeight)
+            {
+                inciseFlowMap = null;
+                File.Delete(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+            }
+
             if (inciseFlowMap != null && inciseFlowMap.Length > 0)
                 updateMaterial = true;
         }
@@ -746,12 +770,24 @@ public partial class Map : MonoBehaviour
         if (File.Exists(Path.Combine(tempDataFolder, "flow.png")))
         {
             flowTexture = LoadAnyImageFile(Path.Combine(tempDataFolder, "flow.png"));
+            if (flowTexture.width != textureSettings.textureWidth || flowTexture.height != textureSettings.textureHeight)
+            {
+                flowTexture = null;
+                File.Delete(Path.Combine(tempDataFolder, "flow.png"));
+            }
+
             if (flowTexture != null)
                 updateFlow = true;
         }
         if (File.Exists(Path.Combine(tempDataFolder, "flowRandom.png")))
         {
             flowTextureRandom = LoadAnyImageFile(Path.Combine(tempDataFolder, "flowRandom.png"));
+            if (flowTextureRandom.width != textureSettings.textureWidth || flowTextureRandom.height != textureSettings.textureHeight)
+            {
+                flowTextureRandom = null;
+                File.Delete(Path.Combine(tempDataFolder, "flowRandom.png"));
+            }
+
             if (flowTextureRandom != null)
                 updateFlow = true;
         }

@@ -61,7 +61,12 @@ public class ColorBox : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
     public void OnPointerUp(PointerEventData eventData)
     {
+        bool isColorPickerUp = gameObjectColorPicker != null;
+
         DestroyAllOtherColorPickers();
+
+        if (isColorPickerUp)
+            return;
 
         // Opens up the color picker.
         gameObjectColorPicker = GameObject.Instantiate(colorPickerPrefab, transform);
