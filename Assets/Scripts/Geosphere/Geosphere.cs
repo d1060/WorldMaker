@@ -200,13 +200,14 @@ public class Geosphere : MonoBehaviour
     {
         // Builds Game Object
         MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>();
-        if (meshFilter == null)
-            return;
 
 #if UNITY_EDITOR
         EditorApplication.delayCall += () =>
         {
 #endif
+            if (meshFilter == null)
+                return;
+
             meshFilter.sharedMesh = new Mesh();
 
             Vector3[] vertices = GetVertexes();
