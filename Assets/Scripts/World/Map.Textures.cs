@@ -625,7 +625,7 @@ public partial class Map : MonoBehaviour
     float[] mergedHeightMap;
     float[] humidityMap;
 
-    void GenerateHeightMap()
+    void GenerateHeightMap(bool resetHeightLimits = false)
     {
         if (originalHeightMap == null)
         {
@@ -637,38 +637,78 @@ public partial class Map : MonoBehaviour
             mapBuffer.SetData(originalHeightMap);
             heightMapComputeShader.SetBuffer(0, "heightMap", mapBuffer);
 
-            heightMapComputeShader.SetInt("seed", textureSettings.surfaceNoiseSettings.seed);
-            heightMapComputeShader.SetFloat("xOffset", textureSettings.surfaceNoiseSettings.noiseOffset.x);
-            heightMapComputeShader.SetFloat("yOffset", textureSettings.surfaceNoiseSettings.noiseOffset.y);
-            heightMapComputeShader.SetFloat("zOffset", textureSettings.surfaceNoiseSettings.noiseOffset.z);
-            heightMapComputeShader.SetFloat("minHeight", MapData.instance.LowestHeight);
-            heightMapComputeShader.SetFloat("maxHeight", MapData.instance.HighestHeight);
-            heightMapComputeShader.SetInt("mapWidth", textureSettings.textureWidth);
-            heightMapComputeShader.SetInt("mapHeight", textureSettings.textureHeight);
-            heightMapComputeShader.SetInt("octaves", textureSettings.surfaceNoiseSettings.octaves);
-            heightMapComputeShader.SetFloat("lacunarity", textureSettings.surfaceNoiseSettings.lacunarity);
-            heightMapComputeShader.SetFloat("persistence", textureSettings.surfaceNoiseSettings.persistence);
-            heightMapComputeShader.SetFloat("multiplier", textureSettings.surfaceNoiseSettings.multiplier);
-            heightMapComputeShader.SetInt("ridgedNoise", textureSettings.surfaceNoiseSettings.ridged ? 1 : 0);
-            heightMapComputeShader.SetFloat("heightExponent", textureSettings.surfaceNoiseSettings.heightExponent);
-            heightMapComputeShader.SetFloat("layerStrength", textureSettings.surfaceNoiseSettings.layerStrength);
-            heightMapComputeShader.SetFloat("domainWarping", textureSettings.surfaceNoiseSettings.domainWarping ? 1 : 0);
-            heightMapComputeShader.SetFloat("xOffset2", textureSettings.surfaceNoiseSettings2.noiseOffset.x);
-            heightMapComputeShader.SetFloat("yOffset2", textureSettings.surfaceNoiseSettings2.noiseOffset.y);
-            heightMapComputeShader.SetFloat("zOffset2", textureSettings.surfaceNoiseSettings2.noiseOffset.z);
-            heightMapComputeShader.SetInt("seed2", textureSettings.surfaceNoiseSettings2.seed);
-            heightMapComputeShader.SetFloat("multiplier2", textureSettings.surfaceNoiseSettings2.multiplier);
-            heightMapComputeShader.SetInt("octaves2", textureSettings.surfaceNoiseSettings2.octaves);
-            heightMapComputeShader.SetFloat("lacunarity2", textureSettings.surfaceNoiseSettings2.lacunarity);
-            heightMapComputeShader.SetFloat("persistence2", textureSettings.surfaceNoiseSettings2.persistence);
-            heightMapComputeShader.SetInt("ridgedNoise2", textureSettings.surfaceNoiseSettings2.ridged ? 1 : 0);
-            heightMapComputeShader.SetFloat("heightExponent2", textureSettings.surfaceNoiseSettings2.heightExponent);
-            heightMapComputeShader.SetFloat("layerStrength2", textureSettings.surfaceNoiseSettings2.layerStrength);
-            heightMapComputeShader.SetFloat("domainWarping2", textureSettings.surfaceNoiseSettings2.domainWarping ? 1 : 0);
+            if (resetHeightLimits)
+            {
+                heightMapComputeShader.SetFloat("_MinimumHeight", 0);
+                heightMapComputeShader.SetFloat("_MaximumHeight", 1);
+            }
+            else
+            {
+                heightMapComputeShader.SetFloat("_MinimumHeight", MapData.instance.LowestHeight);
+                heightMapComputeShader.SetFloat("_MaximumHeight", MapData.instance.HighestHeight);
+            }
+            heightMapComputeShader.SetInt("_MapWidth", textureSettings.textureWidth);
+            heightMapComputeShader.SetInt("_MapHeight", textureSettings.textureHeight);
+
+            heightMapComputeShader.SetFloat("_Seed", textureSettings.surfaceNoiseSettings.seed);
+            heightMapComputeShader.SetFloat("_xOffset", textureSettings.surfaceNoiseSettings.noiseOffset.x);
+            heightMapComputeShader.SetFloat("_yOffset", textureSettings.surfaceNoiseSettings.noiseOffset.y);
+            heightMapComputeShader.SetFloat("_zOffset", textureSettings.surfaceNoiseSettings.noiseOffset.z);
+            heightMapComputeShader.SetInt("_Octaves", textureSettings.surfaceNoiseSettings.octaves);
+            heightMapComputeShader.SetFloat("_Lacunarity", textureSettings.surfaceNoiseSettings.lacunarity);
+            heightMapComputeShader.SetFloat("_Persistence", textureSettings.surfaceNoiseSettings.persistence);
+            heightMapComputeShader.SetFloat("_Multiplier", textureSettings.surfaceNoiseSettings.multiplier);
+            heightMapComputeShader.SetInt("_RidgedNoise", textureSettings.surfaceNoiseSettings.ridged ? 1 : 0);
+            heightMapComputeShader.SetFloat("_HeightExponent", textureSettings.surfaceNoiseSettings.heightExponent);
+            heightMapComputeShader.SetFloat("_LayerStrength", textureSettings.surfaceNoiseSettings.layerStrength);
+            heightMapComputeShader.SetFloat("_DomainWarping", textureSettings.surfaceNoiseSettings.domainWarping);
+
+            heightMapComputeShader.SetFloat("_Seed2", textureSettings.surfaceNoiseSettings2.seed);
+            heightMapComputeShader.SetFloat("_xOffset2", textureSettings.surfaceNoiseSettings2.noiseOffset.x);
+            heightMapComputeShader.SetFloat("_yOffset2", textureSettings.surfaceNoiseSettings2.noiseOffset.y);
+            heightMapComputeShader.SetFloat("_zOffset2", textureSettings.surfaceNoiseSettings2.noiseOffset.z);
+            heightMapComputeShader.SetFloat("_Multiplier2", textureSettings.surfaceNoiseSettings2.multiplier);
+            heightMapComputeShader.SetInt("_Octaves2", textureSettings.surfaceNoiseSettings2.octaves);
+            heightMapComputeShader.SetFloat("_Lacunarity2", textureSettings.surfaceNoiseSettings2.lacunarity);
+            heightMapComputeShader.SetFloat("_Persistence2", textureSettings.surfaceNoiseSettings2.persistence);
+            heightMapComputeShader.SetInt("_RidgedNoise2", textureSettings.surfaceNoiseSettings2.ridged ? 1 : 0);
+            heightMapComputeShader.SetFloat("_HeightExponent2", textureSettings.surfaceNoiseSettings2.heightExponent);
+            heightMapComputeShader.SetFloat("_LayerStrength2", textureSettings.surfaceNoiseSettings2.layerStrength);
+            heightMapComputeShader.SetFloat("_DomainWarping2", textureSettings.surfaceNoiseSettings2.domainWarping);
 
             heightMapComputeShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 16f), Mathf.CeilToInt(textureSettings.textureHeight / 16f), 1);
 
             mapBuffer.GetData(originalHeightMap);
+
+            if (resetHeightLimits)
+            {
+                //ImageTools.SaveTextureFloatArray(originalHeightMap, textureSettings.textureWidth, textureSettings.textureHeight, Path.Combine(Application.persistentDataPath, "Test-Heightmap.png"));
+
+                float minHeight = float.MaxValue;
+                float maxHeight = float.MinValue;
+
+                for (int i = 0; i < originalHeightMap.Length; i += 1)
+                {
+                    if (minHeight > originalHeightMap[i])
+                        minHeight = originalHeightMap[i];
+                    if (maxHeight < originalHeightMap[i])
+                        maxHeight = originalHeightMap[i];
+                }
+
+                if (minHeight != maxHeight)
+                {
+                    MapData.instance.LowestHeight = minHeight;
+                    MapData.instance.HighestHeight = maxHeight;
+                }
+
+                if (MapData.instance.LowestHeight < 0)
+                    MapData.instance.LowestHeight = 0;
+
+                if (MapData.instance.HighestHeight > 1)
+                    MapData.instance.HighestHeight = 1;
+
+                SetHeightLimits();
+            }
 
             // Gets the Max and Min Heights.
             //float[] minMaxMap = new float[2];
@@ -698,12 +738,31 @@ public partial class Map : MonoBehaviour
             //MapData.instance.HighestHeight = 0.5f;
 
             //minMaxOutputsBuffer.Release();
+
             mapBuffer.Release();
 
-            Array.Copy(originalHeightMap, erodedHeightMap, originalHeightMap.Length);
-            Array.Copy(originalHeightMap, mergedHeightMap, originalHeightMap.Length);
+            if (resetHeightLimits)
+            {
+                Array.Clear(originalHeightMap, 0, originalHeightMap.Length);
+                originalHeightMap = null;
+            }
+            else
+            {
+                Array.Copy(originalHeightMap, erodedHeightMap, originalHeightMap.Length);
+                Array.Copy(originalHeightMap, mergedHeightMap, originalHeightMap.Length);
+            }
 
             HeightMap2Texture();
+
+            //if (resetHeightLimits)
+            //{
+            //    textureSettings.UpdateSurfaceMaterialProperties(planetSurfaceMaterial, showTemperature);
+            //    planetSurfaceMaterial.SetFloat("_MinHeight", 0);
+            //    planetSurfaceMaterial.SetFloat("_MaxHeight", 1);
+            //    SaveImageFile(Path.Combine(Application.persistentDataPath, "Test-Shader-Heightmap.png"), SphereShaderDrawType.HeightMap);
+            //    planetSurfaceMaterial.SetFloat("_MinHeight", MapData.instance.LowestHeight);
+            //    planetSurfaceMaterial.SetFloat("_MaxHeight", MapData.instance.HighestHeight);
+            //}
         }
     }
 
@@ -715,34 +774,34 @@ public partial class Map : MonoBehaviour
         humidityBuffer.SetData(originalHeightMap);
         heightMapComputeShader.SetBuffer(0, "heightMap", humidityBuffer);
 
-        heightMapComputeShader.SetInt("seed", textureSettings.humidityNoiseSettings.seed);
-        heightMapComputeShader.SetFloat("xOffset", textureSettings.humidityNoiseSettings.noiseOffset.x);
-        heightMapComputeShader.SetFloat("yOffset", textureSettings.humidityNoiseSettings.noiseOffset.y);
-        heightMapComputeShader.SetFloat("zOffset", textureSettings.humidityNoiseSettings.noiseOffset.z);
-        heightMapComputeShader.SetFloat("minHeight", MapData.instance.LowestHeight);
-        heightMapComputeShader.SetFloat("maxHeight", MapData.instance.HighestHeight);
-        heightMapComputeShader.SetInt("mapWidth", textureSettings.textureWidth);
-        heightMapComputeShader.SetInt("mapHeight", textureSettings.textureHeight);
-        heightMapComputeShader.SetInt("octaves", textureSettings.humidityNoiseSettings.octaves);
-        heightMapComputeShader.SetFloat("lacunarity", textureSettings.humidityNoiseSettings.lacunarity);
-        heightMapComputeShader.SetFloat("persistence", textureSettings.humidityNoiseSettings.persistence);
-        heightMapComputeShader.SetFloat("multiplier", textureSettings.humidityNoiseSettings.multiplier);
-        heightMapComputeShader.SetInt("ridgedNoise", textureSettings.humidityNoiseSettings.ridged ? 1 : 0);
-        heightMapComputeShader.SetFloat("heightExponent", textureSettings.humidityNoiseSettings.heightExponent);
-        heightMapComputeShader.SetFloat("layerStrength", 1);
-        heightMapComputeShader.SetFloat("domainWarping", 0);
-        heightMapComputeShader.SetFloat("xOffset2", textureSettings.humidityNoiseSettings.noiseOffset.x);
-        heightMapComputeShader.SetFloat("yOffset2", textureSettings.humidityNoiseSettings.noiseOffset.y);
-        heightMapComputeShader.SetFloat("zOffset2", textureSettings.humidityNoiseSettings.noiseOffset.z);
-        heightMapComputeShader.SetInt("seed2", textureSettings.humidityNoiseSettings.seed);
-        heightMapComputeShader.SetFloat("multiplier2", textureSettings.humidityNoiseSettings.multiplier);
-        heightMapComputeShader.SetInt("octaves2", textureSettings.humidityNoiseSettings.octaves);
-        heightMapComputeShader.SetFloat("lacunarity2", textureSettings.humidityNoiseSettings.lacunarity);
-        heightMapComputeShader.SetFloat("persistence2", textureSettings.humidityNoiseSettings.persistence);
-        heightMapComputeShader.SetInt("ridgedNoise2", textureSettings.humidityNoiseSettings.ridged ? 1 : 0);
-        heightMapComputeShader.SetFloat("heightExponent2", textureSettings.humidityNoiseSettings.heightExponent);
-        heightMapComputeShader.SetFloat("layerStrength2", 0);
-        heightMapComputeShader.SetFloat("domainWarping2", 0);
+        heightMapComputeShader.SetFloat("_Seed", textureSettings.humidityNoiseSettings.seed);
+        heightMapComputeShader.SetFloat("_xOffset", textureSettings.humidityNoiseSettings.noiseOffset.x);
+        heightMapComputeShader.SetFloat("_yOffset", textureSettings.humidityNoiseSettings.noiseOffset.y);
+        heightMapComputeShader.SetFloat("_zOffset", textureSettings.humidityNoiseSettings.noiseOffset.z);
+        heightMapComputeShader.SetFloat("_MinimumHeight", MapData.instance.LowestHeight);
+        heightMapComputeShader.SetFloat("_MaximumHeight", MapData.instance.HighestHeight);
+        heightMapComputeShader.SetInt("_MapWidth", textureSettings.textureWidth);
+        heightMapComputeShader.SetInt("_MapHeight", textureSettings.textureHeight);
+        heightMapComputeShader.SetInt("_Octaves", textureSettings.humidityNoiseSettings.octaves);
+        heightMapComputeShader.SetFloat("_Lacunarity", textureSettings.humidityNoiseSettings.lacunarity);
+        heightMapComputeShader.SetFloat("_Persistence", textureSettings.humidityNoiseSettings.persistence);
+        heightMapComputeShader.SetFloat("_Multiplier", textureSettings.humidityNoiseSettings.multiplier);
+        heightMapComputeShader.SetInt("_RidgedNoise", textureSettings.humidityNoiseSettings.ridged ? 1 : 0);
+        heightMapComputeShader.SetFloat("_HeightExponent", textureSettings.humidityNoiseSettings.heightExponent);
+        heightMapComputeShader.SetFloat("_LayerStrength", 1);
+        heightMapComputeShader.SetFloat("_DomainWarping", 0);
+        heightMapComputeShader.SetFloat("_xOffset2", textureSettings.humidityNoiseSettings.noiseOffset.x);
+        heightMapComputeShader.SetFloat("_yOffset2", textureSettings.humidityNoiseSettings.noiseOffset.y);
+        heightMapComputeShader.SetFloat("_zOffset2", textureSettings.humidityNoiseSettings.noiseOffset.z);
+        heightMapComputeShader.SetFloat("_Seed2", textureSettings.humidityNoiseSettings.seed);
+        heightMapComputeShader.SetFloat("_Multiplier2", textureSettings.humidityNoiseSettings.multiplier);
+        heightMapComputeShader.SetInt("_Octaves2", textureSettings.humidityNoiseSettings.octaves);
+        heightMapComputeShader.SetFloat("_Lacunarity2", textureSettings.humidityNoiseSettings.lacunarity);
+        heightMapComputeShader.SetFloat("_Persistence2", textureSettings.humidityNoiseSettings.persistence);
+        heightMapComputeShader.SetInt("_RidgedNoise2", textureSettings.humidityNoiseSettings.ridged ? 1 : 0);
+        heightMapComputeShader.SetFloat("_HeightExponent2", textureSettings.humidityNoiseSettings.heightExponent);
+        heightMapComputeShader.SetFloat("_LayerStrength2", 0);
+        heightMapComputeShader.SetFloat("_DomainWarping2", 0);
 
         heightMapComputeShader.Dispatch(0, Mathf.CeilToInt(textureSettings.textureWidth / 8f), Mathf.CeilToInt(textureSettings.textureHeight / 8f), 1);
 

@@ -89,7 +89,7 @@ float4 colorAtElevation(float height, float waterLevel, float temperature, float
     float4 landColor = float4(0, 0, 0, 0);
     if (isLandMastSet > 0)
     {
-        if (isAboveWater)
+        if (height > waterLevel)
         {
             landColor = overlandColor(height, waterLevel, temperature, humidity, desertThreshold1, desertThreshold2, highHumidityLightnessPercentage, desertColor,
                 colorStep1, color1, colorStep2, color2, colorStep3, color3, colorStep4, color4, colorStep5, color5, colorStep6, color6, colorStep7, color7, colorStep8, color8);

@@ -175,7 +175,7 @@ float fbm(float3 coords, float3 offset, int seed, float multiplier, int octaves,
     return val;
 }
 
-float sphereNoise(float2 coords, float3 offset, int seed, float multiplier, int octaves, float lacunarity, float persistence, int ridged, int domainWarping)
+float sphereNoise(float2 coords, float3 offset, int seed, float multiplier, int octaves, float lacunarity, float persistence, int ridged, float domainWarping, float minHeight, float maxHeight)
 {
     float3 sphereCoords = UvToSphere(coords);
 	float noiseValue = 0;
@@ -186,14 +186,18 @@ float sphereNoise(float2 coords, float3 offset, int seed, float multiplier, int 
 		float3 sphereCoordsOffset2 = float3(offset.z, offset.x, offset.y);
 		float3 sphereCoordsOffset3 = float3(offset.x, offset.y, offset.z);
 
-		float3 qCoords = float3(
-			fbm((sphereCoords + sphereCoordsOffset1) / 2, offset, seed, multiplier, octaves, lacunarity, persistence, ridged),
-			fbm((sphereCoords + sphereCoordsOffset2) / 2, offset, seed, multiplier, octaves, lacunarity, persistence, ridged),
-			fbm((sphereCoords + sphereCoordsOffset3) / 2, offset, seed, multiplier, octaves, lacunarity, persistence, ridged)
-			);
+		float qCoordsX = fbm(sphereCoords + sphereCoordsOffset1, offset, seed, multiplier, octaves, lacunarity, persistence, ridged);
+		float qCoordsY = fbm(sphereCoords + sphereCoordsOffset2, offset, seed, multiplier, octaves, lacunarity, persistence, ridged);
+		float qCoordsZ = fbm(sphereCoords + sphereCoordsOffset3, offset, seed, multiplier, octaves, lacunarity, persistence, ridged);
+
+		qCoordsX = (qCoordsX - minHeight) / (maxHeight - minHeight);
+		qCoordsY = (qCoordsY - minHeight) / (maxHeight - minHeight);
+		qCoordsZ = (qCoordsZ - minHeight) / (maxHeight - minHeight);
+
+		float3 qCoords = float3(qCoordsX, qCoordsY, qCoordsZ);
 
 		//if (domainWarping == 1)
-			noiseValue = fbm((sphereCoords + qCoords) / 2, offset, seed, multiplier, octaves, lacunarity, persistence, ridged);
+			noiseValue = fbm(sphereCoords + domainWarping * qCoords, offset, seed, multiplier, octaves, lacunarity, persistence, ridged);
 		//else
 		//{
 		//	float3 sphereCoordsOffset4 = float3(offset.z, offset.x, offset.y);
@@ -201,9 +205,9 @@ float sphereNoise(float2 coords, float3 offset, int seed, float multiplier, int 
 		//	float3 sphereCoordsOffset6 = float3(offset.y * 0.75, offset.x * 0.75, offset.z * 0.75);
 
 		//	float3 rCoords = float3(
-		//		fbm(qCoords.x * 0.8 + sphereCoordsOffset4, offset, seed, multiplier, octaves, lacunarity, persistence, ridged),
-		//		fbm(qCoords.y * 0.8 + sphereCoordsOffset5, offset, seed, multiplier, octaves, lacunarity, persistence, ridged),
-		//		fbm(qCoords.z * 0.8 + sphereCoordsOffset6, offset, seed, multiplier, octaves, lacunarity, persistence, ridged)
+		//		fbm(qCoords.x * qCoords + sphereCoordsOffset4, offset, seed, multiplier, octaves, lacunarity, persistence, ridged),
+		//		fbm(qCoords.y * qCoords + sphereCoordsOffset5, offset, seed, multiplier, octaves, lacunarity, persistence, ridged),
+		//		fbm(qCoords.z * qCoords + sphereCoordsOffset6, offset, seed, multiplier, octaves, lacunarity, persistence, ridged)
 		//		);
 
 		//	noiseValue = fbm((sphereCoords + rCoords) / 2, offset, seed, multiplier, octaves, lacunarity, persistence, ridged);
@@ -219,24 +223,24 @@ float sphereNoise(float2 coords, float3 offset, int seed, float multiplier, int 
 		noiseValue = 1 - (abs(noiseValue - 0.5) * 2);
 	}
 
-    if (noiseValue < 0) noiseValue = 0;
+	noiseValue = (noiseValue - minHeight) / (maxHeight - minHeight);
 
     return noiseValue;
 }
 
-float sphereHeight(float2 coords, float3 offset, int seed, float multiplier, int octaves, float lacunarity, float persistence, int ridged, float heightExponent, float layerStrength, int domainWarping,
-                                  float3 offset2, int seed2, float multiplier2, int octaves2, float lacunarity2, float persistence2, int ridged2, float heightExponent2, float layerStrength2, int domainWarping2 )
+float sphereHeight(float2 coords, float3 offset, int seed, float multiplier, int octaves, float lacunarity, float persistence, int ridged, float heightExponent, float layerStrength, float domainWarping,
+                                  float3 offset2, int seed2, float multiplier2, int octaves2, float lacunarity2, float persistence2, int ridged2, float heightExponent2, float layerStrength2, float domainWarping2, float minHeight, float maxHeight )
 {
     float height = 0;
     if (layerStrength > 0)
     {
-        float height1 = sphereNoise(coords, offset, seed, multiplier, octaves, lacunarity, persistence, ridged, domainWarping);
+        float height1 = sphereNoise(coords, offset, seed, multiplier, octaves, lacunarity, persistence, ridged, domainWarping, minHeight, maxHeight);
         height1 = pow(abs(height1), heightExponent);
         height += height1 * layerStrength;
     }
     if (layerStrength2 > 0)
     {
-        float height2 = sphereNoise(coords, offset2, seed2, multiplier2, octaves2, lacunarity2, persistence2, ridged2, domainWarping2);
+        float height2 = sphereNoise(coords, offset2, seed2, multiplier2, octaves2, lacunarity2, persistence2, ridged2, domainWarping2, minHeight, maxHeight);
         height2 = pow(abs(height2), heightExponent2);
         height += height2 * layerStrength2;
     }

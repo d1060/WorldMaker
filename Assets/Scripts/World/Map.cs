@@ -92,7 +92,7 @@ public partial class Map : MonoBehaviour
         UpdateMenuFields();
         UpdateRecentWorldsPanel();
         GenerateSeeds();
-        //GenerateHeightMap();
+        //GenerateHeightMap(true);
         UpdateSurfaceMaterialProperties(false);
         LoadTerrainTransformations();
 
@@ -392,6 +392,7 @@ public partial class Map : MonoBehaviour
             NameGenerator.instance.SetSeed(namesSeed);
             MapData.instance.WorldName = NameGenerator.instance.GetName(NameGeneratorType.Types.World);
             ApplyWorldName();
+            UpdateUIInputField(setupPanelTransform, "Seed Text Box", mapSettings.Seed.ToString());
         }
 
         EventSystem eventSystem = cameraController.eventSystemObject.GetComponent<EventSystem>();
@@ -405,7 +406,8 @@ public partial class Map : MonoBehaviour
             planetSurfaceMaterial.SetInt("_IsEroded", 0);
             planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
 
-            GenerateHeightMap();
+            GenerateHeightMap(true);
+            //GenerateHeightMap();
         }
 
         UpdateSurfaceMaterialProperties();
@@ -504,9 +506,9 @@ public partial class Map : MonoBehaviour
     void GenerateSeeds()
     {
         System.Random masterRandom = new System.Random(mapSettings.Seed);
-        textureSettings.surfaceNoiseSettings.seed = (int)(masterRandom.NextDouble() * 1000000); // Seeds of value greater than 8,388,600 may be lost due to the intrinsic conversion into float when passing into a material.
+        textureSettings.surfaceNoiseSettings.seed = (float)(masterRandom.NextDouble() * 10000); // Seeds of value greater than 8,388,600 may be lost due to the intrinsic conversion into float when passing into a material.
         textureSettings.surfaceNoiseSettings.noiseOffset = new Vector3((float)masterRandom.NextDouble(), (float)masterRandom.NextDouble(), (float)masterRandom.NextDouble());
-        textureSettings.surfaceNoiseSettings2.seed = (int)(masterRandom.NextDouble() * 1000000); // Seeds of value greater than 8,388,600 may be lost due to the intrinsic conversion into float when passing into a material.
+        textureSettings.surfaceNoiseSettings2.seed = (float)(masterRandom.NextDouble() * 10000); // Seeds of value greater than 8,388,600 may be lost due to the intrinsic conversion into float when passing into a material.
         textureSettings.surfaceNoiseSettings2.noiseOffset = new Vector3((float)masterRandom.NextDouble(), (float)masterRandom.NextDouble(), (float)masterRandom.NextDouble());
         textureSettings.TemperatureNoiseSeed = (int)(masterRandom.NextDouble() * 1000000);
         textureSettings.HumidityNoiseSeed = (int)(masterRandom.NextDouble() * 1000000);
@@ -724,6 +726,7 @@ public partial class Map : MonoBehaviour
             if (originalHeightMap != null && originalHeightMap.Length > 0)
                 updateMaterial = true;
         }
+
         if (File.Exists(Path.Combine(tempDataFolder, "erodedHeightMap.raw")))
         {
             //float lowest = 0;
@@ -738,6 +741,7 @@ public partial class Map : MonoBehaviour
             if (erodedHeightMap != null && erodedHeightMap.Length > 0)
                 updateMaterial = true;
         }
+
         if (File.Exists(Path.Combine(tempDataFolder, "mergedHeightMap.raw")))
         {
             //float lowest = 0;
@@ -752,6 +756,7 @@ public partial class Map : MonoBehaviour
             if (mergedHeightMap != null && mergedHeightMap.Length > 0)
                 updateMaterial = true;
         }
+
         if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
         {
             //float lowest = 0;

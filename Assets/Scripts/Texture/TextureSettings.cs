@@ -79,7 +79,7 @@ public class TextureSettings
     public float LayerStrength { get { return selectedLayer == 1 ? surfaceNoiseSettings.layerStrength : surfaceNoiseSettings2.layerStrength; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.layerStrength = value; else surfaceNoiseSettings2.layerStrength = value; } }
     public float HeightExponent { get { return selectedLayer == 1 ? surfaceNoiseSettings.heightExponent : surfaceNoiseSettings2.heightExponent; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.heightExponent = value; else surfaceNoiseSettings2.heightExponent = value; } }
     public bool Ridged { get { return selectedLayer == 1 ? surfaceNoiseSettings.ridged : surfaceNoiseSettings2.ridged; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.ridged = value; else surfaceNoiseSettings2.ridged = value; } }
-    public bool DomainWarping { get { return selectedLayer == 1 ? surfaceNoiseSettings.domainWarping : surfaceNoiseSettings2.domainWarping; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.domainWarping = value; else surfaceNoiseSettings2.domainWarping = value; } }
+    public float DomainWarping { get { return selectedLayer == 1 ? surfaceNoiseSettings.domainWarping : surfaceNoiseSettings2.domainWarping; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.domainWarping = value; else surfaceNoiseSettings2.domainWarping = value; } }
     public int SelectedLayer { get { return selectedLayer; } set { selectedLayer = value; } }
 
     public void Clear()
@@ -140,12 +140,20 @@ public class TextureSettings
         if (surfaceMaterial == null)
             return;
 
-        surfaceMaterial.SetInt("_Seed", surfaceNoiseSettings.seed);
+        surfaceMaterial.SetFloat("_Seed", surfaceNoiseSettings.seed);
         surfaceMaterial.SetFloat("_XOffset", surfaceNoiseSettings.noiseOffset.x);
         surfaceMaterial.SetFloat("_YOffset", surfaceNoiseSettings.noiseOffset.y);
         surfaceMaterial.SetFloat("_ZOffset", surfaceNoiseSettings.noiseOffset.z);
-        surfaceMaterial.SetFloat("_MinHeight", MapData.instance.LowestHeight);
-        surfaceMaterial.SetFloat("_MaxHeight", MapData.instance.HighestHeight);
+        if (MapData.instance.LowestHeight <= MapData.instance.HighestHeight)
+        {
+            surfaceMaterial.SetFloat("_MinHeight", MapData.instance.LowestHeight);
+            surfaceMaterial.SetFloat("_MaxHeight", MapData.instance.HighestHeight);
+        }
+        else
+        {
+            surfaceMaterial.SetFloat("_MinHeight", MapData.instance.HighestHeight);
+            surfaceMaterial.SetFloat("_MaxHeight", MapData.instance.LowestHeight);
+        }
         surfaceMaterial.SetInt("_TemperatureSeed", TemperatureNoiseSeed);
         surfaceMaterial.SetInt("_HumiditySeed", HumidityNoiseSeed);
         surfaceMaterial.SetFloat("_Multiplier", surfaceNoiseSettings.multiplier);
@@ -157,9 +165,9 @@ public class TextureSettings
         surfaceMaterial.SetInt("_RidgedNoise", surfaceNoiseSettings.ridged ? 1 : 0);
         surfaceMaterial.SetFloat("_HeightExponent", surfaceNoiseSettings.heightExponent);
         surfaceMaterial.SetFloat("_LayerStrength", surfaceNoiseSettings.layerStrength);
-        surfaceMaterial.SetInt("_DomainWarping", surfaceNoiseSettings.domainWarping ? 1 : 0);
+        surfaceMaterial.SetFloat("_DomainWarping", surfaceNoiseSettings.domainWarping);
 
-        surfaceMaterial.SetInt("_Seed2", surfaceNoiseSettings2.seed);
+        surfaceMaterial.SetFloat("_Seed2", surfaceNoiseSettings2.seed);
         surfaceMaterial.SetFloat("_XOffset2", surfaceNoiseSettings2.noiseOffset.x);
         surfaceMaterial.SetFloat("_YOffset2", surfaceNoiseSettings2.noiseOffset.y);
         surfaceMaterial.SetFloat("_ZOffset2", surfaceNoiseSettings2.noiseOffset.z);
@@ -170,7 +178,7 @@ public class TextureSettings
         surfaceMaterial.SetInt("_RidgedNoise2", surfaceNoiseSettings2.ridged ? 1 : 0);
         surfaceMaterial.SetFloat("_HeightExponent2", surfaceNoiseSettings2.heightExponent);
         surfaceMaterial.SetFloat("_LayerStrength2", surfaceNoiseSettings2.layerStrength);
-        surfaceMaterial.SetInt("_DomainWarping2", surfaceNoiseSettings2.domainWarping ? 1 : 0);
+        surfaceMaterial.SetFloat("_DomainWarping2", surfaceNoiseSettings2.domainWarping);
 
         int landColorSteps = landColorStages.Length < land1Color.Length ? landColorStages.Length : land1Color.Length;
         if (landColorSteps > 8) landColorSteps = 8;

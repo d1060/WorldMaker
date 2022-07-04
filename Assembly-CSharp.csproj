@@ -173,6 +173,7 @@
     <None Include="Assets\Shaders\SurfaceSimplexNoise.shader" />
     <None Include="Assets\Shaders\PBRLib.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Surface.cginc" />
+    <None Include="Assets\Shaders\Perlin.cginc" />
     <None Include="Assets\Shaders\ComputeShaders\HeightMap2Texture.compute" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Following Characters.txt" />
     <None Include="Assets\Shaders\ComputeShaders\PlotRivers.compute" />

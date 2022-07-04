@@ -115,6 +115,9 @@ public class FlatMap : MonoBehaviour
 #if UNITY_EDITOR
         EditorApplication.delayCall += () => {
 #endif
+            if (gameObject == null)
+                return;
+
             MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>();
             meshFilter.sharedMesh = new Mesh();
             meshFilter.sharedMesh.vertices = vertices;

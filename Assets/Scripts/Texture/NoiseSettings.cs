@@ -6,7 +6,7 @@ using System;
 [Serializable]
 public class NoiseSettings
 {
-    public int seed = 1;
+    public float seed = 1.324653f;
     [Range(1, 40)]
     public int octaves = 8;
     [Range(0.1f, 2.0f)]
@@ -23,5 +23,5 @@ public class NoiseSettings
     public float heightExponent = 1;
     public Vector3 noiseOffset;
     public bool ridged = false;
-    public bool domainWarping = false;
+    public float domainWarping = 1;
 }
