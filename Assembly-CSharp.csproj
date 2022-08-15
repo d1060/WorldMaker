@@ -87,6 +87,7 @@
     <Compile Include="Assets\Scripts\Geosphere\GeoSphereBaseFaces.cs" />
     <Compile Include="Assets\Scripts\Erosion\PlotRivers.cs" />
     <Compile Include="Assets\Scripts\Menu\GradientSliderHandle.cs" />
+    <Compile Include="Assets\Scripts\Menu\MapSlider.cs" />
     <Compile Include="Assets\Scripts\Erosion\FillBasins.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\Events\HSVChangedEvent.cs" />
     <Compile Include="Assets\Scripts\Texture\NoiseSettings.cs" />
@@ -109,6 +110,7 @@
     <Compile Include="Assets\Scripts\Menu\ContextMenu.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorLabel.cs" />
     <Compile Include="Assets\StandaloneFileBrowser\StandaloneFileBrowser.cs" />
+    <Compile Include="Assets\Scripts\Texture\TextureScale.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorPickerPresets.cs" />
     <Compile Include="Assets\Scripts\Texture\TextureSettings.cs" />
     <Compile Include="Assets\StandaloneFileBrowser\StandaloneFileBrowserLinux.cs" />

@@ -158,11 +158,7 @@ public partial class Map : MonoBehaviour
             exportRT.Create();
         }
 
-        Texture2D source;
-        if (drawMode != SphereShaderDrawType.HeightMap)
-            source = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA32, false);
-        else
-            source = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGB48, false);
+        Texture2D source = new Texture2D(textureSettings.textureWidth, textureSettings.textureHeight, TextureFormat.RGBA32, false);
 
         RenderTexture prevActive = RenderTexture.active;
         RenderTexture.active = exportRT;
@@ -191,6 +187,16 @@ public partial class Map : MonoBehaviour
         string saveFile = Path.GetFileNameWithoutExtension(savedFile);
         //string saveExtension = Path.GetExtension(savedFile);
 
+        string baseFolder = Path.Combine(savePath, saveFile, "Surface");
+        if (AppData.instance.SaveMainMap || AppData.instance.SaveLandMask)
+            if (!Directory.Exists(baseFolder))
+                Directory.CreateDirectory(baseFolder);
+
+        string bumpBaseFolder = Path.Combine(savePath, saveFile, "Bump");
+        if (AppData.instance.SaveHeightMap)
+            if (!Directory.Exists(bumpBaseFolder))
+                Directory.CreateDirectory(bumpBaseFolder);
+
         // Gets the Main Map.
         Texture2D mainMap = ShaderToTexture(SphereShaderDrawType.LandNormal);
         // Gets the Landmask.
@@ -203,25 +209,29 @@ public partial class Map : MonoBehaviour
             ApplyTransparency(mainMap, landMask);
         }
 
-        string baseFolder = Path.Combine(savePath, saveFile, "Surface");
-        if (!Directory.Exists(baseFolder))
-            Directory.CreateDirectory(baseFolder);
-
-        string bumpBaseFolder = Path.Combine(savePath, saveFile, "Bump");
-        if (!Directory.Exists(bumpBaseFolder))
-            Directory.CreateDirectory(bumpBaseFolder);
-
-        Texture2D mainMapCubemapResized = null;
-        Texture2D landMaskCubemapResized = null;
-        Texture2D bumpMapCubemapResized = null;
+        //Texture2D mainMapCubemapResized = null;
+        //Texture2D landMaskCubemapResized = null;
+        //Texture2D bumpMapCubemapResized = null;
         if (AppData.instance.CubemapDivisions >= 1)
         {
             int cubemapResizeDimensions = (int)Mathf.Pow(2, AppData.instance.CubemapDivisions) * AppData.instance.CubemapDimension;
 
-            mainMapCubemapResized = mainMap.ResizePixels(cubemapResizeDimensions, cubemapResizeDimensions, true);
+            //mainMapCubemapResized = mainMap.ResizePixels(cubemapResizeDimensions, cubemapResizeDimensions, true);
+
+            //bumpMapCubemapResized = bumpMap.ResizePixels(cubemapResizeDimensions, cubemapResizeDimensions, true);
+            //bumpMapCubemapResized.SaveAsPNG(Path.Combine(bumpBaseFolder, "base-bump-resized.png"));
+
+            //if (!AppData.instance.TransparentOceans)
+            //    landMaskCubemapResized = landMask.ResizePixels(cubemapResizeDimensions, cubemapResizeDimensions, true);
+
+            TextureScale.Bilinear(mainMap, cubemapResizeDimensions, cubemapResizeDimensions);
+
+            TextureScale.Bilinear(bumpMap, cubemapResizeDimensions, cubemapResizeDimensions);
+
             if (!AppData.instance.TransparentOceans)
-                landMaskCubemapResized = landMask.ResizePixels(cubemapResizeDimensions, cubemapResizeDimensions, true);
-            bumpMapCubemapResized = bumpMap.ResizePixels(cubemapResizeDimensions, cubemapResizeDimensions, true);
+            {
+                TextureScale.Bilinear(landMask, cubemapResizeDimensions, cubemapResizeDimensions);
+            }
         }
 
         for (int faceCount = 0; faceCount < 6; faceCount++)
@@ -247,48 +257,58 @@ public partial class Map : MonoBehaviour
             }
 
             string folder = Path.Combine(savePath, saveFile, "Surface", baseSubfolder);
-            if (!Directory.Exists(folder))
-                Directory.CreateDirectory(folder);
+            if (AppData.instance.SaveMainMap || AppData.instance.SaveLandMask)
+                if (!Directory.Exists(folder))
+                    Directory.CreateDirectory(folder);
 
             string bumpFolder = Path.Combine(savePath, saveFile, "Bump", baseSubfolder);
-            if (!Directory.Exists(bumpFolder))
-                Directory.CreateDirectory(bumpFolder);
+            if (AppData.instance.SaveHeightMap)
+                if (!Directory.Exists(bumpFolder))
+                    Directory.CreateDirectory(bumpFolder);
 
-            if (AppData.instance.TransparentOceans)
-                ExportCubeMapFile(mainMap, folder, "", AppData.instance.CubemapDimension, faceCount, 0, 0, 0, true);
-            if (!AppData.instance.TransparentOceans)
+            if (AppData.instance.SaveHeightMap)
+                ExportCubeMapFile(ref bumpMap, bumpFolder, "", AppData.instance.CubemapDimension, faceCount, 0, 0, 0, true);
+
+            if (AppData.instance.TransparentOceans || (AppData.instance.SaveMainMap && !AppData.instance.SaveLandMask))
+                ExportCubeMapFile(ref mainMap, folder, "", AppData.instance.CubemapDimension, faceCount, 0, 0, 0, true);
+            else
             {
-                ExportCubeMapFile(mainMap, folder, "_c", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
-                ExportCubeMapFile(landMask, folder, "_a", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
+                ExportCubeMapFile(ref mainMap, folder, "_c", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
+                ExportCubeMapFile(ref landMask, folder, "_a", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
             }
-            ExportCubeMapFile(bumpMap, bumpFolder, "", AppData.instance.CubemapDimension, faceCount, 0, 0, 0, true);
 
             for (int i = 1; i < AppData.instance.CubemapDivisions; i++)
             {
-                if (AppData.instance.TransparentOceans)
-                    SaveMapSubDivisions(mainMapCubemapResized, faceCount, i, folder, "", true);
-                if (!AppData.instance.TransparentOceans)
+                if (AppData.instance.SaveHeightMap)
+                    SaveMapSubDivisions(ref bumpMap, faceCount, i, bumpFolder, "", true);
+
+                if (AppData.instance.TransparentOceans || (AppData.instance.SaveMainMap && !AppData.instance.SaveLandMask))
+                    SaveMapSubDivisions(ref mainMap, faceCount, i, folder, "", true);
+                else
                 {
-                    SaveMapSubDivisions(mainMapCubemapResized, faceCount, i, folder, "_c");
-                    SaveMapSubDivisions(landMaskCubemapResized, faceCount, i, folder, "_a");
+                    SaveMapSubDivisions(ref mainMap, faceCount, i, folder, "_c");
+                    SaveMapSubDivisions(ref landMask, faceCount, i, folder, "_a");
                 }
-                SaveMapSubDivisions(bumpMapCubemapResized, faceCount, i, bumpFolder, "", true);
             }
         }
 
-        mainMap = mainMap.ResizePixels(AppData.instance.CubemapDimension, AppData.instance.CubemapDimension);
+        TextureScale.Bilinear(mainMap, AppData.instance.CubemapDimension, AppData.instance.CubemapDimension);
         if (!AppData.instance.TransparentOceans)
-            landMask = landMask.ResizePixels(AppData.instance.CubemapDimension, AppData.instance.CubemapDimension);
-        bumpMap = bumpMap.ResizePixels(AppData.instance.CubemapDimension, AppData.instance.CubemapDimension);
+        {
+            TextureScale.Bilinear(landMask, AppData.instance.CubemapDimension, AppData.instance.CubemapDimension);
+        }
+        TextureScale.Bilinear(bumpMap, AppData.instance.CubemapDimension, AppData.instance.CubemapDimension);
 
-        if (AppData.instance.TransparentOceans)
+        if (AppData.instance.TransparentOceans || (AppData.instance.SaveMainMap && !AppData.instance.SaveLandMask))
             mainMap.SaveAsPNG(Path.Combine(baseFolder, "base.png"));
-        if (!AppData.instance.TransparentOceans)
+        else
         {
             mainMap.SaveAsJPG(Path.Combine(baseFolder, "base_c.jpg"));
             landMask.SaveAsJPG(Path.Combine(baseFolder, "base_a.jpg"));
         }
-        bumpMap.SaveAsPNG(Path.Combine(bumpBaseFolder, "base.png"));
+
+        if (AppData.instance.SaveHeightMap)
+            bumpMap.SaveAsPNG(Path.Combine(bumpBaseFolder, "base.png"));
 
         UnityEngine.Object.Destroy(mainMap);
         UnityEngine.Object.Destroy(landMask);
@@ -298,18 +318,18 @@ public partial class Map : MonoBehaviour
         landMask = null;
         bumpMap = null;
 
-        if (AppData.instance.CubemapDivisions >= 1)
-        {
-            UnityEngine.Object.Destroy(mainMapCubemapResized);
-            mainMapCubemapResized = null;
-            if (!AppData.instance.TransparentOceans)
-            {
-                UnityEngine.Object.Destroy(landMaskCubemapResized);
-                landMaskCubemapResized = null;
-            }
-            UnityEngine.Object.Destroy(bumpMapCubemapResized);
-            bumpMapCubemapResized = null;
-        }
+        //if (AppData.instance.CubemapDivisions >= 1)
+        //{
+        //    UnityEngine.Object.Destroy(mainMapCubemapResized);
+        //    mainMapCubemapResized = null;
+        //    if (!AppData.instance.TransparentOceans)
+        //    {
+        //        UnityEngine.Object.Destroy(landMaskCubemapResized);
+        //        landMaskCubemapResized = null;
+        //    }
+        //    UnityEngine.Object.Destroy(bumpMapCubemapResized);
+        //    bumpMapCubemapResized = null;
+        //}
 
         AppData.instance.LastSavedImageFolder = savePath;
         AppData.instance.Save();
@@ -360,7 +380,7 @@ public partial class Map : MonoBehaviour
         transparencyRT = null;
     }
 
-    void ExportCubeMapFile(Texture2D map, string folder, string filePosfix, int dimension, int face, int division, int divisionX, int divisionY, bool saveAsPng = false)
+    void ExportCubeMapFile(ref Texture2D map, string folder, string filePosfix, int dimension, int face, int division, int divisionX, int divisionY, bool saveAsPng = false)
     {
         bool useCpu = false;
         string fileName = division + "_" + divisionY + "_" + divisionX + filePosfix;
@@ -430,7 +450,7 @@ public partial class Map : MonoBehaviour
         }
     }
 
-    void SaveMapSubDivisions(Texture2D tex, int faceCount, int subdivision, string folder, string filePosfix, bool saveAsPng = false)
+    void SaveMapSubDivisions(ref Texture2D tex, int faceCount, int subdivision, string folder, string filePosfix, bool saveAsPng = false)
     {
         int sizeDivisor = (int)Mathf.Pow(2, subdivision);
 
@@ -438,7 +458,7 @@ public partial class Map : MonoBehaviour
         {
             for (int countY = 0; countY < sizeDivisor; countY++)
             {
-                ExportCubeMapFile(tex, folder, filePosfix, AppData.instance.CubemapDimension, faceCount, subdivision, countX, countY, saveAsPng);
+                ExportCubeMapFile(ref tex, folder, filePosfix, AppData.instance.CubemapDimension, faceCount, subdivision, countX, countY, saveAsPng);
             }
         }
     }
@@ -554,10 +574,6 @@ public partial class Map : MonoBehaviour
         if (heightmapRT != null)
         { 
             planetSurfaceMaterial.SetTexture("_HeightMap", heightmapRT);
-            //if (mapSettings.UseImages)
-            //    planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
-            //else
-            //    planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
         }
         //else
         //    planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);

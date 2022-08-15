@@ -87,8 +87,8 @@ Material:
     - _DesertThreshold1: 25
     - _DesertThreshold2: 30
     - _DetailNormalMapScale: 1
-    - _DomainWarping: 2.3376596
-    - _DomainWarping2: 1.1110785
+    - _DomainWarping: 2.0043218
+    - _DomainWarping2: 1.9999758
     - _DrawType: 0
     - _DstBlend: 0
     - _GlossMapScale: 1
@@ -99,26 +99,26 @@ Material:
     - _HeightRange: 0.36877266
     - _HeightRange2: 0.18669486
     - _HighHumidityLightnessPercentage: 0.549
-    - _HumiditySeed: 931384
+    - _HumiditySeed: 1.9777377
     - _IceTemperatureThreshold1: -10
     - _IceTemperatureThreshold2: -40
     - _IsEroded: 0
     - _IsFlowTexSet: 0
     - _IsHeightmapSet: 0
     - _IsLandmaskSet: 0
-    - _IsMainmapSet: 0
+    - _IsMainmapSet: 1
     - _Lacunarity: 1.6343691
     - _Lacunarity2: 1.6559017
     - _LandGlossiness: 0.219
     - _LandMetallic: 0
     - _LayerStrength: 1
-    - _LayerStrength2: 0
-    - _MaxHeight: 0.84522396
+    - _LayerStrength2: 1
+    - _MaxHeight: 0.6823771
     - _Metallic: 0
-    - _MinHeight: 0.69892603
+    - _MinHeight: 0.5475739
     - _Mode: 0
-    - _Multiplier: 3.3065736
-    - _Multiplier2: 3.7898452
+    - _Multiplier: 3.5514293
+    - _Multiplier2: 3.6919022
     - _NormalScale: 50
     - _OcclusionStrength: 1
     - _OceanColorStep1: 0
@@ -132,21 +132,21 @@ Material:
     - _Persistence: 0.6802733
     - _Persistence2: 0.7079656
     - _RidgedNoise: 0
-    - _RidgedNoise2: 0
-    - _Seed: 9396.109
-    - _Seed2: 872.87177
+    - _RidgedNoise2: 1
+    - _Seed: 1.8205626
+    - _Seed2: 1.4578344
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _TemperatureSeed: 782202
+    - _TemperatureSeed: 1.0108823
     - _UVSec: 0
-    - _WaterLevel: 0.5441245
-    - _XOffset: 0.2370609
-    - _XOffset2: 0.8234042
-    - _YOffset: 0.92420214
-    - _YOffset2: 0.124198735
-    - _ZOffset: 0.5749033
-    - _ZOffset2: 0.016896268
+    - _WaterLevel: 0
+    - _XOffset: 0.68828076
+    - _XOffset2: 0.28825143
+    - _YOffset: 0.7302122
+    - _YOffset2: 0.42803866
+    - _ZOffset: 0.10646706
+    - _ZOffset2: 0.8109984
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}

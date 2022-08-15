@@ -506,12 +506,12 @@ public partial class Map : MonoBehaviour
     void GenerateSeeds()
     {
         System.Random masterRandom = new System.Random(mapSettings.Seed);
-        textureSettings.surfaceNoiseSettings.seed = (float)(masterRandom.NextDouble() * 10000); // Seeds of value greater than 8,388,600 may be lost due to the intrinsic conversion into float when passing into a material.
+        textureSettings.surfaceNoiseSettings.seed = (float)(masterRandom.NextDouble() + 1);
         textureSettings.surfaceNoiseSettings.noiseOffset = new Vector3((float)masterRandom.NextDouble(), (float)masterRandom.NextDouble(), (float)masterRandom.NextDouble());
-        textureSettings.surfaceNoiseSettings2.seed = (float)(masterRandom.NextDouble() * 10000); // Seeds of value greater than 8,388,600 may be lost due to the intrinsic conversion into float when passing into a material.
+        textureSettings.surfaceNoiseSettings2.seed = (float)(masterRandom.NextDouble() + 1);
         textureSettings.surfaceNoiseSettings2.noiseOffset = new Vector3((float)masterRandom.NextDouble(), (float)masterRandom.NextDouble(), (float)masterRandom.NextDouble());
-        textureSettings.TemperatureNoiseSeed = (int)(masterRandom.NextDouble() * 1000000);
-        textureSettings.HumidityNoiseSeed = (int)(masterRandom.NextDouble() * 1000000);
+        textureSettings.TemperatureNoiseSeed = (float)(masterRandom.NextDouble() + 1);
+        textureSettings.HumidityNoiseSeed = (float)(masterRandom.NextDouble() + 1);
         namesSeed = (int)(masterRandom.NextDouble() * 1000000);
     }
 

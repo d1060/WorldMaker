@@ -2,8 +2,8 @@ Shader "Noise/PlanetarySurface"
 {
     Properties
     {
-        _TemperatureSeed("Temperature Seed", Int) = 345
-        _HumiditySeed("Humidity Seed", Int) = 987
+        _TemperatureSeed("Temperature Seed", Float) = 1.345
+        _HumiditySeed("Humidity Seed", Float) = 1.987
         _WaterLevel("Water Level", Range(0, 1)) = 0.66
         [Enum(SphereShaderDrawType)] _DrawType("Draw Type", Float) = 0
 
@@ -131,8 +131,8 @@ Shader "Noise/PlanetarySurface"
         half _LandMetallic;
         float _Multiplier;
         float _Seed;
-        int _TemperatureSeed;
-        int _HumiditySeed;
+        float _TemperatureSeed;
+        float _HumiditySeed;
         int _Octaves;
         float _Lacunarity;
         float _Persistence;
@@ -237,27 +237,43 @@ Shader "Noise/PlanetarySurface"
             }
             else if (_DrawType == 2) // Drawing a Landmask.
             {
-                if (isAboveWater)
+                if (_IsLandmaskSet)
                 {
-                    o.Albedo = float3(1, 1, 1);
+                    float4 lmc = tex2D(_LandMask, uv);
+                    o.Albedo = lmc;
                 }
                 else
                 {
-                    o.Albedo = float3(0, 0, 0);
+                    if (isAboveWater)
+                    {
+                        o.Albedo = float3(1, 1, 1);
+                    }
+                    else
+                    {
+                        o.Albedo = float3(0, 0, 0);
+                    }
                 }
 
                 o.Metallic = 0;
                 o.Smoothness = 0;
             }
-            else if (_DrawType == 7) // Drawing a Landmask.
+            else if (_DrawType == 7) // Drawing an inverted Landmask.
             {
-                if (isAboveWater)
+                if (_IsLandmaskSet)
                 {
-                    o.Albedo = float3(0, 0, 0);
+                    float4 lmc = tex2D(_LandMask, uv);
+                    o.Albedo = float4(1 - lmc.r, 1 - lmc.g, 1 - lmc.b, 1);
                 }
                 else
                 {
-                    o.Albedo = float3(1, 1, 1);
+                    if (isAboveWater)
+                    {
+                        o.Albedo = float3(0, 0, 0);
+                    }
+                    else
+                    {
+                        o.Albedo = float3(1, 1, 1);
+                    }
                 }
 
                 o.Metallic = 0;

@@ -266,11 +266,29 @@ public partial class Map : MonoBehaviour
 
         set
         {
-            mapSettings.HeightMapPath = value;
+            if (!firstUpdate)
+            {
+                if (value == null || value == "" || File.Exists(value))
+                    mapSettings.HeightMapPath = value;
+            }
             if (mapSettings.UseImages)
             {
+                if (value == null || value == "")
+                {
+                    AppData.instance.SaveHeightMap = false;
+                    UpdateUIToggle(contextMenuPanelTransform, "Toggle Height Map", AppData.instance.SaveHeightMap);
+                }
                 UpdateSurfaceMaterialHeightMap();
             }
+
+            if (planetSurfaceMaterial != null)
+            {
+                if (mapSettings.UseImages && value != null && value != "")
+                    planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
+                else
+                    planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
+            }
+
             MapData.instance.Save();
         }
     }
@@ -284,11 +302,29 @@ public partial class Map : MonoBehaviour
 
         set
         {
-            mapSettings.MainTexturePath = value;
+            if (!firstUpdate)
+            {
+                if (value == null || value == "" || File.Exists(value))
+                    mapSettings.MainTexturePath = value;
+            }
             if (mapSettings.UseImages)
             {
+                if (value == null || value == "")
+                {
+                    AppData.instance.SaveMainMap = false;
+                    UpdateUIToggle(contextMenuPanelTransform, "Toggle Main Map", AppData.instance.SaveMainMap);
+                }
                 UpdateSurfaceMaterialMainMap();
             }
+
+            if (planetSurfaceMaterial != null)
+            {
+                if (mapSettings.UseImages && value != null && value != "")
+                    planetSurfaceMaterial.SetInt("_IsMainmapSet", 1);
+                else
+                    planetSurfaceMaterial.SetInt("_IsMainmapSet", 0);
+            }
+
             MapData.instance.Save();
         }
     }
@@ -302,11 +338,29 @@ public partial class Map : MonoBehaviour
 
         set
         {
-            mapSettings.LandMaskPath = value;
+            if (!firstUpdate)
+            {
+                if (value == null || value == "" || File.Exists(value))
+                    mapSettings.LandMaskPath = value;
+            }
             if (mapSettings.UseImages)
             {
+                if (value == null || value == "")
+                {
+                    AppData.instance.SaveLandMask = false;
+                    UpdateUIToggle(contextMenuPanelTransform, "Toggle Land Mask", AppData.instance.SaveLandMask);
+                }
                 UpdateSurfaceMaterialLandMask();
             }
+
+            if (planetSurfaceMaterial != null)
+            {
+                if (mapSettings.UseImages && value != null && value != "")
+                    planetSurfaceMaterial.SetInt("_IsLandmaskSet", 1);
+                else
+                    planetSurfaceMaterial.SetInt("_IsLandmaskSet", 0);
+            }
+
             MapData.instance.Save();
         }
     }
@@ -1093,6 +1147,47 @@ public partial class Map : MonoBehaviour
         {
             MapData.instance.Save();
             ReGenerateWorld(true, !useImages);
+
+            if (mapSettings.UseImages)
+            {
+                if (mapSettings.HeightMapPath == null || mapSettings.HeightMapPath == "")
+                {
+                    AppData.instance.SaveHeightMap = false;
+                    UpdateUIToggle(contextMenuPanelTransform, "Toggle Height Map", AppData.instance.SaveHeightMap);
+                }
+
+                if (mapSettings.MainTexturePath == null || mapSettings.MainTexturePath == "")
+                {
+                    AppData.instance.SaveMainMap = false;
+                    UpdateUIToggle(contextMenuPanelTransform, "Toggle Main Map", AppData.instance.SaveMainMap);
+                }
+
+                if (mapSettings.LandMaskPath == null || mapSettings.LandMaskPath == "")
+                {
+                    AppData.instance.SaveLandMask = false;
+                    UpdateUIToggle(contextMenuPanelTransform, "Toggle Land Mask", AppData.instance.SaveLandMask);
+                }
+            }
+            else
+            {
+                if (!AppData.instance.SaveHeightMap)
+                {
+                    AppData.instance.SaveHeightMap = true;
+                    UpdateUIToggle(contextMenuPanelTransform, "Toggle Height Map", AppData.instance.SaveHeightMap);
+                }
+
+                if (!AppData.instance.SaveMainMap)
+                {
+                    AppData.instance.SaveMainMap = true;
+                    UpdateUIToggle(contextMenuPanelTransform, "Toggle Main Map", AppData.instance.SaveMainMap);
+                }
+
+                if (!AppData.instance.SaveLandMask)
+                {
+                    AppData.instance.SaveLandMask = true;
+                    UpdateUIToggle(contextMenuPanelTransform, "Toggle Land Mask", AppData.instance.SaveLandMask);
+                }
+            }
         }
     }
 
@@ -1317,6 +1412,18 @@ public partial class Map : MonoBehaviour
 
         if (contextMenuPanelTransform != null)
         {
+            if (mapSettings.UseImages)
+            {
+                if (mapSettings.HeightMapPath == null || mapSettings.HeightMapPath == "")
+                    AppData.instance.SaveHeightMap = false;
+
+                if (mapSettings.MainTexturePath == null || mapSettings.MainTexturePath == "")
+                    AppData.instance.SaveMainMap = false;
+
+                if (mapSettings.LandMaskPath == null || mapSettings.LandMaskPath == "")
+                    AppData.instance.SaveLandMask = false;
+            }
+
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Main Map", AppData.instance.SaveMainMap);
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Height Map", AppData.instance.SaveHeightMap);
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Land Mask", AppData.instance.SaveLandMask);

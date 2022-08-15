@@ -70,8 +70,8 @@ public class TextureSettings
     int selectedLayer = 1;
     public float[] TextureSteps { get { return textureSteps; } set { textureSteps = value; } }
     public int MaxZoomLevel { get { return zoomLevelDistances.Length - 1; } }
-    public int TemperatureNoiseSeed { get; set; }
-    public int HumidityNoiseSeed { get; set; }
+    public float TemperatureNoiseSeed { get; set; }
+    public float HumidityNoiseSeed { get; set; }
     public float Detail { get { return selectedLayer == 1 ? surfaceNoiseSettings.octaves : surfaceNoiseSettings2.octaves; } set { if (selectedLayer == 1) surfaceNoiseSettings.octaves = (int)value; else surfaceNoiseSettings2.octaves = (int)value; } }
     public float Scale { get { return selectedLayer == 1 ? surfaceNoiseSettings.lacunarity : surfaceNoiseSettings2.lacunarity; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.lacunarity = value; else surfaceNoiseSettings2.lacunarity = value; } }
     public float Multiplier { get { return selectedLayer == 1 ? surfaceNoiseSettings.multiplier : surfaceNoiseSettings2.multiplier; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.multiplier = value; else surfaceNoiseSettings2.multiplier = value; } }
@@ -154,8 +154,8 @@ public class TextureSettings
             surfaceMaterial.SetFloat("_MinHeight", MapData.instance.HighestHeight);
             surfaceMaterial.SetFloat("_MaxHeight", MapData.instance.LowestHeight);
         }
-        surfaceMaterial.SetInt("_TemperatureSeed", TemperatureNoiseSeed);
-        surfaceMaterial.SetInt("_HumiditySeed", HumidityNoiseSeed);
+        surfaceMaterial.SetFloat("_TemperatureSeed", TemperatureNoiseSeed);
+        surfaceMaterial.SetFloat("_HumiditySeed", HumidityNoiseSeed);
         surfaceMaterial.SetFloat("_Multiplier", surfaceNoiseSettings.multiplier);
         surfaceMaterial.SetInt("_Octaves", surfaceNoiseSettings.octaves);
         surfaceMaterial.SetFloat("_Lacunarity", surfaceNoiseSettings.lacunarity);

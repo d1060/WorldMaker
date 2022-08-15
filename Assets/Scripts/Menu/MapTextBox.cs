@@ -26,34 +26,42 @@ public class MapTextBox : MonoBehaviour
     public string PropertyName;
     public bool truncatePath = false;
     public MapTextBoxEvent Deselect;
+    bool firstUpdate = true;
 
     // Start is called before the first frame update
     void Start()
     {
-        inputField = GetComponent<TMP_InputField>();
-
-        if (map != null && PropertyName != "")
-        {
-            System.Type type = map.GetType();
-            PropertyInfo propertyInfo = type.GetProperty(PropertyName);
-            string propertyValue = propertyInfo.GetValue(map).ToString();
-            if (truncatePath)
-            {
-                string file = System.IO.Path.GetFileName(propertyValue);
-                propertyValue = file;
-            }
-            inputField.text = propertyValue;
-        }
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (firstUpdate)
+        {
+            inputField = GetComponent<TMP_InputField>();
+
+            if (map != null && PropertyName != "")
+            {
+                System.Type type = map.GetType();
+                PropertyInfo propertyInfo = type.GetProperty(PropertyName);
+                string propertyValue = propertyInfo.GetValue(map).ToString();
+                if (truncatePath)
+                {
+                    string file = System.IO.Path.GetFileName(propertyValue);
+                    propertyValue = file;
+                    inputField.SetTextWithoutNotify(propertyValue);
+                }
+                else
+                    inputField.text = propertyValue;
+            }
+        }
+
         if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Tab))
         {
             inputField.DeactivateInputField();
             Deselect?.Invoke();
         }
+        firstUpdate = false;
     }
 
     public string Field
@@ -82,7 +90,10 @@ public class MapTextBox : MonoBehaviour
             }
             , false);
         if (paths.Length == 0)
+        {
+            inputField.text = null;
             return;
+        }
         string path = paths[0];
         Field = path;
         if (truncatePath)

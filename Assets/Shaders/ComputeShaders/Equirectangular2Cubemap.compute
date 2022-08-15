@@ -8,47 +8,48 @@ int subdivision;
 int subDivisionX;
 int subDivisionY;
 int faceId;
-Texture2D base;
+Texture2D<float4> base;
+SamplerState samplerbase;
 RWTexture2D<float4> Result;
 
 #define PI 3.14159274
 #define Rad2Deg 57.29578
 
-float4 bilinear(float2 coord)
-{
-    int leftX = (int)floor(coord.x);
-    int rightX = (int)ceil(coord.x);
-    int bottomY = (int)floor(coord.y);
-    int topY = (int)ceil(coord.y);
-
-    float deltaX = coord.x - leftX;
-    float deltaY = coord.y - bottomY;
-
-    if (rightX >= mapWidth) rightX -= mapWidth;
-    if (rightX < 0) rightX += mapWidth;
-    if (leftX >= mapWidth) leftX -= mapWidth;
-    if (leftX < 0) leftX += mapWidth;
-    if (topY >= mapHeight) topY = mapHeight - 1;
-    if (topY < 0) topY = 0;
-    if (bottomY >= mapHeight) bottomY = mapHeight - 1;
-    if (bottomY < 0) bottomY = 0;
-
-    int2 indexBL = int2(leftX, bottomY);
-    int2 indexBR = int2(rightX, bottomY);
-    int2 indexTR = int2(rightX, topY);
-    int2 indexTL = int2(leftX, topY);
-
-    float4 valueBL = base[indexBL];
-    float4 valueBR = base[indexBR];
-    float4 valueTL = base[indexTL];
-    float4 valueTR = base[indexTR];
-
-    float4 valueXdelta0 = (valueBR - valueBL) * deltaX + valueBL;
-    float4 valueXdelta1 = (valueTR - valueTL) * deltaX + valueTL;
-
-    float4 value = (valueXdelta1 - valueXdelta0) * deltaY + valueXdelta0;
-    return value;
-}
+//float4 bilinear(float2 coord)
+//{
+//    int leftX = (int)floor(coord.x);
+//    int rightX = (int)ceil(coord.x);
+//    int bottomY = (int)floor(coord.y);
+//    int topY = (int)ceil(coord.y);
+//
+//    float deltaX = coord.x - leftX;
+//    float deltaY = coord.y - bottomY;
+//
+//    if (rightX >= mapWidth) rightX -= mapWidth;
+//    if (rightX < 0) rightX += mapWidth;
+//    if (leftX >= mapWidth) leftX -= mapWidth;
+//    if (leftX < 0) leftX += mapWidth;
+//    if (topY >= mapHeight) topY = mapHeight - 1;
+//    if (topY < 0) topY = 0;
+//    if (bottomY >= mapHeight) bottomY = mapHeight - 1;
+//    if (bottomY < 0) bottomY = 0;
+//
+//    int2 indexBL = int2(leftX, bottomY);
+//    int2 indexBR = int2(rightX, bottomY);
+//    int2 indexTR = int2(rightX, topY);
+//    int2 indexTL = int2(leftX, topY);
+//
+//    float4 valueBL = base[indexBL];
+//    float4 valueBR = base[indexBR];
+//    float4 valueTL = base[indexTL];
+//    float4 valueTR = base[indexTR];
+//
+//    float4 valueXdelta0 = (valueBR - valueBL) * deltaX + valueBL;
+//    float4 valueXdelta1 = (valueTR - valueTL) * deltaX + valueTL;
+//
+//    float4 value = (valueXdelta1 - valueXdelta0) * deltaY + valueXdelta0;
+//    return value;
+//}
 
 float2 cartesianToPolarRatio(float3 cartesian)
 {
@@ -155,10 +156,10 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     if (polar.x < 0)  polar.x += 1;
     if (polar.x >= 1) polar.x -= 1;
 
-    polar.x *= mapWidth;
-    polar.y *= mapHeight;
+    //polar.x *= mapWidth;
+    //polar.y *= mapHeight;
 
-    float4 color = bilinear(polar);
+    float4 color = base.SampleLevel(samplerbase, polar, 0); // bilinear(polar);
 
     Result[id.xy] = color;
 }

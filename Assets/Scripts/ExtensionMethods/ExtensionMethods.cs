@@ -433,15 +433,20 @@ public static partial class ExtensionMethods
         drainageColors.SaveAsPng(width, fileName);
     }
 
+    static RenderTexture resizePixelsRT;
     public static Texture2D ResizePixels(this Texture2D tex, int newWidth, int newHeight, bool createCopy = false)
     {
-        RenderTexture rt = RenderTexture.GetTemporary(newWidth, newHeight, 32);
-        RenderTexture.active = rt;
-        Graphics.Blit(tex, rt);
+        RenderTexture prevActive = RenderTexture.active;
+        resizePixelsRT = new RenderTexture(newWidth, newHeight, 32);
+        RenderTexture.active = resizePixelsRT;
         Texture2D result = new Texture2D(newWidth, newHeight);
-        result.ReadPixels(new Rect(0, 0, newWidth, newHeight), 0, 0);
-        result.Apply();
-        RenderTexture.ReleaseTemporary(rt);
+        lock (RenderTexture.active)
+        {
+            Graphics.Blit(tex, resizePixelsRT);
+            result.ReadPixels(new Rect(0, 0, newWidth, newHeight), 0, 0);
+            result.Apply();
+        }
+        RenderTexture.active = prevActive;
         if (!createCopy)
             UnityEngine.Object.Destroy(tex);
         return result;
