@@ -106,14 +106,14 @@ Material:
     - _IsFlowTexSet: 0
     - _IsHeightmapSet: 0
     - _IsLandmaskSet: 0
-    - _IsMainmapSet: 1
+    - _IsMainmapSet: 0
     - _Lacunarity: 1.6343691
     - _Lacunarity2: 1.6559017
     - _LandGlossiness: 0.219
     - _LandMetallic: 0
     - _LayerStrength: 1
     - _LayerStrength2: 1
-    - _MaxHeight: 0.6823771
+    - _MaxHeight: 0.6872793
     - _Metallic: 0
     - _MinHeight: 0.5475739
     - _Mode: 0
@@ -139,8 +139,10 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _TemperatureSeed: 1.0108823
+    - _TextureHeight: 1024
+    - _TextureWidth: 2048
     - _UVSec: 0
-    - _WaterLevel: 0
+    - _WaterLevel: 0.7
     - _XOffset: 0.68828076
     - _XOffset2: 0.28825143
     - _YOffset: 0.7302122

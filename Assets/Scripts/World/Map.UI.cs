@@ -274,10 +274,11 @@ public partial class Map : MonoBehaviour
             if (mapSettings.UseImages)
             {
                 if (value == null || value == "")
-                {
                     AppData.instance.SaveHeightMap = false;
-                    UpdateUIToggle(contextMenuPanelTransform, "Toggle Height Map", AppData.instance.SaveHeightMap);
-                }
+                else
+                    AppData.instance.SaveHeightMap = true;
+
+                UpdateUIToggle(contextMenuPanelTransform, "Toggle Height Map", AppData.instance.SaveHeightMap);
                 UpdateSurfaceMaterialHeightMap();
             }
 
@@ -310,10 +311,11 @@ public partial class Map : MonoBehaviour
             if (mapSettings.UseImages)
             {
                 if (value == null || value == "")
-                {
                     AppData.instance.SaveMainMap = false;
-                    UpdateUIToggle(contextMenuPanelTransform, "Toggle Main Map", AppData.instance.SaveMainMap);
-                }
+                else
+                    AppData.instance.SaveMainMap = true;
+
+                UpdateUIToggle(contextMenuPanelTransform, "Toggle Main Map", AppData.instance.SaveMainMap);
                 UpdateSurfaceMaterialMainMap();
             }
 
@@ -346,10 +348,11 @@ public partial class Map : MonoBehaviour
             if (mapSettings.UseImages)
             {
                 if (value == null || value == "")
-                {
                     AppData.instance.SaveLandMask = false;
-                    UpdateUIToggle(contextMenuPanelTransform, "Toggle Land Mask", AppData.instance.SaveLandMask);
-                }
+                else
+                    AppData.instance.SaveLandMask = true;
+
+                UpdateUIToggle(contextMenuPanelTransform, "Toggle Land Mask", AppData.instance.SaveLandMask);
                 UpdateSurfaceMaterialLandMask();
             }
 
@@ -705,6 +708,19 @@ public partial class Map : MonoBehaviour
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties(false);
             MapData.instance.Save();
+        }
+    }
+
+    public void NewWaterLevelStr(string value)
+    {
+        textureSettings.waterLevel = value.ToFloat() / 100;
+        if (!firstUpdate)
+        {
+            MapData.instance.textureSettings = textureSettings;
+            //GenerateHeightMap();
+            UpdateSurfaceMaterialProperties(false);
+            MapData.instance.Save();
+            UpdateUISlider(setupPanelTransform, "Water Level Slider", textureSettings.waterLevel);
         }
     }
 
@@ -1270,6 +1286,19 @@ public partial class Map : MonoBehaviour
         AppData.instance.Save();
     }
 
+    public void OffsetPixels(string offsetPixels)
+    {
+        float pixels = offsetPixels.ToFloat();
+        if (pixels > 100 || pixels < 0)
+        {
+            if (pixels > 100) pixels = 100;
+            if (pixels < 0) pixels = 0;
+            UpdateUIInputField(contextMenuPanelTransform, "Offset Pixels Text Box", pixels.ToString());
+        }
+        AppData.instance.OffsetPixels = pixels;
+        AppData.instance.Save();
+    }
+
     public void KeepSeedOnRegenerate(bool keepSeed)
     {
         AppData.instance.KeepSeedOnRegenerate = keepSeed;
@@ -1435,6 +1464,7 @@ public partial class Map : MonoBehaviour
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Transparent Oceans", AppData.instance.TransparentOceans);
             UpdateUIInputField(contextMenuPanelTransform, "Cubemap Dimension Text Box", AppData.instance.CubemapDimension.ToString());
             UpdateUIInputField(contextMenuPanelTransform, "Cubemap Subdivisions Text Box", AppData.instance.CubemapDivisions.ToString());
+            UpdateUIInputField(contextMenuPanelTransform, "Offset Pixels Text Box", AppData.instance.OffsetPixels.ToString());
         }
 
         if (erosionPanelTransform != null)

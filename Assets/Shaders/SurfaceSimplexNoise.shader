@@ -8,6 +8,10 @@ Shader "Noise/PlanetarySurface"
         [Enum(SphereShaderDrawType)] _DrawType("Draw Type", Float) = 0
 
         _Seed("Land Seed", Float) = 2343
+
+        _TextureWidth("Texture Width", Float) = 2048
+        _TextureHeight("Texture Height", Float) = 1024
+
         _XOffset("X Offset", Range(0, 1)) = 0
         _YOffset("Y Offset", Range(0, 1)) = 0
         _ZOffset("Z Offset", Range(0, 1)) = 0
@@ -98,7 +102,7 @@ Shader "Noise/PlanetarySurface"
         // Physically based Standard lighting model, and enable shadows on all light types
         #pragma surface surf Standard fullforwardshadows
         //#include "Assets/Shaders/Simplex.cginc"
-		#include "Assets/Shaders/Perlin.cginc"
+        #include "Assets/Shaders/Perlin.cginc"
         #include "Assets/Shaders/Sphere.cginc"
 
         // Use shader model 3.0 target, to get nicer looking lighting
@@ -107,6 +111,9 @@ Shader "Noise/PlanetarySurface"
         #define LONGITUDE_STEP 0.000244140f
         #define LATITUDE_STEP 0.000488281f
         #define PI 3.14159265359
+
+        float _TextureWidth;
+        float _TextureHeight;
 
         sampler2D_float _HeightMap;
         int _IsHeightmapSet;
@@ -216,6 +223,17 @@ Shader "Noise/PlanetarySurface"
 
             if (_IsHeightmapSet > 0 || _IsEroded > 0)
             {
+                float2 uvDownLeft = float2((int)(uv.x * _TextureWidth), (int)(uv.y * _TextureHeight));
+                float2 uvDelta = float2(uv.x * _TextureWidth, uv.y * _TextureHeight) - uvDownLeft;
+                float2 uvUpRight = float2(uvDelta.x > 0 ? uvDownLeft.x + 1 : uvDownLeft.x, uvDelta.y > 0 ? uvDownLeft.y + 1 : uvDownLeft.y);
+                if (uvUpRight.x > _TextureWidth) uvUpRight.x = _TextureWidth;
+                if (uvUpRight.y > _TextureHeight) uvUpRight.y = _TextureHeight;
+
+                uvDownLeft = float2(uvDownLeft.x / _TextureWidth, uvDownLeft.y / _TextureHeight);
+                uvUpRight = float2(uvUpRight.x / _TextureWidth, uvUpRight.y / _TextureHeight);
+                float2 uvDownRight = float2(uvUpRight.x, uvDownLeft.y);
+                float2 uvUpLeft = float2(uvDownLeft.x, uvUpRight.y);
+
                 //float4 c = pow(tex2D(_HeightMap, uv), 1/2.2);
                 float4 c = tex2D(_HeightMap, uv);
                 height = (c.r + c.g + c.b) / 3;

@@ -20,6 +20,7 @@ public class AppData
     public bool TransparentOceans = false;
     public int CubemapDimension = 256;
     public int CubemapDivisions = 2;
+    public float OffsetPixels = 0.5f;
     public string LastSavedImageFolder = "";
     public List<string> RecentWorlds = new List<string>();
     int MaxRecentWorlds = 8;
@@ -76,6 +77,7 @@ public class AppData
                 CubemapDimension = ad.CubemapDimension;
                 CubemapDivisions = ad.CubemapDivisions;
                 TransparentOceans = ad.TransparentOceans;
+                OffsetPixels = ad.OffsetPixels;
                 RemoveRepeatedRecentWorlds();
                 return true;
             }

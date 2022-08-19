@@ -8,6 +8,7 @@ int subdivision;
 int subDivisionX;
 int subDivisionY;
 int faceId;
+float offsetPixels;
 Texture2D<float4> base;
 SamplerState samplerbase;
 RWTexture2D<float4> Result;
@@ -133,24 +134,92 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         return;
 
     float2 cubeMapCoordinate = float2(id.x / (float)cubemapDimension, id.y / (float)cubemapDimension); // From 0 to 1.
+    float divisionPower = pow(2, subdivision);
+    float pixelsPerDivision = cubemapDimension / divisionPower;
+
+    float2 faceCenter = float2(0, 0);
     if (subdivision > 0)
     {
-        float divisionPower = pow(2, subdivision);
-        float pixelsPerDivision = cubemapDimension / divisionPower;
+        float halfFaceShift = (1 / divisionPower) / 2;
         if (subDivisionX >= 0 && subDivisionX < divisionPower)
         {
             float minX = pixelsPerDivision * (float)subDivisionX / (float)cubemapDimension;
             cubeMapCoordinate.x = minX + (cubeMapCoordinate.x * pixelsPerDivision) / cubemapDimension;
+            faceCenter.x = minX + halfFaceShift;
         }
         if (subDivisionY >= 0 && subDivisionY < divisionPower)
         {
             float minY = pixelsPerDivision * (divisionPower - (float)subDivisionY - 1.0) / (float)cubemapDimension;
             cubeMapCoordinate.y = minY + (cubeMapCoordinate.y * pixelsPerDivision) / cubemapDimension;
+            faceCenter.y = minY + halfFaceShift;
         }
     }
     float3 cartesian = cubemapToCartesian(cubeMapCoordinate, faceId);
     cartesian = normalize(cartesian);
     float2 polar = cartesianToPolarRatio(cartesian);
+
+    float3 faceCenterCartesian = cubemapToCartesian(faceCenter, faceId);
+    faceCenterCartesian = normalize(faceCenterCartesian);
+    float2 faceCenterPolar = cartesianToPolarRatio(faceCenterCartesian);
+
+    // Shifts based on the pixel offsets
+    if (subdivision == 0 && offsetPixels > 0)
+    {
+        float offsetRatio = 1 + (offsetPixels / (float)cubemapDimension);
+        if (faceId == 4) // Top
+        {
+            float invY = 1 - polar.y;
+            invY *= offsetRatio;
+            polar.y = 1 - invY;
+        }
+        else if (faceId == 5) // Bottom
+        {
+            polar.y *= offsetRatio;
+        }
+        else if (faceId == 0) // Left face is split in half at the start and the end
+        {
+            float y = polar.y - 0.5;
+            y *= offsetRatio;
+            y += 0.5;
+
+            float x = 0;
+            if (polar.x < 0.5)
+            {
+                x = polar.x * offsetRatio;
+            }
+            else
+            {
+                x = polar.x - 1;
+                x *= offsetRatio;
+                x += 1;
+            }
+            polar = float2(x, y);
+        }
+        else
+        {
+            float2 faceCenter = float2(0.25, 0.5);
+            if (faceId == 2)
+            {
+                faceCenter = float2(0.5, 0.5);
+            }
+            else if (faceId == 3)
+            {
+                faceCenter = float2(0.75, 0.5);
+            }
+
+            float2 relativePolar = polar - faceCenter;
+            relativePolar *= offsetRatio;
+            polar = relativePolar + faceCenter;
+        }
+    }
+    else if (subdivision > 0 && offsetPixels > 0)
+    {
+        float offsetRatio = 1 + (offsetPixels / (float)pixelsPerDivision);
+        float2 relativePolar = polar - faceCenterPolar;
+        relativePolar *= offsetRatio;
+        polar = relativePolar + faceCenterPolar;
+    }
+
     // Shifts for the center meridian
     //polar.x -= 0.125;
     if (polar.x < 0)  polar.x += 1;

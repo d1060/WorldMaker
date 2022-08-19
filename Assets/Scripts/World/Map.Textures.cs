@@ -267,14 +267,14 @@ public partial class Map : MonoBehaviour
                     Directory.CreateDirectory(bumpFolder);
 
             if (AppData.instance.SaveHeightMap)
-                ExportCubeMapFile(ref bumpMap, bumpFolder, "", AppData.instance.CubemapDimension, faceCount, 0, 0, 0, true);
+                ExportCubeMapFile(ref bumpMap, bumpFolder, "", AppData.instance.CubemapDimension, faceCount, 0, 0, 0, AppData.instance.OffsetPixels, true);
 
             if (AppData.instance.TransparentOceans || (AppData.instance.SaveMainMap && !AppData.instance.SaveLandMask))
-                ExportCubeMapFile(ref mainMap, folder, "", AppData.instance.CubemapDimension, faceCount, 0, 0, 0, true);
+                ExportCubeMapFile(ref mainMap, folder, "", AppData.instance.CubemapDimension, faceCount, 0, 0, 0, AppData.instance.OffsetPixels, true);
             else
             {
-                ExportCubeMapFile(ref mainMap, folder, "_c", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
-                ExportCubeMapFile(ref landMask, folder, "_a", AppData.instance.CubemapDimension, faceCount, 0, 0, 0);
+                ExportCubeMapFile(ref mainMap, folder, "_c", AppData.instance.CubemapDimension, faceCount, 0, 0, 0, AppData.instance.OffsetPixels);
+                ExportCubeMapFile(ref landMask, folder, "_a", AppData.instance.CubemapDimension, faceCount, 0, 0, 0, AppData.instance.OffsetPixels);
             }
 
             for (int i = 1; i < AppData.instance.CubemapDivisions; i++)
@@ -380,7 +380,7 @@ public partial class Map : MonoBehaviour
         transparencyRT = null;
     }
 
-    void ExportCubeMapFile(ref Texture2D map, string folder, string filePosfix, int dimension, int face, int division, int divisionX, int divisionY, bool saveAsPng = false)
+    void ExportCubeMapFile(ref Texture2D map, string folder, string filePosfix, int dimension, int face, int division, int divisionX, int divisionY, float offsetPixels, bool saveAsPng = false)
     {
         bool useCpu = false;
         string fileName = division + "_" + divisionY + "_" + divisionX + filePosfix;
@@ -398,6 +398,7 @@ public partial class Map : MonoBehaviour
             equirectangular2CubemapShader.SetInt("subDivisionX", divisionX);
             equirectangular2CubemapShader.SetInt("subDivisionY", divisionY);
             equirectangular2CubemapShader.SetInt("faceId", face);
+            equirectangular2CubemapShader.SetFloat("offsetPixels", offsetPixels);
 
             equirectangular2CubemapShader.SetTexture(0, "base", map);
 
@@ -458,7 +459,7 @@ public partial class Map : MonoBehaviour
         {
             for (int countY = 0; countY < sizeDivisor; countY++)
             {
-                ExportCubeMapFile(ref tex, folder, filePosfix, AppData.instance.CubemapDimension, faceCount, subdivision, countX, countY, saveAsPng);
+                ExportCubeMapFile(ref tex, folder, filePosfix, AppData.instance.CubemapDimension, faceCount, subdivision, countX, countY, AppData.instance.OffsetPixels, saveAsPng);
             }
         }
     }

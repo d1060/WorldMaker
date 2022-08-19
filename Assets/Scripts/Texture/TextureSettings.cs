@@ -140,6 +140,9 @@ public class TextureSettings
         if (surfaceMaterial == null)
             return;
 
+        surfaceMaterial.SetFloat("_TextureWidth", textureWidth);
+        surfaceMaterial.SetFloat("_TextureHeight", textureHeight);
+
         surfaceMaterial.SetFloat("_Seed", surfaceNoiseSettings.seed);
         surfaceMaterial.SetFloat("_XOffset", surfaceNoiseSettings.noiseOffset.x);
         surfaceMaterial.SetFloat("_YOffset", surfaceNoiseSettings.noiseOffset.y);
