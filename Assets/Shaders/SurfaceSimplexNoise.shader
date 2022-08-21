@@ -41,6 +41,8 @@ Shader "Noise/PlanetarySurface"
 
         //_Color ("Color", Color) = (1,1,1,1)
         _HeightMap("Heightmap", 2D) = "white" {}
+        _HeightmapWidth("Heightmap Width", Float) = 2048
+        _HeightmapHeight("Heightmap Height", Float) = 1024
         _IsHeightmapSet("Is Heightmap Set", Int) = 0
         _IsEroded("Is Eroded Heightmap", Int) = 0
         _MainMap("Main Map", 2D) = "white" {}
@@ -116,6 +118,8 @@ Shader "Noise/PlanetarySurface"
         float _TextureHeight;
 
         sampler2D_float _HeightMap;
+        float _HeightmapWidth;
+        float _HeightmapHeight;
         int _IsHeightmapSet;
         int _IsEroded;
         sampler2D_float _MainMap;
@@ -221,29 +225,73 @@ Shader "Noise/PlanetarySurface"
             float3 offset = float3(_XOffset, _YOffset, _ZOffset);
             float3 offset2 = float3(_XOffset2, _YOffset2, _ZOffset2);
 
+            height = sphereHeight(uv, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping,
+                offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2,
+                _MinHeight, _MaxHeight);
+
             if (_IsHeightmapSet > 0 || _IsEroded > 0)
             {
-                float2 uvDownLeft = float2((int)(uv.x * _TextureWidth), (int)(uv.y * _TextureHeight));
-                float2 uvDelta = float2(uv.x * _TextureWidth, uv.y * _TextureHeight) - uvDownLeft;
-                float2 uvUpRight = float2(uvDelta.x > 0 ? uvDownLeft.x + 1 : uvDownLeft.x, uvDelta.y > 0 ? uvDownLeft.y + 1 : uvDownLeft.y);
-                if (uvUpRight.x > _TextureWidth) uvUpRight.x = _TextureWidth;
-                if (uvUpRight.y > _TextureHeight) uvUpRight.y = _TextureHeight;
+                if (_HeightmapWidth != _TextureWidth || _HeightmapHeight != _TextureHeight)
+                {
+                    float2 uvDownLeft = float2((int)(uv.x * _HeightmapWidth), (int)(uv.y * _HeightmapHeight));
+                    float2 uvDelta = float2(uv.x * _HeightmapWidth, uv.y * _HeightmapHeight) - uvDownLeft;
+                    float2 uvUpRight = float2(uvDelta.x > 0 ? uvDownLeft.x + 1 : uvDownLeft.x, uvDelta.y > 0 ? uvDownLeft.y + 1 : uvDownLeft.y);
+                    if (uvUpRight.x > _TextureWidth) uvUpRight.x = _TextureWidth;
+                    if (uvUpRight.y > _TextureHeight) uvUpRight.y = _TextureHeight;
 
-                uvDownLeft = float2(uvDownLeft.x / _TextureWidth, uvDownLeft.y / _TextureHeight);
-                uvUpRight = float2(uvUpRight.x / _TextureWidth, uvUpRight.y / _TextureHeight);
-                float2 uvDownRight = float2(uvUpRight.x, uvDownLeft.y);
-                float2 uvUpLeft = float2(uvDownLeft.x, uvUpRight.y);
+                    uvDownLeft = float2(uvDownLeft.x / _HeightmapWidth, uvDownLeft.y / _HeightmapHeight);
+                    uvUpRight = float2(uvUpRight.x / _HeightmapWidth, uvUpRight.y / _HeightmapHeight);
+                    float2 uvDownRight = float2(uvUpRight.x, uvDownLeft.y);
+                    float2 uvUpLeft = float2(uvDownLeft.x, uvUpRight.y);
 
+                    float heightDL = sphereHeight(uvDownLeft, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping,
+                        offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2,
+                        _MinHeight, _MaxHeight);
+                    float heightDR = sphereHeight(uvDownRight, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping,
+                        offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2,
+                        _MinHeight, _MaxHeight);
+                    float heightUL = sphereHeight(uvUpLeft, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping,
+                        offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2,
+                        _MinHeight, _MaxHeight);
+                    float heightUR = sphereHeight(uvUpRight, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping,
+                        offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2,
+                        _MinHeight, _MaxHeight);
+
+                    float4 c = tex2D(_HeightMap, uv);
+                    float cHeight = (c.r + c.g + c.b) / 3;
+
+                    float4 colorDL = tex2D(_HeightMap, uvDownLeft);
+                    float4 colorDR = tex2D(_HeightMap, uvDownRight);
+                    float4 colorUL = tex2D(_HeightMap, uvUpLeft);
+                    float4 colorUR = tex2D(_HeightMap, uvUpRight);
+
+                    float cDLHeight = (colorDL.r + colorDL.g + colorDL.b) / 3;
+                    float cDRHeight = (colorDR.r + colorDR.g + colorDR.b) / 3;
+                    float cULHeight = (colorUL.r + colorUL.g + colorUL.b) / 3;
+                    float cURHeight = (colorUR.r + colorUR.g + colorUR.b) / 3;
+
+                    float heightDeltaDL = heightDL - cDLHeight;
+                    float heightDeltaDR = heightDR - cDRHeight;
+                    float heightDeltaUL = heightUL - cULHeight;
+                    float heightDeltaUR = heightUR - cURHeight;
+
+                    float heightDeltaD = heightDeltaDL + (heightDeltaDR - heightDeltaDL) * uvDelta.x;
+                    float heightDeltaU = heightDeltaUL + (heightDeltaUR - heightDeltaUL) * uvDelta.x;
+
+                    float heightDelta = heightDeltaD + (heightDeltaU - heightDeltaD) * uvDelta.y;
+
+                    height -= heightDelta;
+                }
+                else
+                {
+                    float4 c = tex2D(_HeightMap, uv);
+                    height = (c.r + c.g + c.b) / 3;
+                }
                 //float4 c = pow(tex2D(_HeightMap, uv), 1/2.2);
-                float4 c = tex2D(_HeightMap, uv);
-                height = (c.r + c.g + c.b) / 3;
             }
-            else
-            {
-                height = sphereHeight(uv, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping,
-                                          offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2,
-										  _MinHeight, _MaxHeight);
-            }
+            //else
+            //{
+            //}
 
             bool isAboveWater = height > _WaterLevel;
 

@@ -162,10 +162,10 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     faceCenterCartesian = normalize(faceCenterCartesian);
     float2 faceCenterPolar = cartesianToPolarRatio(faceCenterCartesian);
 
+    float offsetRatio = 1 + (offsetPixels / ((float)cubemapDimension));
     // Shifts based on the pixel offsets
     if (subdivision == 0 && offsetPixels > 0)
     {
-        float offsetRatio = 1 + (offsetPixels / (float)cubemapDimension);
         if (faceId == 4) // Top
         {
             float invY = 1 - polar.y;
@@ -214,7 +214,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     }
     else if (subdivision > 0 && offsetPixels > 0)
     {
-        float offsetRatio = 1 + (offsetPixels / (float)pixelsPerDivision);
         float2 relativePolar = polar - faceCenterPolar;
         relativePolar *= offsetRatio;
         polar = relativePolar + faceCenterPolar;

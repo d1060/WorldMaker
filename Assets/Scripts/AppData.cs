@@ -20,7 +20,7 @@ public class AppData
     public bool TransparentOceans = false;
     public int CubemapDimension = 256;
     public int CubemapDivisions = 2;
-    public float OffsetPixels = 0.5f;
+    public float OffsetPixels = 4;
     public string LastSavedImageFolder = "";
     public List<string> RecentWorlds = new List<string>();
     int MaxRecentWorlds = 8;

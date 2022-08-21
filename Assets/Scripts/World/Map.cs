@@ -294,29 +294,32 @@ public partial class Map : MonoBehaviour
             cameraController.CalculateVisibleFlatLatitudeAndLongitude();
             cameraController.BringCameraIntoViewPlanes();
             geoSphereCamera.enabled = false;
-            Light geolight = geoSphereCamera.GetComponentInChildren<Light>();
-            geolight.enabled = false;
+            Component geolightComponent = geoSphereCamera.GetChildWithName("Geosphere Directional Light");
+            if (geolightComponent != null)
+                geolightComponent.gameObject.SetActive(false);
 
             cam.enabled = true;
             Canvas ui = cam.GetComponentInChildren<Canvas>();
             ui.worldCamera = cam;
-            Light light = cam.GetComponentInChildren<Light>();
-            light.enabled = true;
+            Component lightComponent = cam.GetChildWithName("Directional Light");
+            if (lightComponent != null)
+                lightComponent.gameObject.SetActive(true);
         }
         else
         {
             HidePlaneMap();
             geoSphereCamera.enabled = true;
-            Light geolight = geoSphereCamera.GetComponentInChildren<Light>();
-            geolight.enabled = true;
+            Component geolightComponent = geoSphereCamera.GetChildWithName("Geosphere Directional Light");
+            if (geolightComponent != null)
+                geolightComponent.gameObject.SetActive(true);
 
             cam.enabled = false;
             Canvas ui = cam.GetComponentInChildren<Canvas>();
             ui.worldCamera = geoSphereCamera;
-            Light light = cam.GetComponentInChildren<Light>();
-            light.enabled = false;
+            Component lightComponent = cam.GetChildWithName("Directional Light");
+            if (lightComponent != null)
+                lightComponent.gameObject.SetActive(false);
         }
-        //mainMap.ShowTextures();
     }
 
     public void UpdateDebugText()

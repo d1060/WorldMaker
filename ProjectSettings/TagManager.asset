@@ -3,15 +3,17 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Globe
+  - Flat Map
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Flat Map Lighting
   - Water
   - UI
-  - 
+  - Globe Lighting
   - 
   - 
   - 

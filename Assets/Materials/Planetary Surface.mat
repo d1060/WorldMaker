@@ -98,6 +98,8 @@ Material:
     - _HeightExponent2: 1.0015556
     - _HeightRange: 0.36877266
     - _HeightRange2: 0.18669486
+    - _HeightmapHeight: 2048
+    - _HeightmapWidth: 4096
     - _HighHumidityLightnessPercentage: 0.549
     - _HumiditySeed: 1.9777377
     - _IceTemperatureThreshold1: -10
@@ -139,8 +141,8 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _TemperatureSeed: 1.0108823
-    - _TextureHeight: 1024
-    - _TextureWidth: 2048
+    - _TextureHeight: 2048
+    - _TextureWidth: 4096
     - _UVSec: 0
     - _WaterLevel: 0.7
     - _XOffset: 0.68828076
