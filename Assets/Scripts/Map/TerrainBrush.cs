@@ -20,8 +20,10 @@ public class TerrainBrush : MonoBehaviour
     float currentDistance = 0;
     float lastDistance = 0;
     float startingThickness = 0;
-    bool movedWhileRightMouseButtonWasDown = false;
+    //bool movedWhileRightMouseButtonWasDown = false;
     Vector2 currentCoordinates = new Vector2(0.5f, 0.5f);
+    bool isLeftMouseButtonDown = false;
+    bool isRightMouseButtonDown = false;
 
     // Start is called before the first frame update
     void Start()
@@ -36,10 +38,28 @@ public class TerrainBrush : MonoBehaviour
         float xAxisMovement = Input.GetAxis("Mouse X");
         float yAxisMovement = Input.GetAxis("Mouse Y");
         float mouseWheel = Input.GetAxis("Mouse ScrollWheel");
-        bool isRightMouseButtonDown = false;
         hasMoved = xAxisMovement != 0 || yAxisMovement != 0 || mouseWheel != 0;
+
         if (Input.GetMouseButton(0))
+        {
+            isLeftMouseButtonDown = true;
+        }
+        else
+        {
+            //if (isLeftMouseButtonDown)
+            //    leftMouseButtonUp = true;
+            isLeftMouseButtonDown = false;
+        }
+        if (Input.GetMouseButton(1))
+        {
+            //if (!isRightMouseButtonDown)
+            //    rightMouseButtonClick = true;
             isRightMouseButtonDown = true;
+        }
+        else
+        {
+            isRightMouseButtonDown = false;
+        }
 
         if (map == null)
             return;
@@ -58,16 +78,16 @@ public class TerrainBrush : MonoBehaviour
             cameraController = map.cam.GetComponent<CameraController>();
         }
 
-        if (Input.GetKeyUp(KeyCode.Mouse0))
+        if (isLeftMouseButtonDown)
         {
-            if (!movedWhileRightMouseButtonWasDown)
-            {
+            //if (!movedWhileRightMouseButtonWasDown)
+            //{
                 RaiseTerrain();
-            }
+            //}
 
-            movedWhileRightMouseButtonWasDown = false;
+            //movedWhileRightMouseButtonWasDown = false;
         }
-        else if (Input.GetKeyUp(KeyCode.Mouse1))
+        else if (isRightMouseButtonDown)
         {
             LowerTerrain();
         }
@@ -82,8 +102,8 @@ public class TerrainBrush : MonoBehaviour
             }
         }
 
-        if (hasMoved && isRightMouseButtonDown)
-            movedWhileRightMouseButtonWasDown = true;
+        //if (hasMoved && isRightMouseButtonDown)
+        //    movedWhileRightMouseButtonWasDown = true;
 
         if (hasMoved && hitPoint != Vector3.zero)
         {

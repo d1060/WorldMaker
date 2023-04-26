@@ -129,4 +129,80 @@ public static partial class ExtensionMethods
 
         return new Vector3(x, y, z);
     }
+
+    public static Vector3 CartesianToCubemap(this Vector3 cartesian)
+    {
+        Vector3 cubeMap = new Vector3();
+
+        float tanZx = cartesian.z / cartesian.x;
+        float tanYx = cartesian.y / cartesian.x;
+
+        float tanZy = cartesian.z / cartesian.y;
+        float tanXy = cartesian.x / cartesian.y;
+
+        float tanXz = cartesian.x / cartesian.z;
+        float tanYz = cartesian.y / cartesian.z;
+
+        if (cartesian.x < 0 && (tanYx >= -1 && tanYx <= 1) && (tanZx >= -1 && tanZx <= 1)) // neg_x - Left
+        {
+            cubeMap.x = (1 - tanZx) / 2;
+            cubeMap.y = (1 - tanYx) / 2;
+            cubeMap.z = 0;
+        }
+        else if (cartesian.y < 0 && (tanXy >= -1 && tanXy <= 1) && (tanZy >= -1 && tanZy <= 1)) // neg_y - Bottom
+        {
+            cubeMap.x = (1 - tanXy) / 2;
+            cubeMap.y = (1 - tanZy) / 2;
+            cubeMap.z = 5;
+        }
+        else if (cartesian.z < 0 && (tanYz >= -1 && tanYz <= 1) && (tanXz >= -1 && tanXz <= 1)) // neg_z - Back
+        {
+            cubeMap.x = (tanXz + 1) / 2;
+            cubeMap.y = (1 - tanYz) / 2;
+            cubeMap.z = 3;
+        }
+        else if (cartesian.z > 0 && (tanYz >= -1 && tanYz <= 1) && (tanXz >= -1 && tanXz <= 1)) // pos_z - Front
+        {
+            cubeMap.x = (tanXz + 1) / 2;
+            cubeMap.y = (tanYz + 1) / 2;
+            cubeMap.z = 1;
+        }
+        else if (cartesian.x > 0 && (tanYx >= -1 && tanYx <= 1) && (tanZx >= -1 && tanZx <= 1)) // pos_x - Right
+        {
+            cubeMap.x = (1 - tanZx) / 2;
+            cubeMap.y = (tanYx + 1) / 2;
+            cubeMap.z = 2;
+        }
+        else if (cartesian.y > 0 && (tanXy >= -1 && tanXy <= 1) && (tanZy >= -1 && tanZy <= 1)) // pos_y - Top
+        {
+            cubeMap.x = (tanXy + 1) / 2;
+            cubeMap.y = (1 - tanZy) / 2;
+            cubeMap.z = 4;
+        }
+        return cubeMap;
+    }
+
+    static public void SaveToFile(this RenderTexture renderTexture, string filePath)
+    {
+        Texture2D tex;
+        tex = new Texture2D(renderTexture.width, renderTexture.height, TextureFormat.RGBAFloat, false, true);
+        var oldRt = RenderTexture.active;
+        RenderTexture.active = renderTexture;
+        tex.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
+        tex.Apply();
+        RenderTexture.active = oldRt;
+        try
+        {
+            File.WriteAllBytes(filePath, tex.EncodeToPNG());
+        }
+        catch
+        {
+
+        }
+
+        if (Application.isPlaying)
+            UnityEngine.Object.Destroy(tex);
+        else
+            UnityEngine.Object.DestroyImmediate(tex);
+    }
 }

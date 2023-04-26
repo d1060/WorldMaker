@@ -125,6 +125,18 @@ public class MainMenu : MonoBehaviour
             mainMenu.ShiftMenuOut();
         }
 
+        ColorBox[] colorBoxes = subMenu.transform.GetComponentsInChildren<ColorBox>();
+        foreach (ColorBox colorBox in colorBoxes)
+        {
+            colorBox.DestroyColorPicker();
+        }
+
+        GradientSliderHandleColorBox[] gradientSliderHandleColorBoxes = subMenu.transform.GetComponentsInChildren<GradientSliderHandleColorBox>();
+        foreach (GradientSliderHandleColorBox gradientSliderHandleColorBox in gradientSliderHandleColorBoxes)
+        {
+            gradientSliderHandleColorBox.DestroyColorPicker();
+        }
+
         currentShift -= shiftStep;
         float actualCurrentShift = (1 - Mathf.Cos(currentShift * Mathf.PI)) / 2;
         if (currentShift < 0)

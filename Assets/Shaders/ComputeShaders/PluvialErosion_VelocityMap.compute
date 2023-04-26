@@ -7,16 +7,18 @@ RWStructuredBuffer<float4> outflowMap; // x == left, y == right, z == top, w = b
 RWStructuredBuffer<float> waterHeightMap;
 RWStructuredBuffer<float2> velocityMap;
 
+#include "Assets/Shaders/Cubemap.cginc"
+
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    if (id.x >= 6 * (uint)mapWidth || id.y >= (uint)mapHeight)
         return;
 
     #include "Assets/Shaders/ComputeShaders/indexes.cginc"
 
     // Water Surface
-    float waterDelta = (outflowMap[indexL].y + outflowMap[indexR].x + outflowMap[indexU].w + outflowMap[indexD].z) - (outflowMap[index].x + outflowMap[index].y + outflowMap[index].z + outflowMap[index].w);
+    float waterDelta = (outflowMap[indexL].y + outflowMap[indexR].x + outflowMap[indexT].w + outflowMap[indexB].z) - (outflowMap[index].x + outflowMap[index].y + outflowMap[index].z + outflowMap[index].w);
     float d2 = waterHeightMap[index] + waterDelta;
     if (d2 < 0) d2 = 0;
     waterHeightMap[index] = d2;
@@ -24,7 +26,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     // Velocity Field
     float horizontalVelocity = (outflowMap[indexL].y - outflowMap[index].x + outflowMap[index].y - outflowMap[indexR].x) / 2; // Horizontal speed is from left to right
     float u = horizontalVelocity;
-    float verticalVelocity = (outflowMap[indexD].z - outflowMap[index].w + outflowMap[index].z - outflowMap[indexU].w) / 2; // Vertical speed is from bottom to top
+    float verticalVelocity = (outflowMap[indexB].z - outflowMap[index].w + outflowMap[index].z - outflowMap[indexT].w) / 2; // Vertical speed is from bottom to top
     float v = verticalVelocity;
 
     //float velocity = sqrt(u * u + v * v);

@@ -106,6 +106,26 @@ public class Geosphere : MonoBehaviour
         RotateCameraTo(longitude, latitude);
     }
 
+    public void MoveCameraBy(float x, float y)
+    {
+        float latitudeDelta = y / 1250;
+        float longitudeDelta = x / 1250;
+
+        float latitude = 0;
+        float longitude = 0;
+        GetCameraLatitudeLongitude(ref latitude, ref longitude);
+
+        latitude += latitudeDelta;
+        longitude += longitudeDelta;
+
+        if (latitude > 0.9999f) latitude = 0.9999f;
+        if (latitude < 0.0001f) latitude = 0.0001f;
+        if (longitude > 1) longitude = 1;
+        if (longitude < 0) longitude = 0;
+
+        RotateCameraTo(longitude, latitude);
+    }
+
     public void RotateCameraTo(double longitude, double latitude)
     {
         Camera camera = transform.GetComponentInChildren<Camera>();

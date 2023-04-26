@@ -114,7 +114,7 @@ namespace UnityEngine.UI.Extensions.ColorPicker
 			switch (saveType)
 			{
 				case SaveType.None:
-					Debug.LogWarning("Called SavePresets with SaveType = None...");
+					//Debug.LogWarning("Called SavePresets with SaveType = None...");
 					break;
 				case SaveType.PlayerPrefs:
 					PlayerPrefs.SetString(playerPrefsKey, jsonData);

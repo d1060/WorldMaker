@@ -4,34 +4,88 @@
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 int mapWidth;
-int mapHeight;
-float waterLevel;
+float minHeight;
+float maxHeight;
+//float waterLevel;
 float erosionNoiseMerge;
-float normalScale;
-RWStructuredBuffer<float> originalHeightMap;
-RWStructuredBuffer<float> erodedHeightMap;
-RWStructuredBuffer<float> mergedHeightMap;
-RWStructuredBuffer<float> inciseFlowMap;
+int flowErosionSet;
+//float normalScale;
+
+StructuredBuffer<float> heightMap12;
+StructuredBuffer<float> heightMap34;
+StructuredBuffer<float> heightMap56;
+
+StructuredBuffer<float> flowErosionMap12;
+StructuredBuffer<float> flowErosionMap34;
+StructuredBuffer<float> flowErosionMap56;
+
 RWTexture2D<float4> result;
 
-float GetHeight(int x, int y)
+//float GetHeight(int x, int y)
+//{
+//    if (y < 0) y = 0;
+//    if (y >= mapHeight) y = mapHeight - 1;
+//
+//    if (x < 0) x += 6 * mapWidth;
+//    if (x >= 6 * mapWidth) x -= 6 * mapWidth;
+//
+//    int index = x + y * 6 * mapWidth;
+//    float erodedHeight = erodedHeightMap[index] - inciseFlowMap[index];
+//    if (erodedHeight < 0) erodedHeight = 0;
+//
+//    float originalHeight = originalHeightMap[index];
+//    float mergedHeight = erodedHeight;
+//    if (erosionNoiseMerge >= 1)
+//        mergedHeight = originalHeight;
+//    else if (erosionNoiseMerge > 0)
+//        mergedHeight = erodedHeight * (1 - erosionNoiseMerge) + originalHeight * erosionNoiseMerge;
+//
+//    return mergedHeight;
+//}
+
+#include "Assets/Shaders/Cubemap.cginc"
+
+float getFlowErosionValueAtCoordinates(uint3 coordinates, int mapWidth)
 {
-    if (y < 0) y = 0;
-    if (y >= mapHeight) y = mapHeight - 1;
+    uint index = coordinates.x + coordinates.y * mapWidth;
 
-    if (x < 0) x += mapWidth;
-    if (x >= mapWidth) x -= mapWidth;
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
 
-    int index = x + y * mapWidth;
-    float erodedHeight = erodedHeightMap[index] - inciseFlowMap[index];
-    if (erodedHeight < 0) erodedHeight = 0;
+    if (coordinates.z <= 0) return flowErosionMap12[index];
+    else if (coordinates.z <= 1) return flowErosionMap12[index];
+    else if (coordinates.z <= 2) return flowErosionMap34[index];
+    else if (coordinates.z <= 3) return flowErosionMap34[index];
+    else if (coordinates.z <= 4) return flowErosionMap56[index];
+    else return flowErosionMap56[index];
+}
 
-    float originalHeight = originalHeightMap[index];
-    float mergedHeight = erodedHeight;
-    if (erosionNoiseMerge >= 1)
-        mergedHeight = originalHeight;
-    else if (erosionNoiseMerge > 0)
-        mergedHeight = erodedHeight * (1 - erosionNoiseMerge) + originalHeight * erosionNoiseMerge;
+float getMapValueAtCoordinates(uint3 coordinates, int mapWidth)
+{
+    uint index = coordinates.x + coordinates.y * mapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
+
+    if (coordinates.z <= 0) return heightMap12[index];
+    else if (coordinates.z <= 1) return heightMap12[index];
+    else if (coordinates.z <= 2) return heightMap34[index];
+    else if (coordinates.z <= 3) return heightMap34[index];
+    else if (coordinates.z <= 4) return heightMap56[index];
+    else return heightMap56[index];
+}
+
+float erodeHeight(uint3 coordinates, int mapWidth, float height)
+{
+    int index = coordinates.x + coordinates.z * mapWidth + coordinates.y * 6 * mapWidth;
+    float erodedHeight = getFlowErosionValueAtCoordinates(coordinates, mapWidth);
+    if (erodedHeight <= 0)
+        return height;
+
+    float mergedHeight = height - erodedHeight * erosionNoiseMerge;
+
+    if (mergedHeight <= 0)
+        return 0;
 
     return mergedHeight;
 }
@@ -39,12 +93,46 @@ float GetHeight(int x, int y)
 [numthreads(32,32,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    if (id.x >= 4 * (uint)mapWidth || id.y >= 2 * (uint)mapWidth)
         return;
 
-    int index = id.x + id.y * mapWidth;
+    float2 textureUV = float2((float)id.x / (4.0 * (float)mapWidth), (float)id.y / (2 * (float)mapWidth));
+    float3 cartesian = uvToCartesian(textureUV);
+    float3 cubemap = cartesianToCubemap(cartesian);
+    int cubemapX = saturate(cubemap.x) * mapWidth;
+    int cubemapY = saturate(cubemap.y) * mapWidth;
 
-    float height = GetHeight(id.x, id.y);
-    mergedHeightMap[index] = height;
+    // Adjustment for boundary pixels.
+    if (cubemap.z != 4 && cubemap.z != 5)
+    {
+        if (id.x == (uint)mapWidth / 2)
+        {
+            cubemap.z = 0;
+            cubemapX = (uint)mapWidth - 1;
+        }
+        else if (id.x == 3 * (uint)mapWidth / 2)
+        {
+            cubemap.z = 1;
+            cubemapX = (uint)mapWidth - 1;
+        }
+        else if (id.x == 5 * (uint)mapWidth / 2)
+        {
+            cubemap.z = 2;
+            cubemapX = (uint)mapWidth - 1;
+        }
+        else if (id.x == 7 * (uint)mapWidth / 2)
+        {
+            cubemap.z = 3;
+            cubemapX = (uint)mapWidth - 1;
+        }
+    }
+
+    //int index = cubemapX + cubemapY * mapWidth;
+    uint3 iCubemap = uint3(cubemapX, cubemapY, cubemap.z);
+    float height = getMapValueAtCoordinates(iCubemap, mapWidth);
+    height = erodeHeight(iCubemap, mapWidth, height);
+
+    //height = (height - minHeight) / (maxHeight - minHeight);
+
     result[id.xy] = float4(height, height, height, 1);
 }

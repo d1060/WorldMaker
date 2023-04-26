@@ -3,20 +3,34 @@
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
-int mapWidth;
-int mapHeight;
-RWTexture2D<float4> renderTexture;
-RWStructuredBuffer<float> heightMap;
+int textureWidth;
+Texture2D<float4> renderTexture;
+SamplerState MyLinearMirrorSampler;
+RWStructuredBuffer<float> heightMap1;
+RWStructuredBuffer<float> heightMap2;
+RWStructuredBuffer<float> heightMap3;
+RWStructuredBuffer<float> heightMap4;
+RWStructuredBuffer<float> heightMap5;
+RWStructuredBuffer<float> heightMap6;
 
-[numthreads(32,32,1)]
+#include "Assets/Shaders/Cubemap.cginc"
+
+[numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    if (id.x >= (uint)textureWidth || id.y >= (uint)textureWidth || id.z >= 6)
         return;
 
-    int index = id.x + id.y * mapWidth;
+    float2 uv = cubemapXYZtoUV(id.x, id.y, id.z, textureWidth);
+    float4 rtColor = renderTexture.SampleLevel(MyLinearMirrorSampler, uv, 0);
+    float height = (rtColor.x + rtColor.y + rtColor.z) / 3;
 
-    float4 rtColor = renderTexture[id.xy];
+    int index = id.x + id.y * textureWidth;
 
-    heightMap[index] = (rtColor.x + rtColor.y + rtColor.z) / 3;
+    if (id.z == 0) heightMap1[index] = height;
+    else if (id.z == 1) heightMap2[index] = height;
+    else if (id.z == 2) heightMap3[index] = height;
+    else if (id.z == 3) heightMap4[index] = height;
+    else if (id.z == 4) heightMap5[index] = height;
+    else if (id.z == 5) heightMap6[index] = height;
 }

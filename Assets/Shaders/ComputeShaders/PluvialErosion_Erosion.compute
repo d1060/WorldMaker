@@ -14,11 +14,12 @@ RWStructuredBuffer<float2> velocityMap;
 RWStructuredBuffer<float> waterHeightMap;
 
 #include "Assets/Shaders/ComputeShaders/interpolate.cginc"
+#include "Assets/Shaders/Cubemap.cginc"
 
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    if (id.x >= 6 * (uint)mapWidth || id.y >= (uint)mapHeight)
         return;
 
     #include "Assets/Shaders/ComputeShaders/indexes.cginc"

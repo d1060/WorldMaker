@@ -13,6 +13,7 @@ public class ButtonToggle : MonoBehaviour
     public Map map;
     public ToggleButtonEvent OnToggle;
     public bool activeIfDisabled = true;
+    public GameObject hintPanel = null;
 
     // Start is called before the first frame update
     void Start()
@@ -36,10 +37,12 @@ public class ButtonToggle : MonoBehaviour
             if (isEnabled)
             {
                 image.sprite = enabledSprite;
+                if (hintPanel) hintPanel.SetActive(true);
             }
             else
             {
                 image.sprite = disabledSprite;
+                if (hintPanel) hintPanel.SetActive(false);
             }
             OnToggle?.Invoke(isEnabled);
         }
@@ -50,6 +53,7 @@ public class ButtonToggle : MonoBehaviour
         isEnabled = true;
         Image image = GetComponent<Image>();
         image.sprite = enabledSprite;
+        if (hintPanel) hintPanel.SetActive(true);
     }
 
     public void Disable()
@@ -57,6 +61,13 @@ public class ButtonToggle : MonoBehaviour
         isEnabled = false;
         Image image = GetComponent<Image>();
         image.sprite = disabledSprite;
+        if (hintPanel) hintPanel.SetActive(false);
+    }
+
+    public void Toggle()
+    {
+        if (isEnabled) Disable();
+        else           Enable();
     }
 }
 

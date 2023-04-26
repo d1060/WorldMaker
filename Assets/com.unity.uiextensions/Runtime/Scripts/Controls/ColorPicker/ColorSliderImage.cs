@@ -34,7 +34,7 @@ namespace UnityEngine.UI.Extensions.ColorPicker
             }
             else
             {
-                Debug.LogWarning("Missing RawImage on object [" + name + "]");
+                //Debug.LogWarning("Missing RawImage on object [" + name + "]");
             }
         }
 
@@ -72,7 +72,7 @@ namespace UnityEngine.UI.Extensions.ColorPicker
             }
             else
             {
-                Debug.LogWarning("Missing RawImage on object [" + name + "]");
+                //Debug.LogWarning("Missing RawImage on object [" + name + "]");
             }
         }
 #endif
@@ -117,7 +117,7 @@ namespace UnityEngine.UI.Extensions.ColorPicker
         {
             if (!picker)
             {
-                Debug.LogWarning("Missing Picker on object [" + name + "]");
+                //Debug.LogWarning("Missing Picker on object [" + name + "]");
             }
             Color32 baseColor = picker != null ? picker.CurrentColor : Color.black;
 

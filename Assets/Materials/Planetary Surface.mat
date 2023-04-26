@@ -2,14 +2,15 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!21 &2100000
 Material:
-  serializedVersion: 6
+  serializedVersion: 8
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Planetary Surface
   m_Shader: {fileID: 4800000, guid: 398f651102b27db429700ea8400ffad4, type: 3}
-  m_ShaderKeywords: 
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -73,9 +74,11 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AtmosphericFalloff: 0.5
+    - _BakedNormalIntensity: 3
     - _BumpScale: 1
     - _ColorStep1: 0.01
-    - _ColorStep2: 0.26784435
+    - _ColorStep2: 0.1
     - _ColorStep3: 0.6
     - _ColorStep4: 0.8
     - _ColorStep5: 0.95
@@ -84,44 +87,50 @@ Material:
     - _ColorStep8: 1
     - _ColorSteps: 6
     - _Cutoff: 0.5
-    - _DesertThreshold1: 25
-    - _DesertThreshold2: 30
+    - _DesertThreshold1: 10
+    - _DesertThreshold2: 20
     - _DetailNormalMapScale: 1
-    - _DomainWarping: 2.0043218
-    - _DomainWarping2: 1.9999758
+    - _DomainWarping: 1
+    - _DomainWarping2: 1
     - _DrawType: 0
     - _DstBlend: 0
     - _GlossMapScale: 1
-    - _Glossiness: 0.801
+    - _Glossiness: 0.883
     - _GlossyReflections: 1
-    - _HeightExponent: 1.00155
-    - _HeightExponent2: 1.0015556
+    - _GlowIntensity: 0.5
+    - _GlowPower: 0.5
+    - _GrayscaleContrast: 1
+    - _GrayscaleGammaCorrection: 1
+    - _HeightExponent: 2
+    - _HeightExponent2: 2.1195648
     - _HeightRange: 0.36877266
     - _HeightRange2: 0.18669486
-    - _HeightmapHeight: 2048
-    - _HeightmapWidth: 4096
+    - _HeightmapHeight: 2014
+    - _HeightmapWidth: 12084
     - _HighHumidityLightnessPercentage: 0.549
-    - _HumiditySeed: 1.9777377
-    - _IceTemperatureThreshold1: -10
-    - _IceTemperatureThreshold2: -40
+    - _HumiditySeed: 952736.6
+    - _IceTemperatureThreshold1: 0
+    - _IceTemperatureThreshold2: -20
     - _IsEroded: 0
     - _IsFlowTexSet: 0
     - _IsHeightmapSet: 0
     - _IsLandmaskSet: 0
     - _IsMainmapSet: 0
-    - _Lacunarity: 1.6343691
-    - _Lacunarity2: 1.6559017
-    - _LandGlossiness: 0.219
+    - _Lacunarity: 1.7650981
+    - _Lacunarity2: 1.69
+    - _LandGlossiness: 0.376
     - _LandMetallic: 0
     - _LayerStrength: 1
     - _LayerStrength2: 1
-    - _MaxHeight: 0.6872793
+    - _LightFalloff: 17
+    - _LightIntensity: 1
+    - _MaxHeight: 0.8872528
     - _Metallic: 0
-    - _MinHeight: 0.5475739
+    - _MinHeight: 0
     - _Mode: 0
-    - _Multiplier: 3.5514293
-    - _Multiplier2: 3.6919022
-    - _NormalScale: 50
+    - _Multiplier: 3.1958716
+    - _Multiplier2: 4.31594
+    - _NormalScale: 10
     - _OcclusionStrength: 1
     - _OceanColorStep1: 0
     - _OceanColorStep2: 0.5
@@ -129,32 +138,35 @@ Material:
     - _OceanColorStep4: 1
     - _OceanColorSteps: 3
     - _Octaves: 13
-    - _Octaves2: 13
+    - _Octaves2: 14
     - _Parallax: 0.02
-    - _Persistence: 0.6802733
-    - _Persistence2: 0.7079656
-    - _RidgedNoise: 0
+    - _Persistence: 0.5921538
+    - _Persistence2: 0.7588247
+    - _RidgedNoise: 1
     - _RidgedNoise2: 1
-    - _Seed: 1.8205626
-    - _Seed2: 1.4578344
+    - _Seed: 285255.72
+    - _Seed2: 331515.03
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _TemperatureSeed: 1.0108823
+    - _SunDisk: 0
+    - _TemperatureSeed: 596390.6
     - _TextureHeight: 2048
-    - _TextureWidth: 4096
+    - _TextureWidth: 2048
     - _UVSec: 0
-    - _WaterLevel: 0.7
-    - _XOffset: 0.68828076
-    - _XOffset2: 0.28825143
-    - _YOffset: 0.7302122
-    - _YOffset2: 0.42803866
-    - _ZOffset: 0.10646706
-    - _ZOffset2: 0.8109984
+    - _UnderwaterNormalScale: 2.1
+    - _WaterLevel: 0.81273705
+    - _XOffset: 0.33151504
+    - _XOffset2: 0.54599655
+    - _YOffset: 0.21675692
+    - _YOffset2: 0.94809824
+    - _ZOffset: 0.9527367
+    - _ZOffset2: 0.05583087
     - _ZWrite: 1
     m_Colors:
+    - _AtmosphericColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Color1: {r: 0.6901961, g: 0.6392157, b: 0.43137255, a: 1}
+    - _Color1: {r: 0.7921569, g: 0.7607843, b: 0.627451, a: 1}
     - _Color2: {r: 0.50980395, g: 0.5019608, b: 0.27058825, a: 1}
     - _Color3: {r: 0.20392157, g: 0.27450982, b: 0.039215688, a: 1}
     - _Color4: {r: 0.5294118, g: 0.5411765, b: 0.3647059, a: 1}
@@ -165,8 +177,8 @@ Material:
     - _DesertColor: {r: 0.7529412, g: 0.8862745, b: 0.5568628, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _IceColor: {r: 0.95686275, g: 0.95686275, b: 0.95686275, a: 1}
-    - _OceanColor1: {r: 0.2509804, g: 0.33333334, b: 0.39215687, a: 1}
-    - _OceanColor2: {r: 0.19215687, g: 0.21176471, b: 0.28627452, a: 1}
+    - _OceanColor1: {r: 0.13333334, g: 0.3019608, b: 0.42745098, a: 1}
+    - _OceanColor2: {r: 0.13725491, g: 0.15294118, b: 0.22352941, a: 1}
     - _OceanColor3: {r: 0.19607843, g: 0.2, b: 0.2784314, a: 1}
     - _OceanColor4: {r: 0.19607843, g: 0.2, b: 0.2784314, a: 1}
   m_BuildTextureStacks: []

@@ -6,13 +6,19 @@
 
 #pragma kernel CSMain
 
-RWStructuredBuffer<float> map;
-StructuredBuffer<int> randomIndices;
-StructuredBuffer<int2> brushIndices;
+RWStructuredBuffer<float> map12;
+RWStructuredBuffer<float> map34;
+RWStructuredBuffer<float> map56;
+
+//RWStructuredBuffer<float> erosionMap12;
+//RWStructuredBuffer<float> erosionMap34;
+//RWStructuredBuffer<float> erosionMap56;
+
+StructuredBuffer<float> randomIndices;
+StructuredBuffer<int> brushIndices;
 StructuredBuffer<float> brushWeights;
 
 int mapWidth;
-int mapHeight;
 int brushLength;
 
 int maxLifetime;
@@ -26,93 +32,200 @@ float evaporateSpeed;
 float gravity;
 float startSpeed;
 float startWater;
+//float waterLevel;
 
-// Returns float3(gradientX, gradientY, height)
-float3 CalculateHeightAndGradient(float posX, float posY) {
-    int coordX = (int)posX;
-    int coordY = (int)posY;
+#include "Assets/Shaders/Cubemap.cginc"
 
-    // Calculate droplet's offset inside the cell (0,0) = at NW node, (1,1) = at SE node
-    float x = posX - coordX;
-    float y = posY - coordY;
+float getMapValueAtCoordinates(int3 coordinates)
+{
+    int index = coordinates.x + coordinates.y * mapWidth;
 
-    // Calculate heights of the four nodes of the droplet's cell
-    int indexNW = coordY * mapWidth + coordX;
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
 
-    int eastX = coordX + 1;
-    if (eastX >= mapWidth) eastX -= mapWidth;
+    if (index < 0 || index >= 2 * mapWidth * mapWidth)
+        return 0;
 
-    int southY = coordY + 1;
-    if (southY >= mapHeight) southY = mapHeight - 1;
-
-    int indexNE = coordY * mapWidth + eastX;
-    int indexSW = southY * mapWidth + coordX;
-    int indexSE = southY * mapWidth + eastX;
-
-    float heightNW = map[indexNW];
-    float heightNE = map[indexNE];
-    float heightSW = map[indexSW];
-    float heightSE = map[indexSE];
-
-    // Calculate droplet's direction of flow with bilinear interpolation of height difference along the edges
-    float gradientX = (heightNE - heightNW) * (1 - y) + (heightSE - heightSW) * y;
-    float gradientY = (heightSW - heightNW) * (1 - x) + (heightSE - heightNE) * x;
-
-    // Calculate height with bilinear interpolation of the heights of the nodes of the cell
-    float height = heightNW * (1 - x) * (1 - y) + heightNE * x * (1 - y) + heightSW * (1 - x) * y + heightSE * x * y;
-
-    return float3(gradientX, gradientY, height);
+    if (coordinates.z == 0) return map12[index];
+    else if (coordinates.z == 1) return map12[index];
+    else if (coordinates.z == 2) return map34[index];
+    else if (coordinates.z == 3) return map34[index];
+    else if (coordinates.z == 4) return map56[index];
+    else return map56[index];
 }
 
-[numthreads(8, 8, 1)]
-void CSMain(uint3 id : SV_DispatchThreadID)
+void CalculateHeightAndGradient(float3 coordinates, inout float2 gradient, inout float height)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    int3 coord = int3((int)coordinates.x, (int)coordinates.y, (int)coordinates.z);
+
+    float u = coordinates.x - coord.x;
+    float v = coordinates.y - coord.y;
+
+    uint3 coordR = getRightCoordinates(coord, mapWidth);
+    uint3 coordT = getTopCoordinates(coord, mapWidth);
+    uint3 coordTR = getTopRightCoordinates(coord, mapWidth);
+
+    float a = getMapValueAtCoordinates(coord);
+    float b = getMapValueAtCoordinates(coordR);
+    float c = getMapValueAtCoordinates(coordT);
+    float d = getMapValueAtCoordinates(coordTR);
+
+    height = (1 - v) * ((1 - u) * a + u * b) + v * ((1 - u) * c + u * d);
+    gradient = float2((1 - v) * (b - a) + v * (d - c), 
+                      (1 - u) * (c - a) + u * (d - b));
+}
+
+void updateMapAtCoordinates(int3 coords, float amount)
+{
+    int index = coords.x + coords.y * mapWidth;
+
+    if (coords.z == 1 || coords.z == 3 || coords.z == 5)
+        index += mapWidth * mapWidth;
+
+    if (index < 0 || index >= 2 * mapWidth * mapWidth)
         return;
 
-    float posX = id.x;
-    float posY = id.y;
+    if (coords.z == 0) map12[index] += amount;
+    else if (coords.z == 1) map12[index] += amount;
+    else if (coords.z == 2) map34[index] += amount;
+    else if (coords.z == 3) map34[index] += amount;
+    else if (coords.z == 4) map56[index] += amount;
+    else map56[index] += amount;
+}
+
+void shiftGradient(float3 prevCoordinates, float3 newCoordinates, inout float dirX, inout float dirY)
+{
+    if (prevCoordinates.z == 0 && newCoordinates.z == 4) 
+    {
+        float prevX = dirX;
+        dirX = dirY;
+        dirY = -prevX;
+    }
+    else if (prevCoordinates.z == 2 && newCoordinates.z == 4)
+    {
+        float prevX = dirX;
+        dirX = -dirY;
+        dirY = prevX;
+    }
+    else if (prevCoordinates.z == 3 && newCoordinates.z == 4)
+    {
+        dirX = -dirX;
+        dirY = -dirY;
+    }
+
+    else if (prevCoordinates.z == 4 && newCoordinates.z == 0)
+    {
+        float prevX = dirX;
+        dirX = -dirY;
+        dirY = prevX;
+    }
+    else if (prevCoordinates.z == 4 && newCoordinates.z == 2)
+    {
+        float prevX = dirX;
+        dirX = dirY;
+        dirY = -prevX;
+    }
+    else if (prevCoordinates.z == 4 && newCoordinates.z == 3)
+    {
+        dirX = -dirX;
+        dirY = -dirY;
+    }
+
+    else if (prevCoordinates.z == 0 && newCoordinates.z == 5)
+    {
+        float prevX = dirX;
+        dirX = -dirY;
+        dirY = prevX;
+    }
+    else if (prevCoordinates.z == 2 && newCoordinates.z == 5)
+    {
+        float prevX = dirX;
+        dirX = dirY;
+        dirY = -prevX;
+    }
+    else if (prevCoordinates.z == 3 && newCoordinates.z == 5)
+    {
+        dirX = -dirX;
+        dirY = -dirY;
+    }
+
+    else if (prevCoordinates.z == 5 && newCoordinates.z == 0)
+    {
+        float prevX = dirX;
+        dirX = dirY;
+        dirY = -prevX;
+    }
+    else if (prevCoordinates.z == 5 && newCoordinates.z == 2)
+    {
+        float prevX = dirX;
+        dirX = -dirY;
+        dirY = prevX;
+    }
+    else if (prevCoordinates.z == 5 && newCoordinates.z == 3)
+    {
+        dirX = -dirX;
+        dirY = -dirY;
+    }
+}
+
+[numthreads(64, 1, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    float x = randomIndices[id.x];
+    float y = randomIndices[id.x + 1];
+    int z = randomIndices[id.x + 2];
+    
+    //float x = id.x;
+    //float y = id.y;
+    //int z = id.z;
+
+    if (x >= mapWidth || y >= mapWidth || z >= 6)
+        return;
+
+    float3 coordinates = float3(x, y, z);
+
     float dirX = 0;
     float dirY = 0;
     float speed = startSpeed;
     float water = startWater;
     float sediment = 0;
+    //int isUnderwater = false;
 
-    for (int lifetime = 0; lifetime < maxLifetime; lifetime++) {
-        int nodeX = (int)posX;
-        int nodeY = (int)posY;
-        int dropletIndex = nodeY * mapWidth + nodeX;
+    for (int lifetime = 0; lifetime < maxLifetime; lifetime++)
+    {
+        int nodeX = (int)(coordinates.x);
+        int nodeY = (int)(coordinates.y);
 
         // Calculate droplet's offset inside the cell (0,0) = at NW node, (1,1) = at SE node
-        float cellOffsetX = posX - nodeX;
-        float cellOffsetY = posY - nodeY;
+        float cellOffsetX = coordinates.x - nodeX;
+        float cellOffsetY = coordinates.y - nodeY;
 
         // Calculate droplet's height and direction of flow with bilinear interpolation of surrounding heights
-        float3 heightAndGradient = CalculateHeightAndGradient(posX, posY);
+        float height;
+        float2 gradient;
+        CalculateHeightAndGradient(coordinates, gradient, height);
+
+        //if (height < waterLevel)
+        //    isUnderwater = true;
 
         // Update the droplet's direction and position (move position 1 unit regardless of speed)
-        dirX = (dirX * inertia - heightAndGradient.x * (1 - inertia));
-        dirY = (dirY * inertia - heightAndGradient.y * (1 - inertia));
+        dirX = (dirX * inertia - gradient.x * (1 - inertia));
+        dirY = (dirY * inertia - gradient.y * (1 - inertia));
 
         // Normalize direction
-        float len = max(0.01, sqrt(dirX * dirX + dirY * dirY));
+        float len = max(0.0001, sqrt(dirX * dirX + dirY * dirY));
         dirX /= len;
         dirY /= len;
-        posX += dirX;
-        posY += dirY;
 
-        // Stop simulating droplet if it's not moving or has flowed over edge of map
-        if ((dirX == 0 && dirY == 0) || posY < 0 || posY > mapHeight) {
-            break;
-        }
-        if (posX < 0)
-            posX += mapWidth;
-        if (posX >= mapWidth)
-            posX -= mapWidth;
+        float3 newCoordinates = getNewCoordinates(coordinates, dirX, dirY, mapWidth);
+        shiftGradient(coordinates, newCoordinates, dirX, dirY);
+        coordinates = newCoordinates;
 
         // Find the droplet's new height and calculate the deltaHeight
-        float newHeight = CalculateHeightAndGradient(posX, posY).z;
-        float deltaHeight = newHeight - heightAndGradient.z;
+        float newHeight;
+        float2 newGradient;
+        CalculateHeightAndGradient(coordinates, newGradient, newHeight);
+        float deltaHeight = newHeight - height;
 
         // Calculate the droplet's sediment capacity (higher when moving fast down a slope and contains lots of water)
         float sedimentCapacity = max(-deltaHeight * speed * water * sedimentCapacityFactor, minSedimentCapacity);
@@ -121,25 +234,31 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         if (sediment > sedimentCapacity || deltaHeight > 0)
         {
             // If moving uphill (deltaHeight > 0) try fill up to the current height, otherwise deposit a fraction of the excess sediment
-            float amountToDeposit = (deltaHeight > 0) ? min(deltaHeight, sediment) : (sediment - sedimentCapacity) * depositSpeed;
+            float amountToDeposit = 0;
+            if (deltaHeight > 0)
+            {
+                amountToDeposit = min(deltaHeight, (sediment - sedimentCapacity)) * depositSpeed;
+            }
+            else
+            {
+                amountToDeposit = min(-deltaHeight, (sediment - sedimentCapacity)) * depositSpeed;
+            }
+
+            //if (height < waterLevel && height + amountToDeposit > waterLevel)
+            //    amountToDeposit = waterLevel - height;
+
             sediment -= amountToDeposit;
 
             // Add the sediment to the four nodes of the current cell using bilinear interpolation
             // Deposition is not distributed over a radius (like erosion) so that it can fill small pits
-            int eastX = nodeX + 1;
-            if (eastX >= mapWidth) eastX -= mapWidth;
+            int3 eastCoordinates = getRightIntCoordinates(coordinates, mapWidth);
+            int3 northCoordinates = getTopIntCoordinates(coordinates, mapWidth);
+            int3 northEastCoordinates = getTopRightIntCoordinates(coordinates, mapWidth);
 
-            int southY = nodeY + 1;
-            if (southY >= mapHeight) southY = mapHeight - 1;
-
-            int indexNE = nodeY * mapWidth + eastX;
-            int indexSW = southY * mapWidth + nodeX;
-            int indexSE = southY * mapWidth + eastX;
-
-            map[dropletIndex] += amountToDeposit * (1 - cellOffsetX) * (1 - cellOffsetY);
-            map[indexNE] += amountToDeposit * cellOffsetX * (1 - cellOffsetY);
-            map[indexSW] += amountToDeposit * (1 - cellOffsetX) * cellOffsetY;
-            map[indexSE] += amountToDeposit * cellOffsetX * cellOffsetY;
+            updateMapAtCoordinates(coordinates, amountToDeposit * (1 - cellOffsetX) * (1 - cellOffsetY));
+            updateMapAtCoordinates(eastCoordinates, amountToDeposit * (1 - cellOffsetX) * cellOffsetY);
+            updateMapAtCoordinates(northCoordinates, amountToDeposit * cellOffsetX * (1 - cellOffsetY));
+            updateMapAtCoordinates(northEastCoordinates, amountToDeposit * cellOffsetX * cellOffsetY);
         }
         else
         {
@@ -147,27 +266,19 @@ void CSMain(uint3 id : SV_DispatchThreadID)
             // Clamp the erosion to the change in height so that it doesn't dig a hole in the terrain behind the droplet
             float amountToErode = min((sedimentCapacity - sediment) * erodeSpeed, -deltaHeight);
 
-            for (int i = 0; i < brushLength; i++)
+            for (int i = 0; i < brushLength; i ++)
             {
-                int brushX = brushIndices[i].x;
-                int brushY = brushIndices[i].y;
+                int brushX = brushIndices[i * 2];
+                int brushY = brushIndices[i * 2 + 1];
 
-                int erodeX = nodeX + brushX;
-                int erodeY = nodeY + brushY;
+                float3 erodeCoordinates = getNewCoordinates(coordinates, brushX, brushY, mapWidth);
+                //shiftGradient(coordinates, erodeCoordinates, dirX, dirY);
 
-                if (erodeX < 0) erodeX += mapWidth;
-                if (erodeX >= mapWidth) erodeX -= mapWidth;
-                if (erodeY < 0) erodeY = 0;
-                if (erodeY >= mapWidth) erodeY = mapWidth - 1;
-
-                int erodeIndex = erodeY * mapWidth + erodeX;
-                if (erodeIndex > 0 && erodeIndex < mapWidth * mapHeight)
-                {
-                    float weightedErodeAmount = amountToErode * brushWeights[i];
-                    float deltaSediment = (map[erodeIndex] < weightedErodeAmount) ? map[erodeIndex] : weightedErodeAmount;
-                    map[erodeIndex] -= deltaSediment;
-                    sediment += deltaSediment;
-                }
+                float weightedErodeAmount = amountToErode * brushWeights[i];
+                float mapValue = getMapValueAtCoordinates(erodeCoordinates);
+                float deltaSediment = (mapValue < weightedErodeAmount) ? mapValue : weightedErodeAmount;
+                updateMapAtCoordinates(erodeCoordinates, -deltaSediment);
+                sediment += deltaSediment;
             }
         }
 

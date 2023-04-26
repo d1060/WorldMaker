@@ -11,7 +11,6 @@ public class InciseFlowSettings
     [Range(0, 1)]
     public float strength = 0.5f;
     public float exponent = 10;
-    public float amount = 0.5f;
     public float maxFlowStrength = 100;
     public float chiselStrength = 1;
     [Range(0, 1)]
@@ -31,4 +30,20 @@ public class InciseFlowSettings
     public int numberOfRivers = 1024;
     public float startingAlpha = 0.5f;
     public int riverPlotSeed = 234543;
+
+    public float LowerRiverAmount
+    {
+        get
+        {
+            return riverAmount1 < riverAmount2 ? riverAmount1 : riverAmount2;
+        }
+    }
+
+    public float UpperRiverAmount
+    {
+        get
+        {
+            return riverAmount1 >= riverAmount2 ? riverAmount1 : riverAmount2;
+        }
+    }
 }

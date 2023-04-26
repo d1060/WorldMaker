@@ -1,8 +1,10 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using TMPro;
 
 public class CameraController : MonoBehaviour
 {
@@ -18,15 +20,28 @@ public class CameraController : MonoBehaviour
     //public Globe globe;
     //public SectorizedGeoSphere.Sphere sectorizedGeoSphere;
     public Geosphere geosphere;
+    public float navigationKeySpeed = 4f;
+    public float navigationKeyDelay = 1.0f;
     float minCameraDistance = 4;
     float maxCameraDistance = 190;
     float zoomMultiplier = 10;
     Vector3 cameraStartingPosition;
+    Vector3 targetCameraPosition;
     Plane[] boundaryPlanes;
     Camera cam = null;
     int zoomLevel = 1;
     public GameObject contextMenu;
     Canvas canvas;
+
+    DateTime navigationKeyStart;
+    bool navigationKeyDown = false;
+    bool isNavigating = false;
+    float navigationSpeed = 0; // In a ratio from 0 to 1 (1 = navigationKeySpeed)
+    float lastXAxisMovement = 0;
+    float lastYAxisMovement = 0;
+    public TMP_InputField worldNameText;
+    public float smoothTime = 0.1f;
+    private Vector3 velocity = Vector3.zero;
 
     double visibleLowerLongitude = 0;
     double visibleUpperLongitude = 1;
@@ -41,12 +56,15 @@ public class CameraController : MonoBehaviour
     public float MinCameraDistance { get { return minCameraDistance; } }
     public float MaxCameraDistance { get { return maxCameraDistance; } }
 
+
+
     // Start is called before the first frame update
     void Start()
     {
         cam = GetComponent<Camera>();
         boundaryPlanes = GeometryUtility.CalculateFrustumPlanes(cam);
         cameraStartingPosition = cam.transform.position;
+        targetCameraPosition = cameraStartingPosition;
 
         canvas = this.gameObject.GetComponentInChildren<Canvas>();
         graphicRaycaster = canvas.GetComponent<GraphicRaycaster>();
@@ -58,7 +76,84 @@ public class CameraController : MonoBehaviour
     {
         float xAxisMovement = Input.GetAxis("Mouse X");
         float yAxisMovement = Input.GetAxis("Mouse Y");
+        if (Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightAlt) || Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift))
+        {
+            xAxisMovement = 0;
+            yAxisMovement = 0;
+        }
         float mouseWheel = Input.GetAxis("Mouse ScrollWheel");
+        bool isKeyPress = false;
+
+        // Navigation Keys
+        if ((Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.RightArrow) || 
+             Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.LeftArrow)) &&
+            (!Input.GetKey(KeyCode.RightControl) && !Input.GetKey(KeyCode.LeftControl) && !Input.GetKey(KeyCode.RightShift) &&
+             !Input.GetKey(KeyCode.LeftShift) && !Input.GetKey(KeyCode.RightAlt) && !Input.GetKey(KeyCode.LeftAlt)))
+        {
+            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
+            {
+                if (yAxisMovement < navigationKeySpeed)
+                    yAxisMovement = navigationKeySpeed;
+            }
+            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.RightArrow))
+            {
+                if (-xAxisMovement < navigationKeySpeed)
+                    xAxisMovement = -navigationKeySpeed;
+            }
+            if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow))
+            {
+                if (-yAxisMovement < navigationKeySpeed)
+                    yAxisMovement = -navigationKeySpeed;
+            }
+            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.LeftArrow))
+            {
+                if (xAxisMovement < navigationKeySpeed)
+                    xAxisMovement = navigationKeySpeed;
+            }
+
+            isKeyPress = true;
+            if (navigationKeyDown == false)
+            {
+                navigationKeyStart = DateTime.Now;
+                navigationKeyDown = true;
+            }
+            isNavigating = true;
+        }
+        else
+        {
+            if (navigationKeyDown == true)
+            {
+                navigationKeyStart = DateTime.Now;
+                navigationKeyDown = false;
+            }
+        }
+
+        if (navigationKeyDown)
+        {
+            TimeSpan ts = DateTime.Now - navigationKeyStart;
+            if (ts.TotalSeconds >= navigationKeyDelay)
+                navigationSpeed = 1;
+            else
+                navigationSpeed = (float)(ts.TotalSeconds / navigationKeyDelay);
+            if (navigationSpeed < navigationKeySpeed / 10)
+                navigationSpeed = navigationKeySpeed / 10;
+        }
+        else if (!navigationKeyDown && isNavigating)
+        {
+            TimeSpan ts = DateTime.Now - navigationKeyStart;
+            if (ts.TotalSeconds >= navigationKeyDelay)
+            {
+                navigationSpeed = 0;
+                isNavigating = false;
+            }
+            else
+                navigationSpeed = 1 - (float)(ts.TotalSeconds / navigationKeyDelay);
+            isKeyPress = true;
+
+            xAxisMovement = lastXAxisMovement;
+            yAxisMovement = lastYAxisMovement;
+        }
+
         bool isMouseButtonDown = false;
         bool isLeftMouseButtonDown = false;
         //bool isMouseButton2Down = false;
@@ -68,7 +163,6 @@ public class CameraController : MonoBehaviour
         //    isMouseButton2Down = true;
         if(Input.GetKeyDown(KeyCode.Mouse1))
             isLeftMouseButtonDown = true;
-
 
         bool performZoom = true;
         if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && mouseWheel != 0)
@@ -136,6 +230,11 @@ public class CameraController : MonoBehaviour
                 //Debug.Log("Doing Pan.");
                 DoPan();
             }
+            else if ((xAxisMovement != 0 || yAxisMovement != 0) && isKeyPress)
+            {
+                //Debug.Log("Doing Pan.");
+                DoFixedPan(xAxisMovement * navigationSpeed, yAxisMovement * navigationSpeed);
+            }
 
             if (isMouseButtonDown)
             {
@@ -162,6 +261,14 @@ public class CameraController : MonoBehaviour
                 //Debug.Log("Camera Controller: Close Context Menu - Not going to hit a waypoint Marker.");
                 CloseContextMenu();
             }
+        }
+
+        lastXAxisMovement = xAxisMovement;
+        lastYAxisMovement = yAxisMovement;
+
+        if (targetCameraPosition != transform.position)
+        {
+            transform.position = Vector3.SmoothDamp(transform.position, targetCameraPosition, ref velocity, smoothTime);
         }
     }
 
@@ -235,7 +342,8 @@ public class CameraController : MonoBehaviour
 
                 if (cameraPosition.z > -minCameraDistance)
                     cameraPosition.z = -minCameraDistance;
-                transform.position = cameraPosition;
+
+                targetCameraPosition = cameraPosition;
             }
 
             geosphere?.ZoomCameraTo(-transform.position.z);
@@ -254,7 +362,8 @@ public class CameraController : MonoBehaviour
             cameraPosition.z = 0 - geosphere.GetCameraDistance();
             if (cameraPosition.z > -minCameraDistance)
                 cameraPosition.z = -minCameraDistance;
-            transform.position = cameraPosition;
+
+            targetCameraPosition = cameraPosition;
         }
     }
 
@@ -315,12 +424,62 @@ public class CameraController : MonoBehaviour
         }
 
         cameraPosition.z = cam.transform.position.z;
-        cam.transform.position = cameraPosition;
+        targetCameraPosition = cameraPosition;
 
         CalculateVisibleFlatLatitudeAndLongitude();
 
         if (!map.ShowGlobe)
             geosphere?.RotateCameraTo((visibleLowerLongitude + visibleUpperLongitude)/2, (visibleLowerLatitude + visibleUpperLatitude)/2);
+    }
+
+    void DoFixedPan(float xAxisMovement, float yAxisMovement)
+    {
+        if (xAxisMovement == 0 && yAxisMovement == 0)
+            return;
+
+        worldNameText.interactable = false;
+
+        float xDelta = xAxisMovement;
+        float yDelta = yAxisMovement;
+
+        float cameraDistanceRatio = (-transform.position.z < minCameraDistance ? minCameraDistance : -transform.position.z) / maxCameraDistance;
+        xDelta *= cameraDistanceRatio;
+        yDelta *= cameraDistanceRatio;
+
+        Vector3 cameraPan = new Vector3(0, yDelta, 0);
+        Vector3 cameraPosition = cam.transform.position + cameraPan;
+
+        if (map.ShowGlobe)
+        {
+            if (geosphere != null)
+            {
+                float latitude = 0;
+                float longitude = 0;
+                geosphere.GetCameraLatitudeLongitude(ref latitude, ref longitude);
+                geosphere.MoveCameraBy(xDelta, yDelta);
+                map.ShiftTo(longitude + xDelta / 1000);
+            }
+        }
+        else
+        {
+            if (!IsInsidePlanes(cameraPosition))
+                cameraPosition = MoveIntoPlanes(cameraPosition);
+
+            if (xDelta != 0)
+            {
+                map.Shift(-xDelta);
+            }
+        }
+
+        cameraPosition.z = cam.transform.position.z;
+        targetCameraPosition = cameraPosition;
+
+        CalculateVisibleFlatLatitudeAndLongitude();
+
+        if (!map.ShowGlobe)
+            geosphere?.RotateCameraTo((visibleLowerLongitude + visibleUpperLongitude) / 2, (visibleLowerLatitude + visibleUpperLatitude) / 2);
+
+        worldNameText.interactable = true;
     }
 
     public void BringCameraIntoViewPlanes()
@@ -329,7 +488,7 @@ public class CameraController : MonoBehaviour
         if (!IsInsidePlanes(cameraPosition))
         {
             cameraPosition = MoveIntoPlanes(cameraPosition);
-            cam.transform.position = cameraPosition;
+            targetCameraPosition = cameraPosition;
         }
     }
 
@@ -386,13 +545,13 @@ public class CameraController : MonoBehaviour
 
     int GetZoomLevel(float distance)
     {
-        for (int i = 0; i < map.textureSettings.zoomLevelDistances.Length; i++)
+        for (int i = 0; i < TextureManager.instance.Settings.zoomLevelDistances.Length; i++)
         {
-            if (distance > map.textureSettings.zoomLevelDistances[i])
+            if (distance > TextureManager.instance.Settings.zoomLevelDistances[i])
                 return i >= 1 ? i : 1;
         }
-        if (distance <= map.textureSettings.zoomLevelDistances[map.textureSettings.zoomLevelDistances.Length - 1])
-            return map.textureSettings.zoomLevelDistances.Length - 1;
+        if (distance <= TextureManager.instance.Settings.zoomLevelDistances[TextureManager.instance.Settings.zoomLevelDistances.Length - 1])
+            return TextureManager.instance.Settings.zoomLevelDistances.Length - 1;
 
         return 1;
     }

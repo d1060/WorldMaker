@@ -7,29 +7,57 @@ float waterLevel;
 float upwardWeight = 10;
 float downwardWeight = 1;
 float distanceWeight = 10;
-RWStructuredBuffer<float> heightMap;
-RWStructuredBuffer<float> distanceMap;
-RWStructuredBuffer<int> connectivityMap;
-RWStructuredBuffer<int> output;
-//RWStructuredBuffer<int> statusMap;
+float flowAmount = 1;
+float maxFlow = 1000;
+StructuredBuffer<float> heightMap12;
+StructuredBuffer<float> heightMap34;
+StructuredBuffer<float> heightMap56;
 
-float diagonalHeight(int index, float thisHeight)
+RWStructuredBuffer<float> distanceMap12;
+RWStructuredBuffer<float> distanceMap34;
+RWStructuredBuffer<float> distanceMap56;
+
+RWStructuredBuffer<int> connectivityMap12;
+RWStructuredBuffer<int> connectivityMap34;
+RWStructuredBuffer<int> connectivityMap56;
+
+#include "Assets/Shaders/Cubemap.cginc"
+
+float getMapValueAtCoordinates(int3 coordinates)
 {
-    float diagonalHeight = heightMap[index];
+    int index = coordinates.x + coordinates.y * mapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
+
+    if (coordinates.z <= 0) return heightMap12[index];
+    else if (coordinates.z <= 1) return heightMap12[index];
+    else if (coordinates.z <= 2) return heightMap34[index];
+    else if (coordinates.z <= 3) return heightMap34[index];
+    else if (coordinates.z <= 4) return heightMap56[index];
+    else return heightMap56[index];
+}
+
+float diagonalHeight(int3 coordinates, float thisHeight)
+{
+    float diagonalHeight = getMapValueAtCoordinates(coordinates);
     float actualHeight = (diagonalHeight - thisHeight) / 1.41421356 + thisHeight;
     return actualHeight;
 }
 
-void checkIsCloser(int neighborIndex, int myIndex, float neighborHeight, float myHeight, float distance, inout float lowestConnectedDistance, inout int lowestConnectedIndex)
+void checkIsCloser(float neighborDistance, int neighborConnectivity, int neighborIndex, int3 coordinates, float neighborHeight, float myHeight, float distance, inout float lowestConnectedDistance, inout int lowestConnectedIndex)
 {
-    if (neighborHeight < waterLevel)
+    int myIndex = coordinates.x + coordinates.z * mapWidth + coordinates.y * mapWidth * 6;
+    float effectiveWaterLevel = waterLevel * 0.9;
+
+    if (neighborHeight < effectiveWaterLevel)
     {
-        lowestConnectedDistance = distance + (waterLevel - myHeight) * downwardWeight;
+        lowestConnectedDistance = distance + (effectiveWaterLevel - myHeight) * downwardWeight;
         if (lowestConnectedDistance == 0)
             lowestConnectedDistance = 0.0000001;
         lowestConnectedIndex = neighborIndex;
     }
-    else if (distanceMap[neighborIndex] != 0 && connectivityMap[neighborIndex] != myIndex)
+    else if (neighborDistance != 0 && neighborConnectivity != myIndex)
     {
         float slope = neighborHeight - myHeight; // Downward slope is NEGATIVE. Upward is POSITIVE.
         if (slope > 0)
@@ -37,112 +65,180 @@ void checkIsCloser(int neighborIndex, int myIndex, float neighborHeight, float m
         else
             slope *= downwardWeight;
 
-        float currentDistance = distanceMap[neighborIndex];
+        float currentDistance = neighborDistance;
         float distanceThroughNeighbor = currentDistance + distance + slope;
 
         if (distanceThroughNeighbor < lowestConnectedDistance || lowestConnectedDistance == 9999999)
         {
             lowestConnectedDistance = distanceThroughNeighbor;
             lowestConnectedIndex = neighborIndex;
-            output[0] = 0;
+            //output[0] = 0;
         }
     }
 }
 
-[numthreads(32,32,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+int getConnectivityFrom(int3 coordinates)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    int index = coordinates.x + coordinates.y * mapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
+
+    if (coordinates.z <= 0) return connectivityMap12[index];
+    else if (coordinates.z <= 1) return connectivityMap12[index];
+    else if (coordinates.z <= 2) return connectivityMap34[index];
+    else if (coordinates.z <= 3) return connectivityMap34[index];
+    else if (coordinates.z <= 4) return connectivityMap56[index];
+    else return connectivityMap56[index];
+}
+
+void setConnectivityAt(int3 coordinates, int value)
+{
+    int index = coordinates.x + coordinates.y * mapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
+
+    if (coordinates.z <= 0) connectivityMap12[index] = value;
+    else if (coordinates.z <= 1) connectivityMap12[index] = value;
+    else if (coordinates.z <= 2) connectivityMap34[index] = value;
+    else if (coordinates.z <= 3) connectivityMap34[index] = value;
+    else if (coordinates.z <= 4) connectivityMap56[index] = value;
+    else connectivityMap56[index] = value;
+}
+
+float getDistanceFrom(int3 coordinates)
+{
+    int index = coordinates.x + coordinates.y * mapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
+
+    if (coordinates.z <= 0) return distanceMap12[index];
+    else if (coordinates.z <= 1) return distanceMap12[index];
+    else if (coordinates.z <= 2) return distanceMap34[index];
+    else if (coordinates.z <= 3) return distanceMap34[index];
+    else if (coordinates.z <= 4) return distanceMap56[index];
+    else return distanceMap56[index];
+}
+
+void setDistanceAt(int3 coordinates, float value)
+{
+    int index = coordinates.x + coordinates.y * mapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
+
+    if (coordinates.z <= 0) distanceMap12[index] = value;
+    else if (coordinates.z <= 1) distanceMap12[index] = value;
+    else if (coordinates.z <= 2) distanceMap34[index] = value;
+    else if (coordinates.z <= 3) distanceMap34[index] = value;
+    else if (coordinates.z <= 4) distanceMap56[index] = value;
+    else distanceMap56[index] = value;
+}
+
+[numthreads(8, 8, 6)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapWidth || id.z >= 6)
         return;
 
-    int x = id.x;
-    int y = id.y;
-
-    int index = x + y * mapWidth;
+    int3 cubemap = int3(id.x, id.y, id.z);
 
     float linearStep = 1 / (float)mapWidth;
     linearStep *= distanceWeight;
     float diagonalStep = linearStep * 1.41421356;
 
-    float height = heightMap[index];
+    float height = getMapValueAtCoordinates(cubemap);
 
-    if (height < waterLevel)
+    int3 cubemapLeft = getLeftIntCoordinates(cubemap, mapWidth);
+    int3 cubemapRight = getRightIntCoordinates(cubemap, mapWidth);
+    int3 cubemapTop = getTopIntCoordinates(cubemap, mapWidth);
+    int3 cubemapBottom = getBottomIntCoordinates(cubemap, mapWidth);
+
+    int3 cubemapTopLeft = getTopLeftIntCoordinates(cubemap, mapWidth);
+    int3 cubemapBottomRight = getBottomRightIntCoordinates(cubemap, mapWidth);
+    int3 cubemapTopRight = getTopRightIntCoordinates(cubemap, mapWidth);
+    int3 cubemapBottomLeft = getBottomLeftIntCoordinates(cubemap, mapWidth);
+
+    float heightD = getMapValueAtCoordinates(cubemapBottom);
+    float heightR = getMapValueAtCoordinates(cubemapRight);
+    float heightU = getMapValueAtCoordinates(cubemapTop);
+    float heightL = getMapValueAtCoordinates(cubemapLeft);
+
+    float heightDL = diagonalHeight(cubemapBottomLeft, height);
+    float heightDR = diagonalHeight(cubemapBottomRight, height);
+    float heightUR = diagonalHeight(cubemapTopRight, height);
+    float heightUL = diagonalHeight(cubemapTopLeft, height);
+
+    uint index = id.x + id.z * mapWidth + id.y * mapWidth * 6;
+
+    int indexL = cubemapLeft.x + cubemapLeft.z * mapWidth + cubemapLeft.y * mapWidth * 6;
+    int indexR = cubemapRight.x + cubemapRight.z * mapWidth + cubemapRight.y * mapWidth * 6;
+    int indexT = cubemapTop.x + cubemapTop.z * mapWidth + cubemapTop.y * mapWidth * 6;
+    int indexB = cubemapBottom.x + cubemapBottom.z * mapWidth + cubemapBottom.y * mapWidth * 6;
+    int indexBL = cubemapBottomLeft.x + cubemapBottomLeft.z * mapWidth + cubemapBottomLeft.y * mapWidth * 6;
+    int indexBR = cubemapBottomRight.x + cubemapBottomRight.z * mapWidth + cubemapBottomRight.y * mapWidth * 6;
+    int indexTL = cubemapTopLeft.x + cubemapTopLeft.z * mapWidth + cubemapTopLeft.y * mapWidth * 6;
+    int indexTR = cubemapTopRight.x + cubemapTopRight.z * mapWidth + cubemapTopRight.y * mapWidth * 6;
+
+    float distance = getDistanceFrom(cubemap);
+    float distanceL = getDistanceFrom(cubemapLeft);
+    float distanceR = getDistanceFrom(cubemapRight);
+    float distanceT = getDistanceFrom(cubemapTop);
+    float distanceB = getDistanceFrom(cubemapBottom);
+    float distanceBL = getDistanceFrom(cubemapBottomLeft);
+    float distanceBR = getDistanceFrom(cubemapBottomRight);
+    float distanceTL = getDistanceFrom(cubemapTopLeft);
+    float distanceTR = getDistanceFrom(cubemapTopRight);
+
+    float effectiveWaterLevel = waterLevel * 0.9;
+
+    if (height < effectiveWaterLevel)
+    {
         return;
-
-    int leftX = x - 1;
-    int rightX = x + 1;
-    int topY = y - 1;
-    int bottomY = y + 1;
-
-    bool isTop = false;
-    bool isBottom = false;
-
-    if (leftX < 0) leftX += mapWidth;
-    if (rightX >= mapWidth) rightX -= mapWidth;
-    if (bottomY >= mapHeight)
-    {
-        bottomY = mapHeight - 1;
-        isBottom = true;
     }
-    if (topY < 0)
+    else
     {
-        topY = 0;
-        isTop = true;
-    }
-
-    int indexL = leftX + mapWidth * y;
-    int indexR = rightX + mapWidth * y;
-    int indexU = x + mapWidth * topY;
-    int indexD = x + mapWidth * bottomY;
-    int indexDL = leftX + mapWidth * bottomY;
-    int indexDR = rightX + mapWidth * bottomY;
-    int indexUL = leftX + mapWidth * topY;
-    int indexUR = rightX + mapWidth * topY;
-
-    float heightD = heightMap[indexD];
-    float heightR = heightMap[indexR];
-    float heightU = heightMap[indexU];
-    float heightL = heightMap[indexL];
-    float heightDL = diagonalHeight(indexDL, height);
-    float heightDR = diagonalHeight(indexDR, height);
-    float heightUR = diagonalHeight(indexUR, height);
-    float heightUL = diagonalHeight(indexUL, height);
-
-    // If any neighbors have a calculated distance, or are below water:
-    if (distanceMap[indexL] != 0 || heightL < waterLevel ||
-        distanceMap[indexR] != 0 || heightR < waterLevel ||
-        distanceMap[indexU] != 0 || heightU < waterLevel ||
-        distanceMap[indexD] != 0 || heightD < waterLevel ||
-        distanceMap[indexDL] != 0 || heightDL < waterLevel ||
-        distanceMap[indexDR] != 0 || heightDR < waterLevel ||
-        distanceMap[indexUL] != 0 || heightUL < waterLevel ||
-        distanceMap[indexUR] != 0 || heightUR < waterLevel)
-    {
-        float lowestConnectedDistance = 9999999;
-        int lowestConnectedIndex = -1;
-
-        if (!isTop)
+        // If any neighbors have a calculated distance, or are below water:
+        if (distanceL != 0 || heightL <= waterLevel ||
+            distanceR != 0 || heightR <= waterLevel ||
+            distanceT != 0 || heightU <= waterLevel ||
+            distanceB != 0 || heightD <= waterLevel ||
+            distanceBL != 0 || heightDL <= waterLevel ||
+            distanceBR != 0 || heightDR <= waterLevel ||
+            distanceTL != 0 || heightUL <= waterLevel ||
+            distanceTR != 0 || heightUR <= waterLevel)
         {
-            checkIsCloser(indexUL, index, heightUL, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
-            checkIsCloser(indexU, index, heightU, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
-            checkIsCloser(indexUR, index, heightUR, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
-        }
-        checkIsCloser(indexL, index, heightL, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
-        checkIsCloser(indexR, index, heightR, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
-        if (!isBottom)
-        {
-            checkIsCloser(indexDL, index, heightDL, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
-            checkIsCloser(indexD, index, heightD, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
-            checkIsCloser(indexDR, index, heightDR, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
-        }
+            int connectivityL = getConnectivityFrom(cubemapLeft);
+            int connectivityR = getConnectivityFrom(cubemapRight);
+            int connectivityT = getConnectivityFrom(cubemapTop);
+            int connectivityB = getConnectivityFrom(cubemapBottom);
+            int connectivityBL = getConnectivityFrom(cubemapBottomLeft);
+            int connectivityBR = getConnectivityFrom(cubemapBottomRight);
+            int connectivityTL = getConnectivityFrom(cubemapTopLeft);
+            int connectivityTR = getConnectivityFrom(cubemapTopRight);
 
-        if (lowestConnectedIndex == -1)
-            return;
+            float lowestConnectedDistance = 9999999;
+            int lowestConnectedIndex = -1;
 
-        if (distanceMap[index] == 0 || distanceMap[index] > lowestConnectedDistance)
-        {
-            distanceMap[index] = lowestConnectedDistance;
-            connectivityMap[index] = lowestConnectedIndex;
+            checkIsCloser(distanceTL, connectivityTL, indexTL, cubemap, heightUL, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceT, connectivityT, indexT, cubemap, heightU, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceTR, connectivityTR, indexTR, cubemap, heightUR, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceL, connectivityL, indexL, cubemap, heightL, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceR, connectivityR, indexR, cubemap, heightR, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceBL, connectivityBL, indexBL, cubemap, heightDL, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceB, connectivityB, indexB, cubemap, heightD, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceBR, connectivityBR, indexBR, cubemap, heightDR, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
+
+            if (lowestConnectedIndex == -1)
+                return;
+
+            if (distance == 0 || distance > lowestConnectedDistance)
+            {
+                setDistanceAt(cubemap, lowestConnectedDistance);
+                setConnectivityAt(cubemap, lowestConnectedIndex);
+            }
         }
     }
 }

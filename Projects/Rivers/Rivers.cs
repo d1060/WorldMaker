@@ -48,7 +48,7 @@ public class Rivers
     int iterationCount = 0;
     Texture2D flowTex;
 
-    public void Init(ref Texture2D flowTex)
+    public void Init(Texture2D flowTex)
     {
         try
         {
@@ -79,6 +79,8 @@ public class Rivers
             Debug.Log("Error initializing Incise Flow: " + e.Message + "\n" + e.StackTrace);
         }
     }
+
+    public Color[] FlowMap { get { return flowMap;  } set { flowMap = value; } }
 
     public void StartThreads()
     {
@@ -183,12 +185,6 @@ public class Rivers
             riverThread(iterationCount++);
         }
         return iterationCount;
-    }
-
-    public void Finalize(ref Texture2D flowTex)
-    {
-        flowTex.SetPixels(flowMap);
-        flowTex.Apply();
     }
 
     void FindClosestUnderwaterPoint(Vector2i xy, out Vector2i closest)

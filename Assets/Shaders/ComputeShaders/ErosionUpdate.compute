@@ -1,0 +1,39 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+int mapWidth;
+
+StructuredBuffer<float> erosionMap12;
+StructuredBuffer<float> erosionMap34;
+StructuredBuffer<float> erosionMap56;
+
+RWStructuredBuffer<float> heightMap12;
+RWStructuredBuffer<float> heightMap34;
+RWStructuredBuffer<float> heightMap56;
+
+[numthreads(32, 32, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float erosionValue = 0;
+
+    int index = id.x + id.y * mapWidth;
+
+    if (id.z == 1 || id.z == 3 || id.z == 5)
+        index += mapWidth * mapWidth;
+
+    if (id.z <= 0) erosionValue = erosionMap12[index];
+    else if (id.z <= 1) erosionValue = erosionMap12[index];
+    else if (id.z <= 2) erosionValue = erosionMap34[index];
+    else if (id.z <= 3) erosionValue = erosionMap34[index];
+    else if (id.z <= 4) erosionValue = erosionMap56[index];
+    else erosionValue = erosionMap56[index];
+
+    //if (erosionValue < 0) erosionValue = 0;
+
+    if (id.z <= 0) heightMap12[index] -= erosionValue;
+    else if (id.z <= 1) heightMap12[index] -= erosionValue;
+    else if (id.z <= 2) heightMap34[index] -= erosionValue;
+    else if (id.z <= 3) heightMap34[index] -= erosionValue;
+    else if (id.z <= 4) heightMap56[index] -= erosionValue;
+    else heightMap56[index] -= erosionValue;
+}

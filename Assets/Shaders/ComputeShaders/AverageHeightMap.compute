@@ -2,69 +2,83 @@
 #pragma kernel CSMain
 
 int mapWidth;
-int mapHeight;
 float blur = 0;
 int blurStep;
-RWStructuredBuffer<float> sourceHeightMap;
-RWStructuredBuffer<float> targetHeightMap;
 
-float diagonalHeight(int index, float thisHeight)
+RWStructuredBuffer<float> sourceHeightMap12;
+RWStructuredBuffer<float> sourceHeightMap34;
+RWStructuredBuffer<float> sourceHeightMap56;
+
+RWStructuredBuffer<float> targetHeightMap12;
+RWStructuredBuffer<float> targetHeightMap34;
+RWStructuredBuffer<float> targetHeightMap56;
+
+#include "Assets/Shaders/Cubemap.cginc"
+
+float getSourceValueAtCoordinates(uint3 coordinates)
 {
-    float diagonalHeight = sourceHeightMap[index];
+    uint index = coordinates.x + coordinates.y * mapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
+
+    if (coordinates.z <= 0) return sourceHeightMap12[index];
+    else if (coordinates.z <= 1) return sourceHeightMap12[index];
+    else if (coordinates.z <= 2) return sourceHeightMap34[index];
+    else if (coordinates.z <= 3) return sourceHeightMap34[index];
+    else if (coordinates.z <= 4) return sourceHeightMap56[index];
+    else return sourceHeightMap56[index];
+}
+
+void setTargetValueAtCoordinates(uint3 coordinates, float value)
+{
+    uint index = coordinates.x + coordinates.y * mapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
+
+    if (coordinates.z <= 0) targetHeightMap12[index] = value;
+    else if (coordinates.z <= 1) targetHeightMap12[index] = value;
+    else if (coordinates.z <= 2) targetHeightMap34[index] = value;
+    else if (coordinates.z <= 3) targetHeightMap34[index] = value;
+    else if (coordinates.z <= 4) targetHeightMap56[index] = value;
+    else targetHeightMap56[index] = value;
+}
+
+float diagonalHeight(uint3 coords, float thisHeight)
+{
+    float diagonalHeight = getSourceValueAtCoordinates(coords);
     float actualHeight = (diagonalHeight - thisHeight) / 1.41421356 + thisHeight;
     return actualHeight;
 }
 
-[numthreads(32,32,1)]
+[numthreads(8,8,6)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapWidth || id.z >= 6)
         return;
 
-    int x = id.x;
-    int y = id.y;
+    uint3 cubemap = uint3(id.x, id.y, id.z);
 
-    int index = x + y * mapWidth;
+    uint3 coordsL = getLeftCoordinates(cubemap, mapWidth);
+    uint3 coordsR = getRightCoordinates(cubemap, mapWidth);
+    uint3 coordsT = getTopCoordinates(cubemap, mapWidth);
+    uint3 coordsB = getBottomCoordinates(cubemap, mapWidth);
 
-    int leftX = x - 1;
-    int rightX = x + 1;
-    int topY = y - 1;
-    int bottomY = y + 1;
+    uint3 coordsTL = getTopLeftCoordinates(cubemap, mapWidth);
+    uint3 coordsBR = getBottomRightCoordinates(cubemap, mapWidth);
+    uint3 coordsTR = getTopRightCoordinates(cubemap, mapWidth);
+    uint3 coordsBL = getBottomLeftCoordinates(cubemap, mapWidth);
 
-    bool isTop = false;
-    bool isBottom = false;
-
-    if (leftX < 0) leftX += mapWidth;
-    if (rightX >= mapWidth) rightX -= mapWidth;
-    if (bottomY >= mapHeight)
-    {
-        bottomY = mapHeight - 1;
-        isBottom = true;
-    }
-    if (topY < 0)
-    {
-        topY = 0;
-        isTop = true;
-    }
-
-    int indexL = leftX + mapWidth * y;
-    int indexR = rightX + mapWidth * y;
-    int indexU = x + mapWidth * topY;
-    int indexD = x + mapWidth * bottomY;
-    int indexDL = leftX + mapWidth * bottomY;
-    int indexDR = rightX + mapWidth * bottomY;
-    int indexUL = leftX + mapWidth * topY;
-    int indexUR = rightX + mapWidth * topY;
-
-    float height = sourceHeightMap[index];
-    float heightD = sourceHeightMap[indexD];
-    float heightR = sourceHeightMap[indexR];
-    float heightU = sourceHeightMap[indexU];
-    float heightL = sourceHeightMap[indexL];
-    float heightDL = diagonalHeight(indexDL, height);
-    float heightDR = diagonalHeight(indexDR, height);
-    float heightUR = diagonalHeight(indexUR, height);
-    float heightUL = diagonalHeight(indexUL, height);
+    float height = getSourceValueAtCoordinates(cubemap);
+    float heightD = getSourceValueAtCoordinates(coordsB);
+    float heightR = getSourceValueAtCoordinates(coordsR);
+    float heightU = getSourceValueAtCoordinates(coordsT);
+    float heightL = getSourceValueAtCoordinates(coordsL);
+    float heightDL = diagonalHeight(coordsBL, height);
+    float heightDR = diagonalHeight(coordsBR, height);
+    float heightUR = diagonalHeight(coordsTR, height);
+    float heightUL = diagonalHeight(coordsTL, height);
 
     float squaredBlurStep = pow((2 * blurStep) + 1, 2);
     float squaredPrevBlurStep = pow((2 * (blurStep - 1)) + 1, 2);
@@ -81,18 +95,16 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     float othersNumHeights = 0;
     float othersTotalHeight = 0;
-    if (!isTop)
-    {
-        othersTotalHeight += heightUL + heightU + heightUR;
-        othersNumHeights += 3;
-    }
+
+    othersTotalHeight += heightUL + heightU + heightUR;
+    othersNumHeights += 3;
+
     othersTotalHeight += heightL + heightR;
     othersNumHeights += 2;
-    if (!isBottom)
-    {
-        othersTotalHeight += heightDL + heightD + heightDR;
-        othersNumHeights += 3;
-    }
+
+    othersTotalHeight += heightDL + heightD + heightDR;
+    othersNumHeights += 3;
+
     othersNumHeights *= othersBlurWeight;
     othersTotalHeight *= othersBlurWeight;
 
@@ -100,5 +112,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     numHeights += othersNumHeights;
 
     float finalHeight = totalHeight / numHeights;
-    targetHeightMap[index] = finalHeight;
+
+    setTargetValueAtCoordinates(cubemap, finalHeight);
 }

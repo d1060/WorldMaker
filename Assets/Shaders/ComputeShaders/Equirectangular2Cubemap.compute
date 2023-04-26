@@ -16,6 +16,8 @@ RWTexture2D<float4> Result;
 #define PI 3.14159274
 #define Rad2Deg 57.29578
 
+#include "Assets/Shaders/Cubemap.cginc"
+
 //float4 bilinear(float2 coord)
 //{
 //    int leftX = (int)floor(coord.x);
@@ -52,81 +54,6 @@ RWTexture2D<float4> Result;
 //    return value;
 //}
 
-float2 cartesianToPolarRatio(float3 cartesian)
-{
-    float2 polar;
-    float xzAtan2 = 0;
-
-    if (cartesian.x == 0)
-    {
-        if (cartesian.z > 0)
-            xzAtan2 = PI / 2.0;
-        else
-            xzAtan2 = -PI / 2.0;
-    }
-    else
-        xzAtan2 = atan2(cartesian.z, cartesian.x);
-
-    polar.x = xzAtan2;
-
-    polar.y = asin(cartesian.y);
-
-    polar.x *= Rad2Deg;
-    polar.y *= Rad2Deg;
-
-    polar.x /= 360;
-    polar.y /= 180;
-
-    polar.x += 0.5;
-    polar.y += 0.5;
-    return polar;
-}
-
-float3 cubemapToCartesian(float2 cubeMap, int faceId)
-{
-    float x = 0;
-    float y = 0;
-    float z = 0;
-
-    if (faceId == 0) // neg_x - Left - Z Starts from -dimension/2 to dimension/2
-    {                // cubeMap.x is Z
-        x = -1;
-        z = 1 - 2 * cubeMap.x;
-        y = 2 * cubeMap.y - 1;
-    }
-    else if (faceId == 1) // pos_z - Back
-    {                     // cubeMap.x is X
-        z = -1;
-        x = 2 * cubeMap.x - 1;
-        y = 2 * cubeMap.y - 1;
-    }
-    else if (faceId == 2) // pos_x - Right
-    {                     // cubeMap.x is -Z
-        x = 1;
-        z = 2 * cubeMap.x - 1;
-        y = 2 * cubeMap.y - 1;
-    }
-    else if (faceId == 3) // neg_z - Front
-    {                     // cubeMap.x is -X
-        z = 1;
-        x = 1 - 2 * cubeMap.x;
-        y = 2 * cubeMap.y - 1;
-    }
-    else if (faceId == 4) // pos_y - Top - Aligns with pos_z
-    {                     // cubeMap.x is X, cubeMap.y is Z
-        y = 1;
-        x = 2 * cubeMap.x - 1;
-        z = 2 * cubeMap.y - 1;
-    }
-    else if (faceId == 5) // neg_y - Bottom - Aligns with pos_z
-    {                     // cubeMap.x is X, cubeMap.y is -Z
-        y = -1;
-        x = 2 * cubeMap.x - 1;
-        z = 1 - 2 * cubeMap.y;
-    }
-    return float3(x, y, z);
-}
-
 [numthreads(32,32,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
@@ -155,11 +82,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         }
     }
     float3 cartesian = cubemapToCartesian(cubeMapCoordinate, faceId);
-    cartesian = normalize(cartesian);
     float2 polar = cartesianToPolarRatio(cartesian);
 
     float3 faceCenterCartesian = cubemapToCartesian(faceCenter, faceId);
-    faceCenterCartesian = normalize(faceCenterCartesian);
     float2 faceCenterPolar = cartesianToPolarRatio(faceCenterCartesian);
 
     float offsetRatio = 1 + (offsetPixels / ((float)cubemapDimension));

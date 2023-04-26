@@ -14,7 +14,6 @@ public partial class Map : MonoBehaviour
 {
     public float mapWidth = 400;
     public float mapHeight = 200;
-    public TextureSettings textureSettings;
     public InciseFlowSettings inciseFlowSettings;
     public TMP_InputField worldNameText;
     public GameObject debugText;
@@ -34,14 +33,13 @@ public partial class Map : MonoBehaviour
 
     public float[,] heights = null;
     public GameObject waypointMarkerPrefab;
-    public GameObject terrainBrushPrefab;
+    public GameObject terrainBrush;
     Vector3 mouseMapHit = Vector3.zero;
     bool firstUpdate = true;
     public Material pathMaterial;
 
     //MapSector mainMap;
     GameObject waypointMarker;
-    GameObject terrainBrush;
     WaypointController waypointController = null;
 
     List<float> minHeights = new List<float>();
@@ -65,21 +63,21 @@ public partial class Map : MonoBehaviour
             mapSettings.Seed = random.Next();
         }
         MapData.instance.mapSettings = mapSettings;
-        MapData.instance.textureSettings = textureSettings;
+        MapData.instance.textureSettings = TextureManager.instance.Settings;
         MapData.instance.erosionSettings = erosionSettings;
         MapData.instance.inciseFlowSettings = inciseFlowSettings;
         MapData.instance.plotRiversSettings = plotRiversSettings;
         if (MapData.instance.Load())
         {
             mapSettings = MapData.instance.mapSettings;
-            textureSettings = MapData.instance.textureSettings;
+            TextureManager.instance.Settings = MapData.instance.textureSettings;
             erosionSettings = MapData.instance.erosionSettings;
             plotRiversSettings = MapData.instance.plotRiversSettings;
             inciseFlowSettings = MapData.instance.inciseFlowSettings;
         }
         GranuralizedGeoSphere.instance.Init(50);
-        MapData.instance.LowestHeight = textureSettings.minHeight;
-        MapData.instance.HighestHeight = textureSettings.maxHeight;
+        MapData.instance.LowestHeight = TextureManager.instance.Settings.minHeight;
+        MapData.instance.HighestHeight = TextureManager.instance.Settings.maxHeight;
 
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
         planetSurfaceMaterial.SetInt("_IsEroded", 0);
@@ -150,6 +148,34 @@ public partial class Map : MonoBehaviour
         if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.U))
         {
             UndoErosion();
+        }
+
+        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.T))
+        {
+            //Show Temperature
+            TemperatureToggleButton?.Toggle();
+            DoShowTemperature(!showTemperature);
+        }
+
+        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.G))
+        {
+            //Show Globe
+            ShowGlobeToggleButton?.Toggle();
+            DoShowGlobe(!showGlobe);
+        }
+
+        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.W))
+        {
+            //Edit Waypoints
+            WaypointToggleButton?.Toggle();
+            DoRuler(!doRuler);
+        }
+
+        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.A))
+        {
+            //Alter Terrain
+            TerrainToggleButton?.Toggle();
+            DoTerrainBrush(!doTerrainBrush);
         }
 
         if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.L))
@@ -243,18 +269,17 @@ public partial class Map : MonoBehaviour
         LowerTerrainImage?.SetActive(true);
         BrushSizeSlider?.transform.gameObject.SetActive(true);
         BrushStrengthSlider?.transform.gameObject.SetActive(true);
-        if (terrainBrush == null)
+        if (terrainBrush != null)
         {
+            terrainBrush.SetActive(true);
             Vector3 position = Vector3.zero;
             if (mouseMapHit != Vector3.zero)
                 position = new Vector3(mouseMapHit.x, mouseMapHit.y, mouseMapHit.z);
 
-            terrainBrush = Instantiate(terrainBrushPrefab, position, Quaternion.identity);
-            terrainBrush.name = "Terrain Brush";
             TerrainBrush terrainBrushScript = terrainBrush.GetComponent<TerrainBrush>();
             terrainBrushScript.map = this;
             terrainBrushScript.radius = BrushSizeSlider.value;
-            terrainBrushScript.strength = BrushStrengthSlider.value;
+            terrainBrushScript.strength = BrushStrengthSlider.value / 100;
         }
     }
 
@@ -267,8 +292,7 @@ public partial class Map : MonoBehaviour
 
         if (terrainBrush != null)
         {
-            GameObject.DestroyImmediate(terrainBrush);
-            terrainBrush = null;
+            terrainBrush.SetActive(false);
         }
     }
 
@@ -287,6 +311,7 @@ public partial class Map : MonoBehaviour
 
     public void DoShowGlobe(bool showGlobe)
     {
+        worldNameText.interactable = false;
         this.showGlobe = showGlobe;
         if (!showGlobe)
         {
@@ -320,6 +345,7 @@ public partial class Map : MonoBehaviour
             if (lightComponent != null)
                 lightComponent.gameObject.SetActive(false);
         }
+        worldNameText.interactable = true;
     }
 
     public void UpdateDebugText()
@@ -396,6 +422,44 @@ public partial class Map : MonoBehaviour
             MapData.instance.WorldName = NameGenerator.instance.GetName(NameGeneratorType.Types.World);
             ApplyWorldName();
             UpdateUIInputField(setupPanelTransform, "Seed Text Box", mapSettings.Seed.ToString());
+
+            if (MapData.instance.textureSettings.surfaceNoiseSettings.ridged && MapData.instance.textureSettings.surfaceNoiseSettings2.ridged)
+            {
+                MapData.instance.LowestHeight = 0;
+                MapData.instance.HighestHeight = 1;
+            }
+            else if (MapData.instance.textureSettings.surfaceNoiseSettings.ridged != MapData.instance.textureSettings.surfaceNoiseSettings2.ridged)
+            {
+                MapData.instance.LowestHeight = 0.15f;
+                MapData.instance.HighestHeight = 0.85f;
+            }
+            else
+            {
+                MapData.instance.LowestHeight = 0.15f;
+                MapData.instance.HighestHeight = 0.7f;
+            }
+
+            MapData.instance.textureSettings.surfaceNoiseSettings.noiseOffset.x = (float)random.NextDouble();
+            MapData.instance.textureSettings.surfaceNoiseSettings.noiseOffset.y = (float)random.NextDouble();
+            MapData.instance.textureSettings.surfaceNoiseSettings.noiseOffset.z = (float)random.NextDouble();
+            MapData.instance.textureSettings.surfaceNoiseSettings.multiplier = (float)random.NextDouble() * 3 + 2; //Landmasses: 5 - 2
+            MapData.instance.textureSettings.surfaceNoiseSettings.octaves = random.Next(13, 17); //Map Detail: 13-17
+            MapData.instance.textureSettings.surfaceNoiseSettings.lacunarity = (float)random.NextDouble() * 0.15f + 1.6f; //Map Scaling: 1.6 - 1.75
+            MapData.instance.textureSettings.surfaceNoiseSettings.persistence = (float)random.NextDouble() * 0.06f + 0.67f; //Smoothness: 0.67 - 0.73
+            MapData.instance.textureSettings.surfaceNoiseSettings.heightExponent = 2; //Height Exponent: 2
+            MapData.instance.textureSettings.surfaceNoiseSettings.domainWarping = (float)random.NextDouble() + 0.5f; //Domain Warping: 0.5 - 1.5
+            MapData.instance.textureSettings.surfaceNoiseSettings.layerStrength = (float)random.NextDouble();
+
+            MapData.instance.textureSettings.surfaceNoiseSettings2.noiseOffset.x = (float)random.NextDouble();
+            MapData.instance.textureSettings.surfaceNoiseSettings2.noiseOffset.y = (float)random.NextDouble();
+            MapData.instance.textureSettings.surfaceNoiseSettings2.noiseOffset.z = (float)random.NextDouble();
+            MapData.instance.textureSettings.surfaceNoiseSettings2.multiplier = (float)random.NextDouble() * 3 + 2; //Landmasses: 5 - 2
+            MapData.instance.textureSettings.surfaceNoiseSettings2.octaves = random.Next(13, 17); //Map Detail: 13-17
+            MapData.instance.textureSettings.surfaceNoiseSettings2.lacunarity = (float)random.NextDouble() * 0.15f + 1.6f; //Map Scaling: 1.6 - 1.75
+            MapData.instance.textureSettings.surfaceNoiseSettings2.persistence = (float)random.NextDouble() * 0.06f + 0.67f; //Smoothness: 0.67 - 0.73
+            MapData.instance.textureSettings.surfaceNoiseSettings2.heightExponent = 2; //Height Exponent: 2
+            MapData.instance.textureSettings.surfaceNoiseSettings2.domainWarping = (float)random.NextDouble() + 0.5f; //Domain Warping: 0.5 - 1.5
+            MapData.instance.textureSettings.surfaceNoiseSettings2.layerStrength = 1 - MapData.instance.textureSettings.surfaceNoiseSettings.layerStrength;
         }
 
         EventSystem eventSystem = cameraController.eventSystemObject.GetComponent<EventSystem>();
@@ -403,17 +467,30 @@ public partial class Map : MonoBehaviour
 
         if (!keepSeed || reGenerateHeightMap)
         {
-            erodedHeightMap = null;
-            originalHeightMap = null;
-            mergedHeightMap = null;
+            //TextureManager.instance.ErodedHeightMap = null;
+            TextureManager.instance.HeightMap1 = null;
+            TextureManager.instance.HeightMap2 = null;
+            TextureManager.instance.HeightMap3 = null;
+            TextureManager.instance.HeightMap4 = null;
+            TextureManager.instance.HeightMap5 = null;
+            TextureManager.instance.HeightMap6 = null;
+            //TextureManager.instance.MergedHeightMap = null;
             planetSurfaceMaterial.SetInt("_IsEroded", 0);
             planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
 
-            GenerateHeightMap(true);
-            //GenerateHeightMap();
+            GenerateHeightMap();
+
+            //float minHeight = 0, maxHeight = 0;
+            //TextureManager.instance.HeightMapMinMaxHeights(ref minHeight, ref maxHeight);
+
+            //MapData.instance.LowestHeight = minHeight;
+            //MapData.instance.HighestHeight = maxHeight;
+
+            SetHeightLimits();
         }
 
         UpdateSurfaceMaterialProperties();
+        UpdateNoiseLayerFields();
     }
 
     public void SaveData()
@@ -462,7 +539,7 @@ public partial class Map : MonoBehaviour
 
         if (MapData.instance.Load(openFile))
         {
-            textureSettings = MapData.instance.textureSettings;
+            TextureManager.instance.Settings = MapData.instance.textureSettings;
             mapSettings = MapData.instance.mapSettings;
             erosionSettings = MapData.instance.erosionSettings;
             plotRiversSettings = MapData.instance.plotRiversSettings;
@@ -498,6 +575,16 @@ public partial class Map : MonoBehaviour
         MapData.instance.Save();
     }
 
+    public void WorldNameSelected(string param)
+    {
+
+    }
+
+    public void WorldNameDeSelected(string param)
+    {
+
+    }
+
     void ApplyWorldName()
     {
         if (worldNameText == null)
@@ -509,12 +596,12 @@ public partial class Map : MonoBehaviour
     void GenerateSeeds()
     {
         System.Random masterRandom = new System.Random(mapSettings.Seed);
-        textureSettings.surfaceNoiseSettings.seed = (float)(masterRandom.NextDouble() + 1);
-        textureSettings.surfaceNoiseSettings.noiseOffset = new Vector3((float)masterRandom.NextDouble(), (float)masterRandom.NextDouble(), (float)masterRandom.NextDouble());
-        textureSettings.surfaceNoiseSettings2.seed = (float)(masterRandom.NextDouble() + 1);
-        textureSettings.surfaceNoiseSettings2.noiseOffset = new Vector3((float)masterRandom.NextDouble(), (float)masterRandom.NextDouble(), (float)masterRandom.NextDouble());
-        textureSettings.TemperatureNoiseSeed = (float)(masterRandom.NextDouble() + 1);
-        textureSettings.HumidityNoiseSeed = (float)(masterRandom.NextDouble() + 1);
+        TextureManager.instance.Settings.surfaceNoiseSettings.seed = (float)(masterRandom.NextDouble() * 1000000);
+        //TextureManager.instance.Settings.surfaceNoiseSettings.noiseOffset = new Vector3((float)masterRandom.NextDouble(), (float)masterRandom.NextDouble(), (float)masterRandom.NextDouble());
+        TextureManager.instance.Settings.surfaceNoiseSettings2.seed = (float)(masterRandom.NextDouble() * 1000000);
+        //TextureManager.instance.Settings.surfaceNoiseSettings2.noiseOffset = new Vector3((float)masterRandom.NextDouble(), (float)masterRandom.NextDouble(), (float)masterRandom.NextDouble());
+        TextureManager.instance.Settings.TemperatureNoiseSeed = (float)(masterRandom.NextDouble() * 1000000);
+        TextureManager.instance.Settings.HumidityNoiseSeed = (float)(masterRandom.NextDouble() * 1000000);
         namesSeed = (int)(masterRandom.NextDouble() * 1000000);
     }
 
@@ -603,27 +690,27 @@ public partial class Map : MonoBehaviour
         return new Vector3(x, y, z);
     }
 
-    public float HeightAtCoordinates(Vector2 polarRatioCoordinates)
+    public float HeightAtCoordinates(Vector2 uv)
     {
         GenerateHeightMap();
 
-        int nextX = (int)polarRatioCoordinates.x + 1;
-        if (nextX >= textureSettings.textureWidth) nextX -= textureSettings.textureWidth;
-        int nextY = (int)polarRatioCoordinates.y + 1;
-        if (nextY >= textureSettings.textureHeight) nextY = textureSettings.textureHeight - 1;
+        float nextX = uv.x + 1 / TextureManager.instance.Settings.textureWidth;
+        if (nextX >= 1) nextX -= 1.0f;
+        float nextY = uv.y + 1 / TextureManager.instance.Settings.textureWidth;
+        if (nextY >= 1) nextY = uv.y;
 
-        int indexDL = (int)polarRatioCoordinates.x + (int)polarRatioCoordinates.y * textureSettings.textureWidth;
-        int indexDR = nextX + (int)polarRatioCoordinates.y * textureSettings.textureWidth;
-        int indexUL = (int)polarRatioCoordinates.x + nextY * textureSettings.textureWidth;
-        int indexUR = nextX + nextY * textureSettings.textureWidth;
+        Vector2 uvDL = new Vector2(uv.x, uv.y);
+        Vector2 uvDR = new Vector2(uv.x, uv.y);
+        Vector2 uvUL = new Vector2(uv.x, uv.y);
+        Vector2 uvUR = new Vector2(uv.x, uv.y);
 
-        float heightDL = erodedHeightMap[indexDL];
-        float heightDR = erodedHeightMap[indexDR];
-        float heightUL = erodedHeightMap[indexUL];
-        float heightUR = erodedHeightMap[indexUR];
+        float heightDL = TextureManager.instance.HeightMapValueAtUV(uvDL);
+        float heightDR = TextureManager.instance.HeightMapValueAtUV(uvDR);
+        float heightUL = TextureManager.instance.HeightMapValueAtUV(uvUL);
+        float heightUR = TextureManager.instance.HeightMapValueAtUV(uvUR);
 
-        float xDelta = polarRatioCoordinates.x - (int)polarRatioCoordinates.x;
-        float yDelta = polarRatioCoordinates.y - (int)polarRatioCoordinates.y;
+        float xDelta = uv.x - (int)uv.x;
+        float yDelta = uv.y - (int)uv.y;
 
         float heightXdelta0 = (heightDR - heightDL) * xDelta + heightDL;
         float heightXdelta1 = (heightUR - heightUL) * xDelta + heightUL;
@@ -635,8 +722,8 @@ public partial class Map : MonoBehaviour
     public float HeightAtCoordinatesUntilWaterLevel(Vector2 polarRatioCoordinates)
     {
         float height = HeightAtCoordinates(polarRatioCoordinates);
-        if (height < textureSettings.waterLevel)
-            return textureSettings.waterLevel;
+        if (height < TextureManager.instance.Settings.waterLevel)
+            return TextureManager.instance.Settings.waterLevel;
         return height;
     }
 
@@ -645,65 +732,121 @@ public partial class Map : MonoBehaviour
         string tempDataFolder = Path.Combine(Application.persistentDataPath, "Temp", mapSettings.Seed.ToString());
         bool noFileExists = true;
 
-        if (originalHeightMap != null)
+        if (TextureManager.instance.HeightMap1 != null)
         {
             if (!Directory.Exists(tempDataFolder))
                 Directory.CreateDirectory(tempDataFolder);
             noFileExists = false;
-            originalHeightMap.SaveBytes(Path.Combine(tempDataFolder, "originalHeightMap.raw"));
+            TextureManager.instance.HeightMap1.SaveBytes(Path.Combine(tempDataFolder, "HeightMap1.raw"));
+            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap1-save.png"));
         }
-        else if (File.Exists(Path.Combine(tempDataFolder, "originalHeightMap.raw")))
-            File.Delete(Path.Combine(tempDataFolder, "originalHeightMap.raw"));
+        else if (File.Exists(Path.Combine(tempDataFolder, "HeightMap1.raw")))
+            File.Delete(Path.Combine(tempDataFolder, "HeightMap1.raw"));
 
-        if (erodedHeightMap != null)
+        if (TextureManager.instance.HeightMap2 != null)
         {
             if (!Directory.Exists(tempDataFolder))
                 Directory.CreateDirectory(tempDataFolder);
             noFileExists = false;
-            erodedHeightMap.SaveBytes(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
+            TextureManager.instance.HeightMap2.SaveBytes(Path.Combine(tempDataFolder, "HeightMap2.raw"));
+            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap2-save.png"));
         }
-        else if (File.Exists(Path.Combine(tempDataFolder, "erodedHeightMap.raw")))
-            File.Delete(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
+        else if (File.Exists(Path.Combine(tempDataFolder, "HeightMap2.raw")))
+            File.Delete(Path.Combine(tempDataFolder, "HeightMap2.raw"));
 
-        if (mergedHeightMap != null)
+        if (TextureManager.instance.HeightMap3 != null)
         {
             if (!Directory.Exists(tempDataFolder))
                 Directory.CreateDirectory(tempDataFolder);
             noFileExists = false;
-            mergedHeightMap.SaveBytes(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
+            TextureManager.instance.HeightMap3.SaveBytes(Path.Combine(tempDataFolder, "HeightMap3.raw"));
+            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap3-save.png"));
         }
-        else if (File.Exists(Path.Combine(tempDataFolder, "mergedHeightMap.raw")))
-            File.Delete(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
+        else if (File.Exists(Path.Combine(tempDataFolder, "HeightMap3.raw")))
+            File.Delete(Path.Combine(tempDataFolder, "HeightMap3.raw"));
 
-        if (flowTexture != null)
+        if (TextureManager.instance.HeightMap4 != null)
         {
             if (!Directory.Exists(tempDataFolder))
                 Directory.CreateDirectory(tempDataFolder);
             noFileExists = false;
-            flowTexture.SaveAsPNG(Path.Combine(tempDataFolder, "flow.png"));
+            TextureManager.instance.HeightMap4.SaveBytes(Path.Combine(tempDataFolder, "HeightMap4.raw"));
+            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap4-save.png"));
         }
-        else if (File.Exists(Path.Combine(tempDataFolder, "flow.png")))
-            File.Delete(Path.Combine(tempDataFolder, "flow.png"));
+        else if (File.Exists(Path.Combine(tempDataFolder, "HeightMap4.raw")))
+            File.Delete(Path.Combine(tempDataFolder, "HeightMap4.raw"));
 
-        if (flowTextureRandom != null)
+        if (TextureManager.instance.HeightMap5 != null)
         {
             if (!Directory.Exists(tempDataFolder))
                 Directory.CreateDirectory(tempDataFolder);
             noFileExists = false;
-            flowTextureRandom.SaveAsPNG(Path.Combine(tempDataFolder, "flowRandom.png"));
+            TextureManager.instance.HeightMap5.SaveBytes(Path.Combine(tempDataFolder, "HeightMap5.raw"));
+            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap5-save.png"));
         }
-        else if (File.Exists(Path.Combine(tempDataFolder, "flowRandom.png")))
-            File.Delete(Path.Combine(tempDataFolder, "flowRandom.png"));
+        else if (File.Exists(Path.Combine(tempDataFolder, "HeightMap5.raw")))
+            File.Delete(Path.Combine(tempDataFolder, "HeightMap5.raw"));
 
-        if (inciseFlowMap != null)
+        if (TextureManager.instance.HeightMap6 != null)
         {
             if (!Directory.Exists(tempDataFolder))
                 Directory.CreateDirectory(tempDataFolder);
             noFileExists = false;
-            inciseFlowMap.SaveBytes(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+            TextureManager.instance.HeightMap6.SaveBytes(Path.Combine(tempDataFolder, "HeightMap6.raw"));
+            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap6-save.png"));
         }
-        else if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
-            File.Delete(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+        else if (File.Exists(Path.Combine(tempDataFolder, "HeightMap6.raw")))
+            File.Delete(Path.Combine(tempDataFolder, "HeightMap6.raw"));
+
+        //if (TextureManager.instance.ErodedHeightMap != null)
+        //{
+        //    if (!Directory.Exists(tempDataFolder))
+        //        Directory.CreateDirectory(tempDataFolder);
+        //    noFileExists = false;
+        //    TextureManager.instance.ErodedHeightMap.SaveBytes(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
+        //}
+        //else if (File.Exists(Path.Combine(tempDataFolder, "erodedHeightMap.raw")))
+        //    File.Delete(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
+
+        //if (TextureManager.instance.MergedHeightMap != null)
+        //{
+        //    if (!Directory.Exists(tempDataFolder))
+        //        Directory.CreateDirectory(tempDataFolder);
+        //    noFileExists = false;
+        //    TextureManager.instance.MergedHeightMap.SaveBytes(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
+        //}
+        //else if (File.Exists(Path.Combine(tempDataFolder, "mergedHeightMap.raw")))
+        //    File.Delete(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
+
+        //if (TextureManager.instance.FlowTexture != null)
+        //{
+        //    if (!Directory.Exists(tempDataFolder))
+        //        Directory.CreateDirectory(tempDataFolder);
+        //    noFileExists = false;
+        //    TextureManager.instance.FlowTexture.SaveAsPNG(Path.Combine(tempDataFolder, "flow.png"));
+        //}
+        //else if (File.Exists(Path.Combine(tempDataFolder, "flow.png")))
+        //    File.Delete(Path.Combine(tempDataFolder, "flow.png"));
+
+        //if (TextureManager.instance.FlowTextureRandom != null)
+        //{
+        //    if (!Directory.Exists(tempDataFolder))
+        //        Directory.CreateDirectory(tempDataFolder);
+        //    noFileExists = false;
+        //    TextureManager.instance.FlowTextureRandom.SaveAsPNG(Path.Combine(tempDataFolder, "flowRandom.png"));
+        //}
+        //else if (File.Exists(Path.Combine(tempDataFolder, "flowRandom.png")))
+        //    File.Delete(Path.Combine(tempDataFolder, "flowRandom.png"));
+
+        //if (TextureManager.instance.InciseFlowMap != null)
+        //{
+        //    if (!Directory.Exists(tempDataFolder))
+        //        Directory.CreateDirectory(tempDataFolder);
+        //    noFileExists = false;
+        //    TextureManager.instance.InciseFlowMap.SaveBytes(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+        //}
+        //else if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
+        //    File.Delete(Path.Combine(tempDataFolder, "inciseFlow.raw"));
 
         if (noFileExists && Directory.Exists(tempDataFolder))
             Directory.Delete(tempDataFolder);
@@ -716,89 +859,160 @@ public partial class Map : MonoBehaviour
             return;
 
         bool updateMaterial = false;
-        bool updateFlow = false;
-        if (File.Exists(Path.Combine(tempDataFolder, "originalHeightMap.raw")))
+        //bool updateFlow = false;
+        if (File.Exists(Path.Combine(tempDataFolder, "HeightMap1.raw")))
         {
-            originalHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "originalHeightMap.raw"));
-            if (originalHeightMap.Length > 0 && originalHeightMap.Length != textureSettings.textureWidth * textureSettings.textureHeight)
+            TextureManager.instance.HeightMap1 = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "HeightMap1.raw"));
+            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap1-load.png"));
+            if (TextureManager.instance.HeightMap1.Length > 0 && TextureManager.instance.HeightMap1.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
             {
-                originalHeightMap = null;
-                File.Delete(Path.Combine(tempDataFolder, "originalHeightMap.raw"));
+                TextureManager.instance.HeightMap1 = null;
+                File.Delete(Path.Combine(tempDataFolder, "HeightMap1.raw"));
             }
 
-            if (originalHeightMap != null && originalHeightMap.Length > 0)
+            if (TextureManager.instance.HeightMap1 != null && TextureManager.instance.HeightMap1.Length > 0)
                 updateMaterial = true;
         }
 
-        if (File.Exists(Path.Combine(tempDataFolder, "erodedHeightMap.raw")))
+        if (File.Exists(Path.Combine(tempDataFolder, "HeightMap2.raw")))
         {
-            //float lowest = 0;
-            //float highest = 0;
-            erodedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
-            if (erodedHeightMap.Length > 0 && erodedHeightMap.Length != textureSettings.textureWidth * textureSettings.textureHeight)
+            TextureManager.instance.HeightMap2 = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "HeightMap2.raw"));
+            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap2-load.png"));
+            if (TextureManager.instance.HeightMap2.Length > 0 && TextureManager.instance.HeightMap2.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
             {
-                erodedHeightMap = null;
-                File.Delete(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
+                TextureManager.instance.HeightMap2 = null;
+                File.Delete(Path.Combine(tempDataFolder, "HeightMap2.raw"));
             }
 
-            if (erodedHeightMap != null && erodedHeightMap.Length > 0)
+            if (TextureManager.instance.HeightMap2 != null && TextureManager.instance.HeightMap2.Length > 0)
                 updateMaterial = true;
         }
 
-        if (File.Exists(Path.Combine(tempDataFolder, "mergedHeightMap.raw")))
+        if (File.Exists(Path.Combine(tempDataFolder, "HeightMap3.raw")))
         {
-            //float lowest = 0;
-            //float highest = 0;
-            mergedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
-            if (mergedHeightMap.Length > 0 && mergedHeightMap.Length != textureSettings.textureWidth * textureSettings.textureHeight)
+            TextureManager.instance.HeightMap3 = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "HeightMap3.raw"));
+            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap3-load.png"));
+            if (TextureManager.instance.HeightMap3.Length > 0 && TextureManager.instance.HeightMap3.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
             {
-                mergedHeightMap = null;
-                File.Delete(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
+                TextureManager.instance.HeightMap3 = null;
+                File.Delete(Path.Combine(tempDataFolder, "HeightMap3.raw"));
             }
 
-            if (mergedHeightMap != null && mergedHeightMap.Length > 0)
+            if (TextureManager.instance.HeightMap3 != null && TextureManager.instance.HeightMap3.Length > 0)
                 updateMaterial = true;
         }
 
-        if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
+        if (File.Exists(Path.Combine(tempDataFolder, "HeightMap4.raw")))
         {
-            //float lowest = 0;
-            //float highest = 0;
-            inciseFlowMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "inciseFlow.raw"));
-            if (inciseFlowMap.Length > 0 && inciseFlowMap.Length != textureSettings.textureWidth * textureSettings.textureHeight)
+            TextureManager.instance.HeightMap4 = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "HeightMap4.raw"));
+            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap4-load.png"));
+            if (TextureManager.instance.HeightMap4.Length > 0 && TextureManager.instance.HeightMap4.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
             {
-                inciseFlowMap = null;
-                File.Delete(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+                TextureManager.instance.HeightMap4 = null;
+                File.Delete(Path.Combine(tempDataFolder, "HeightMap4.raw"));
             }
 
-            if (inciseFlowMap != null && inciseFlowMap.Length > 0)
+            if (TextureManager.instance.HeightMap4 != null && TextureManager.instance.HeightMap4.Length > 0)
                 updateMaterial = true;
         }
 
-        if (File.Exists(Path.Combine(tempDataFolder, "flow.png")))
+        if (File.Exists(Path.Combine(tempDataFolder, "HeightMap5.raw")))
         {
-            flowTexture = LoadAnyImageFile(Path.Combine(tempDataFolder, "flow.png"));
-            if (flowTexture.width != textureSettings.textureWidth || flowTexture.height != textureSettings.textureHeight)
+            TextureManager.instance.HeightMap5 = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "HeightMap5.raw"));
+            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap5-load.png"));
+            if (TextureManager.instance.HeightMap5.Length > 0 && TextureManager.instance.HeightMap5.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
             {
-                flowTexture = null;
-                File.Delete(Path.Combine(tempDataFolder, "flow.png"));
+                TextureManager.instance.HeightMap5 = null;
+                File.Delete(Path.Combine(tempDataFolder, "HeightMap5.raw"));
             }
 
-            if (flowTexture != null)
-                updateFlow = true;
+            if (TextureManager.instance.HeightMap5 != null && TextureManager.instance.HeightMap5.Length > 0)
+                updateMaterial = true;
         }
-        if (File.Exists(Path.Combine(tempDataFolder, "flowRandom.png")))
+
+        if (File.Exists(Path.Combine(tempDataFolder, "HeightMap6.raw")))
         {
-            flowTextureRandom = LoadAnyImageFile(Path.Combine(tempDataFolder, "flowRandom.png"));
-            if (flowTextureRandom.width != textureSettings.textureWidth || flowTextureRandom.height != textureSettings.textureHeight)
+            TextureManager.instance.HeightMap6 = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "HeightMap6.raw"));
+            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap6-load.png"));
+            if (TextureManager.instance.HeightMap6.Length > 0 && TextureManager.instance.HeightMap6.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
             {
-                flowTextureRandom = null;
-                File.Delete(Path.Combine(tempDataFolder, "flowRandom.png"));
+                TextureManager.instance.HeightMap6 = null;
+                File.Delete(Path.Combine(tempDataFolder, "HeightMap6.raw"));
             }
 
-            if (flowTextureRandom != null)
-                updateFlow = true;
+            if (TextureManager.instance.HeightMap6 != null && TextureManager.instance.HeightMap6.Length > 0)
+                updateMaterial = true;
         }
+
+        //if (File.Exists(Path.Combine(tempDataFolder, "erodedHeightMap.raw")))
+        //{
+        //    //float lowest = 0;
+        //    //float highest = 0;
+        //    TextureManager.instance.ErodedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
+        //    if (TextureManager.instance.ErodedHeightMap.Length > 0 && TextureManager.instance.ErodedHeightMap.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
+        //    {
+        //        TextureManager.instance.ErodedHeightMap = null;
+        //        File.Delete(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
+        //    }
+
+        //    if (TextureManager.instance.ErodedHeightMap != null && TextureManager.instance.ErodedHeightMap.Length > 0)
+        //        updateMaterial = true;
+        //}
+
+        //if (File.Exists(Path.Combine(tempDataFolder, "mergedHeightMap.raw")))
+        //{
+        //    //float lowest = 0;
+        //    //float highest = 0;
+        //    TextureManager.instance.MergedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
+        //    if (TextureManager.instance.MergedHeightMap.Length > 0 && TextureManager.instance.MergedHeightMap.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
+        //    {
+        //        TextureManager.instance.MergedHeightMap = null;
+        //        File.Delete(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
+        //    }
+
+        //    if (TextureManager.instance.MergedHeightMap != null && TextureManager.instance.MergedHeightMap.Length > 0)
+        //        updateMaterial = true;
+        //}
+
+        //if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
+        //{
+        //    //float lowest = 0;
+        //    //float highest = 0;
+        //    TextureManager.instance.InciseFlowMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+        //    if (TextureManager.instance.InciseFlowMap.Length > 0 && TextureManager.instance.InciseFlowMap.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
+        //    {
+        //        TextureManager.instance.InciseFlowMap = null;
+        //        File.Delete(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+        //    }
+
+        //    if (TextureManager.instance.InciseFlowMap != null && TextureManager.instance.InciseFlowMap.Length > 0)
+        //        updateMaterial = true;
+        //}
+
+        //if (File.Exists(Path.Combine(tempDataFolder, "flow.png")))
+        //{
+        //    TextureManager.instance.FlowTexture = LoadAnyImageFile(Path.Combine(tempDataFolder, "flow.png"));
+        //    if (TextureManager.instance.FlowTexture.width != TextureManager.instance.Settings.textureWidth || TextureManager.instance.FlowTexture.height != TextureManager.instance.Settings.textureWidth)
+        //    {
+        //        TextureManager.instance.FlowTexture = null;
+        //        File.Delete(Path.Combine(tempDataFolder, "flow.png"));
+        //    }
+
+        //    if (TextureManager.instance.FlowTexture != null)
+        //        updateFlow = true;
+        //}
+        //if (File.Exists(Path.Combine(tempDataFolder, "flowRandom.png")))
+        //{
+        //    TextureManager.instance.FlowTextureRandom = LoadAnyImageFile(Path.Combine(tempDataFolder, "flowRandom.png"));
+        //    if (TextureManager.instance.FlowTextureRandom.width != TextureManager.instance.Settings.textureWidth || TextureManager.instance.FlowTextureRandom.height != TextureManager.instance.Settings.textureWidth)
+        //    {
+        //        TextureManager.instance.FlowTextureRandom = null;
+        //        File.Delete(Path.Combine(tempDataFolder, "flowRandom.png"));
+        //    }
+
+        //    if (TextureManager.instance.FlowTextureRandom != null)
+        //        updateFlow = true;
+        //}
 
         if (updateMaterial)
         {
@@ -806,14 +1020,14 @@ public partial class Map : MonoBehaviour
             UpdateSurfaceMaterialHeightMap(true);
         }
 
-        if (updateFlow)
-        {
-            if (flowTexture != null)
-                planetSurfaceMaterial.SetTexture("_FlowTex", flowTexture);
-            else
-                planetSurfaceMaterial.SetTexture("_FlowTex", flowTextureRandom);
-            planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
-        }
+        //if (updateFlow)
+        //{
+        //    if (TextureManager.instance.FlowTexture != null)
+        //        planetSurfaceMaterial.SetTexture("_FlowTex", TextureManager.instance.FlowTexture);
+        //    else
+        //        planetSurfaceMaterial.SetTexture("_FlowTex", TextureManager.instance.FlowTextureRandom);
+        //    planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
+        //}
     }
 
     float[] LoadFloatArrayFromFile(string fileName)

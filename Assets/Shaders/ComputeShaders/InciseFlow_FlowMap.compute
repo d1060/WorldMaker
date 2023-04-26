@@ -1,48 +1,150 @@
 #pragma kernel CSMain
 
 int mapWidth;
-int mapHeight;
-float amount = 1;
-RWStructuredBuffer<float> flowMap;
-RWStructuredBuffer<int> drainageIndexesMap;
+float flowAmount = 1;
+float maxFlow = 1000;
+int numPasses = 100;
 
-float getFlowFrom(int x, int y, int thisIndex)
+StructuredBuffer<int> connectivityMap12;
+StructuredBuffer<int> connectivityMap34;
+StructuredBuffer<int> connectivityMap56;
+
+RWStructuredBuffer<float> flowMap12; // The Flow Map contains a number indicating how much water is flowing into each pixel.
+RWStructuredBuffer<float> flowMap34;
+RWStructuredBuffer<float> flowMap56;
+
+#include "Assets/Shaders/Cubemap.cginc"
+
+int getConnectivityFrom(int3 coordinates)
 {
-    if (y < 0) return 0;
-    if (y >= mapHeight) return 0;
-    if (x >= mapWidth) x -= mapWidth;
-    if (x < 0) x += mapWidth;
+    int index = coordinates.x + coordinates.y * mapWidth;
 
-    int nextIndex = x + y * mapWidth;
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
 
-    if (drainageIndexesMap[nextIndex] != thisIndex)
-        return 0;
-
-    return flowMap[nextIndex];
+    if (coordinates.z <= 0) return connectivityMap12[index];
+    else if (coordinates.z <= 1) return connectivityMap12[index];
+    else if (coordinates.z <= 2) return connectivityMap34[index];
+    else if (coordinates.z <= 3) return connectivityMap34[index];
+    else if (coordinates.z <= 4) return connectivityMap56[index];
+    else return connectivityMap56[index];
 }
 
-[numthreads(32,32,1)]
+//float getFlowFrom(int thisIndex, int3 nextCoordinates)
+//{
+//    int connectivityIndex = getConnectivityFrom(nextCoordinates);
+//
+//    if (connectivityIndex != thisIndex)
+//        return 0;
+//
+//    int flowMapIndex = nextCoordinates.x + nextCoordinates.y * mapWidth;
+//
+//    if (nextCoordinates.z == 1 || nextCoordinates.z == 3 || nextCoordinates.z == 5)
+//        flowMapIndex += mapWidth * mapWidth;
+//
+//    if (nextCoordinates.z <= 0) return flowMap12[flowMapIndex];
+//    else if (nextCoordinates.z <= 1) return flowMap12[flowMapIndex];
+//    else if (nextCoordinates.z <= 2) return flowMap34[flowMapIndex];
+//    else if (nextCoordinates.z <= 3) return flowMap34[flowMapIndex];
+//    else if (nextCoordinates.z <= 4) return flowMap56[flowMapIndex];
+//    else return flowMap56[flowMapIndex];
+//}
+
+//void setFlowAt(int3 thisCoordinates, float value)
+//{
+//    int flowMapIndex = thisCoordinates.x + thisCoordinates.y * mapWidth;
+//
+//    if (thisCoordinates.z == 1 || thisCoordinates.z == 3 || thisCoordinates.z == 5)
+//        flowMapIndex += mapWidth * mapWidth;
+//
+//    if (thisCoordinates.z <= 0) flowMap12[flowMapIndex] = value;
+//    else if (thisCoordinates.z <= 1) flowMap12[flowMapIndex] = value;
+//    else if (thisCoordinates.z <= 2) flowMap34[flowMapIndex] = value;
+//    else if (thisCoordinates.z <= 3) flowMap34[flowMapIndex] = value;
+//    else if (thisCoordinates.z <= 4) flowMap56[flowMapIndex] = value;
+//    else flowMap56[flowMapIndex] = value;
+//}
+
+void addFlowAt(int3 thisCoordinates, float value)
+{
+    int flowMapIndex = thisCoordinates.x + thisCoordinates.y * mapWidth;
+
+    if (thisCoordinates.z == 1 || thisCoordinates.z == 3 || thisCoordinates.z == 5)
+        flowMapIndex += mapWidth * mapWidth;
+
+    if (thisCoordinates.z <= 0) flowMap12[flowMapIndex] += value;
+    else if (thisCoordinates.z <= 1) flowMap12[flowMapIndex] += value;
+    else if (thisCoordinates.z <= 2) flowMap34[flowMapIndex] += value;
+    else if (thisCoordinates.z <= 3) flowMap34[flowMapIndex] += value;
+    else if (thisCoordinates.z <= 4) flowMap56[flowMapIndex] += value;
+    else flowMap56[flowMapIndex] += value;
+}
+
+[numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapWidth || id.z >= 6)
         return;
 
-    int x = id.x;
-    int y = id.y;
-    int index = x + y * mapWidth;
+    int3 cubemap = int3(id.x, id.y, id.z);
 
-    if (drainageIndexesMap[index] == 0)
+    int3 cubemapLeft = getLeftIntCoordinates(cubemap, mapWidth);
+    int3 cubemapRight = getRightIntCoordinates(cubemap, mapWidth);
+    int3 cubemapTop = getTopIntCoordinates(cubemap, mapWidth);
+    int3 cubemapBottom = getBottomIntCoordinates(cubemap, mapWidth);
+
+    int3 cubemapTopLeft = getTopLeftIntCoordinates(cubemap, mapWidth);
+    int3 cubemapBottomRight = getBottomRightIntCoordinates(cubemap, mapWidth);
+    int3 cubemapTopRight = getTopRightIntCoordinates(cubemap, mapWidth);
+    int3 cubemapBottomLeft = getBottomLeftIntCoordinates(cubemap, mapWidth);
+
+    uint index = id.x + id.z * mapWidth + id.y * mapWidth * 6;
+
+    int connectivity = getConnectivityFrom(cubemap);
+
+    if (connectivity == 0)
         return;
 
-    float inflowAmount = amount >= 1 ? amount : 1;
-    inflowAmount += getFlowFrom(x + 1, y, index);
-    inflowAmount += getFlowFrom(x, y + 1, index);
-    inflowAmount += getFlowFrom(x - 1, y, index);
-    inflowAmount += getFlowFrom(x, y - 1, index);
-    inflowAmount += getFlowFrom(x + 1, y + 1, index);
-    inflowAmount += getFlowFrom(x + 1, y - 1, index);
-    inflowAmount += getFlowFrom(x - 1, y + 1, index);
-    inflowAmount += getFlowFrom(x - 1, y - 1, index);
-    
-    flowMap[index] = inflowAmount;
+    for (int i = 0; i < numPasses; i++)
+    {
+        int3 newCubemap = fromIndex(connectivity, mapWidth);
+
+        addFlowAt(newCubemap, flowAmount > 0.000001 ? flowAmount : 0.000001);
+
+        connectivity = getConnectivityFrom(newCubemap);
+
+        if (connectivity == 0)
+            return;
+    }
+
+    //uint indexL = cubemapLeft.x + cubemapLeft.z * mapWidth + cubemapLeft.y * mapWidth * 6;
+    //uint indexR = cubemapRight.x + cubemapRight.z * mapWidth + cubemapRight.y * mapWidth * 6;
+    //uint indexT = cubemapTop.x + cubemapTop.z * mapWidth + cubemapTop.y * mapWidth * 6;
+    //uint indexB = cubemapBottom.x + cubemapBottom.z * mapWidth + cubemapBottom.y * mapWidth * 6;
+    //uint indexBL = cubemapBottomLeft.x + cubemapBottomLeft.z * mapWidth + cubemapBottomLeft.y * mapWidth * 6;
+    //uint indexBR = cubemapBottomRight.x + cubemapBottomRight.z * mapWidth + cubemapBottomRight.y * mapWidth * 6;
+    //uint indexTL = cubemapTopLeft.x + cubemapTopLeft.z * mapWidth + cubemapTopLeft.y * mapWidth * 6;
+    //uint indexTR = cubemapTopRight.x + cubemapTopRight.z * mapWidth + cubemapTopRight.y * mapWidth * 6;
+
+    // Flow Map.
+    //float inflowAmount = flowAmount >= 0 ? flowAmount : 0.000001;
+
+    //inflowAmount += getFlowFrom(index, cubemapLeft);
+    //if (inflowAmount > maxFlow) inflowAmount = maxFlow;
+    //inflowAmount += getFlowFrom(index, cubemapRight);
+    //if (inflowAmount > maxFlow) inflowAmount = maxFlow;
+    //inflowAmount += getFlowFrom(index, cubemapTop);
+    //if (inflowAmount > maxFlow) inflowAmount = maxFlow;
+    //inflowAmount += getFlowFrom(index, cubemapBottom);
+    //if (inflowAmount > maxFlow) inflowAmount = maxFlow;
+    //inflowAmount += getFlowFrom(index, cubemapBottomLeft);
+    //if (inflowAmount > maxFlow) inflowAmount = maxFlow;
+    //inflowAmount += getFlowFrom(index, cubemapBottomRight);
+    //if (inflowAmount > maxFlow) inflowAmount = maxFlow;
+    //inflowAmount += getFlowFrom(index, cubemapTopLeft);
+    //if (inflowAmount > maxFlow) inflowAmount = maxFlow;
+    //inflowAmount += getFlowFrom(index, cubemapTopRight);
+    //if (inflowAmount > maxFlow) inflowAmount = maxFlow;
+
+    //setFlowAt(cubemap, inflowAmount);
 }

@@ -11,7 +11,7 @@ RWTexture2D<float4> Result;
 [numthreads(32,32,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    if (id.x >= 4 * (uint)mapWidth || id.y >= 2 * (uint)mapHeight)
         return;
 
     float4 color = baseTexture[id.xy];

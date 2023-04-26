@@ -2,21 +2,35 @@
 #pragma kernel CSMain
 
 int mapWidth;
-int mapHeight;
 float waterLevel = 0.6;
 
-RWStructuredBuffer<float> heightMap;
+StructuredBuffer<float> heightMap1;
+StructuredBuffer<float> heightMap2;
+StructuredBuffer<float> heightMap3;
+StructuredBuffer<float> heightMap4;
+StructuredBuffer<float> heightMap5;
+StructuredBuffer<float> heightMap6;
+
 RWStructuredBuffer<int> landMask;
 
 [numthreads(32,32,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapWidth || id.z >= 6)
         return;
 
-    int index = id.x + id.y * mapWidth;
+    int index = id.x + id.z * mapWidth + id.y * 6 * mapWidth;
+    int heightIndex = id.x + id.y * 6 * mapWidth;
 
-    float height = heightMap[index];
+    float height = 0;
+
+    if (id.z == 0) height = heightMap1[heightIndex];
+    if (id.z == 1) height = heightMap2[heightIndex];
+    if (id.z == 2) height = heightMap3[heightIndex];
+    if (id.z == 3) height = heightMap4[heightIndex];
+    if (id.z == 4) height = heightMap5[heightIndex];
+    if (id.z == 5) height = heightMap6[heightIndex];
+
     if (height < waterLevel)
         return;
 

@@ -41,6 +41,39 @@ public static partial class ExtensionMethods
         return highest;
     }
 
+    public static void MinMax(this float[] a, ref float min, ref float max)
+    {
+        float highest = float.MinValue;
+        float lowest = float.MaxValue;
+
+        foreach (float v in a)
+        {
+            if (v > highest)
+                highest = v;
+            if (v < lowest)
+                lowest = v;
+        }
+
+        min = lowest;
+        max = highest;
+    }
+
+    public static float MaxAndIndex(this float[] a, ref int index)
+    {
+        index = -1;
+        float highest = float.MinValue;
+        for (int i = 0; i < a.Length; i++)
+        {
+            float v = a[i];
+            if (v > highest)
+            {
+                highest = v;
+                index = i;
+            }
+        }
+        return highest;
+    }
+
     public static void MoveForward(this Transform t, float amount)
     {
         Vector3 forward = t.forward;
@@ -393,8 +426,10 @@ public static partial class ExtensionMethods
                 Color color = new Color(0, 0, 0, 1);
                 if (drainageIndex != 0)
                 {
-                    int drainX = drainageIndex % width;
-                    int drainY = drainageIndex / width;
+                    int drainX = drainageIndex % (width * 6);
+                    int drainZ = drainX / width;
+                    drainX -= drainZ * width;
+                    int drainY = drainageIndex / (width * 6);
 
                     int relX = drainX - x;
                     int relY = drainY - y;
@@ -418,6 +453,11 @@ public static partial class ExtensionMethods
                         color.b += 0.25f;
                     }
 
+                    if (drainageIndex < 0 || drainageIndex >= array.Length)
+                    {
+                        //int a = 0;
+                    }
+                    else
                     // Is the next cell pointing here?
                     if (array[drainageIndex] == index)
                     {

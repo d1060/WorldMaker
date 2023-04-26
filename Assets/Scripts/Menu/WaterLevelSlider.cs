@@ -16,7 +16,7 @@ public class WaterLevelSlider : MonoBehaviour, IPointerUpHandler
     void Start()
     {
         slider = GetComponent<Slider>();
-        slider.value = map.textureSettings.waterLevel;
+        slider.value = TextureManager.instance.Settings.waterLevel;
         valueText.text = (slider.value * 100).ToString("##0.#") + "%";
     }
 
@@ -28,7 +28,7 @@ public class WaterLevelSlider : MonoBehaviour, IPointerUpHandler
 
     public void OnWaterLevelChanged()
     {
-        map.textureSettings.waterLevel = slider.value;
+        TextureManager.instance.Settings.waterLevel = slider.value;
         valueText.text = (slider.value * 100).ToString("##0.#") + "%";
         OnMouseUp?.Invoke();
     }
@@ -45,7 +45,7 @@ public class WaterLevelSlider : MonoBehaviour, IPointerUpHandler
 
         sliderValue /= 100;
         slider.value = sliderValue;
-        map.textureSettings.waterLevel = sliderValue;
+        TextureManager.instance.Settings.waterLevel = sliderValue;
     }
 
     public void OnPointerUp(PointerEventData eventData)

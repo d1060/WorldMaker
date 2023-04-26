@@ -2,49 +2,110 @@
 #pragma kernel CSMain
 
 int mapWidth;
-int mapHeight;
 float waterLevel = 0.6;
 float startingAlpha;
 float3 riverColor;
-RWStructuredBuffer<int> riverFlowMask;
-RWStructuredBuffer<int> connectvityMap;
+
+RWStructuredBuffer<int> riverFlowMask12;
+RWStructuredBuffer<int> riverFlowMask34;
+RWStructuredBuffer<int> riverFlowMask56;
+
+StructuredBuffer<int> connectivityMap12;
+StructuredBuffer<int> connectivityMap34;
+StructuredBuffer<int> connectivityMap56;
 
 Texture2D<float4> original;
 RWTexture2D<float4> result;
 
-int getIncomingFlow(int x, int y, int index)
+#include "Assets/Shaders/Cubemap.cginc"
+
+int getConnectivityFrom(int3 coordinates)
 {
-    int thisIndex = x + y * mapWidth;
-    if (connectvityMap[thisIndex] == index)
-        return riverFlowMask[thisIndex];
-    return 0;
+    int index = coordinates.x + coordinates.y * mapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
+
+    if (coordinates.z <= 0) return connectivityMap12[index];
+    else if (coordinates.z <= 1) return connectivityMap12[index];
+    else if (coordinates.z <= 2) return connectivityMap34[index];
+    else if (coordinates.z <= 3) return connectivityMap34[index];
+    else if (coordinates.z <= 4) return connectivityMap56[index];
+    else return connectivityMap56[index];
+}
+
+int getFlowFrom(int3 coordinates, int thisIndex)
+{
+    int connectedIndex = getConnectivityFrom(coordinates);
+    if (connectedIndex != thisIndex)
+        return 0;
+
+    int flowIndex = coordinates.x + coordinates.y * mapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        flowIndex += mapWidth * mapWidth;
+
+    if (coordinates.z <= 0) return riverFlowMask12[flowIndex];
+    else if (coordinates.z <= 1) return riverFlowMask12[flowIndex];
+    else if (coordinates.z <= 2) return riverFlowMask34[flowIndex];
+    else if (coordinates.z <= 3) return riverFlowMask34[flowIndex];
+    else if (coordinates.z <= 4) return riverFlowMask56[flowIndex];
+    else return riverFlowMask56[flowIndex];
+}
+
+void setFlowAt(int3 coordinates, int value)
+{
+    int index = coordinates.x + coordinates.y * mapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
+
+    if (coordinates.z <= 0) riverFlowMask12[index] = value;
+    else if (coordinates.z <= 1) riverFlowMask12[index] = value;
+    else if (coordinates.z <= 2) riverFlowMask34[index] = value;
+    else if (coordinates.z <= 3) riverFlowMask34[index] = value;
+    else if (coordinates.z <= 4) riverFlowMask56[index] = value;
+    else riverFlowMask56[index] = value;
 }
 
 [numthreads(32,32,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    if (id.x >= (uint)mapWidth * 4 || id.y >= (uint)mapWidth * 2)
         return;
 
-    int x = id.x;
-    int y = id.y;
+    float2 uv = float2((float)id.x / (4 * mapWidth), (float)id.y / (2 * mapWidth));
+    float3 cartesian = uvToCartesian(uv);
+    float3 cubemap = cartesianToCubemap(cartesian);
+    cubemap.x *= mapWidth;
+    cubemap.y *= mapWidth;
 
-    int index = x + y * mapWidth;
+    int index = toIndex(cubemap, mapWidth);
+
+    int3 cubemapLeft = getLeftIntCoordinates(cubemap, mapWidth);
+    int3 cubemapRight = getRightIntCoordinates(cubemap, mapWidth);
+    int3 cubemapTop = getTopIntCoordinates(cubemap, mapWidth);
+    int3 cubemapBottom = getBottomIntCoordinates(cubemap, mapWidth);
+
+    int3 cubemapTopLeft = getTopLeftIntCoordinates(cubemap, mapWidth);
+    int3 cubemapBottomRight = getBottomRightIntCoordinates(cubemap, mapWidth);
+    int3 cubemapTopRight = getTopRightIntCoordinates(cubemap, mapWidth);
+    int3 cubemapBottomLeft = getBottomLeftIntCoordinates(cubemap, mapWidth);
 
     int incomingFlow = 0;
-    incomingFlow += getIncomingFlow(x + 1, y, index);
-    incomingFlow += getIncomingFlow(x, y + 1, index);
-    incomingFlow += getIncomingFlow(x - 1, y, index);
-    incomingFlow += getIncomingFlow(x, y - 1, index);
-    incomingFlow += getIncomingFlow(x + 1, y - 1, index);
-    incomingFlow += getIncomingFlow(x + 1, y + 1, index);
-    incomingFlow += getIncomingFlow(x - 1, y + 1, index);
-    incomingFlow += getIncomingFlow(x - 1, y - 1, index);
+    incomingFlow += getFlowFrom(cubemapLeft, index);
+    incomingFlow += getFlowFrom(cubemapRight, index);
+    incomingFlow += getFlowFrom(cubemapTop, index);
+    incomingFlow += getFlowFrom(cubemapBottom, index);
+    incomingFlow += getFlowFrom(cubemapTopLeft, index);
+    incomingFlow += getFlowFrom(cubemapBottomRight, index);
+    incomingFlow += getFlowFrom(cubemapTopRight, index);
+    incomingFlow += getFlowFrom(cubemapBottomLeft, index);
 
     if (incomingFlow == 0)
         return;
 
-    riverFlowMask[index] = incomingFlow + 1;
+    setFlowAt(cubemap, incomingFlow + 1);
 
     float thisVarAlpha = (incomingFlow / 128.0);
     float thisAlpha = thisVarAlpha + startingAlpha;

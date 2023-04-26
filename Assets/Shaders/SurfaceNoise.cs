@@ -7,5 +7,6 @@ public enum SphereShaderDrawType
     Normal = 4,
     Humidity = 5,
     LandNormal = 6,
-    InvertedLandMask = 7
+    InvertedLandMask = 7,
+    LandWithNoNormals = 8
 }

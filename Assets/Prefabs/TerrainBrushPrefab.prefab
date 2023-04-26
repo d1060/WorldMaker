@@ -98,6 +98,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   numberOfDivisions: 100
   radius: 50
-  strength: 1
+  strength: 0.001
   thickness: 1
   map: {fileID: 0}

@@ -7,7 +7,7 @@ using System;
 public class TextureSettings
 {
     public int textureWidth = 256;
-    public int textureHeight = 128;
+    //public int textureHeight = 128;
     public Color32 iceColor = new Color32(244, 244, 244, 255);
     [Range(0, -20)]
     public float iceTemperatureThreshold1 = 0;
@@ -72,6 +72,9 @@ public class TextureSettings
     public int MaxZoomLevel { get { return zoomLevelDistances.Length - 1; } }
     public float TemperatureNoiseSeed { get; set; }
     public float HumidityNoiseSeed { get; set; }
+    public float XOffset { get { return selectedLayer == 1 ? surfaceNoiseSettings.noiseOffset.x : surfaceNoiseSettings2.noiseOffset.x; } set { if (selectedLayer == 1) surfaceNoiseSettings.noiseOffset.x = value; else surfaceNoiseSettings2.noiseOffset.x = value; } }
+    public float YOffset { get { return selectedLayer == 1 ? surfaceNoiseSettings.noiseOffset.y : surfaceNoiseSettings2.noiseOffset.y; } set { if (selectedLayer == 1) surfaceNoiseSettings.noiseOffset.y = value; else surfaceNoiseSettings2.noiseOffset.y = value; } }
+    public float ZOffset { get { return selectedLayer == 1 ? surfaceNoiseSettings.noiseOffset.z : surfaceNoiseSettings2.noiseOffset.z; } set { if (selectedLayer == 1) surfaceNoiseSettings.noiseOffset.z = value; else surfaceNoiseSettings2.noiseOffset.z = value; } }
     public float Detail { get { return selectedLayer == 1 ? surfaceNoiseSettings.octaves : surfaceNoiseSettings2.octaves; } set { if (selectedLayer == 1) surfaceNoiseSettings.octaves = (int)value; else surfaceNoiseSettings2.octaves = (int)value; } }
     public float Scale { get { return selectedLayer == 1 ? surfaceNoiseSettings.lacunarity : surfaceNoiseSettings2.lacunarity; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.lacunarity = value; else surfaceNoiseSettings2.lacunarity = value; } }
     public float Multiplier { get { return selectedLayer == 1 ? surfaceNoiseSettings.multiplier : surfaceNoiseSettings2.multiplier; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.multiplier = value; else surfaceNoiseSettings2.multiplier = value; } }
@@ -85,7 +88,7 @@ public class TextureSettings
     public void Clear()
     {
         textureWidth = 256;
-        textureHeight = 128;
+        //textureHeight = 128;
         iceColor = new Color32(244, 244, 244, 255);
         iceTemperatureThreshold1 = 0;
         iceTemperatureThreshold2 = -10;
@@ -141,7 +144,7 @@ public class TextureSettings
             return;
 
         surfaceMaterial.SetFloat("_TextureWidth", textureWidth);
-        surfaceMaterial.SetFloat("_TextureHeight", textureHeight);
+        surfaceMaterial.SetFloat("_TextureHeight", textureWidth);
 
         surfaceMaterial.SetFloat("_Seed", surfaceNoiseSettings.seed);
         surfaceMaterial.SetFloat("_XOffset", surfaceNoiseSettings.noiseOffset.x);

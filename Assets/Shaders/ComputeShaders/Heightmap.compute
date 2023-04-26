@@ -1,9 +1,13 @@
 #pragma kernel CSMain
 
-RWStructuredBuffer<float> heightMap;
+RWStructuredBuffer<float> heightMap1;
+RWStructuredBuffer<float> heightMap2;
+RWStructuredBuffer<float> heightMap3;
+RWStructuredBuffer<float> heightMap4;
+RWStructuredBuffer<float> heightMap5;
+RWStructuredBuffer<float> heightMap6;
 
 int _MapWidth;
-int _MapHeight;
 float _MinimumHeight;
 float _MaximumHeight;
 
@@ -33,26 +37,32 @@ float _HeightExponent2;
 float _LayerStrength2;
 float _DomainWarping2;
 
-//#include "Assets/Shaders/Simplex.cginc"
-#include "Assets/Shaders/Perlin.cginc"
+#include "Assets/Shaders/Simplex.cginc"
+//#include "Assets/Shaders/Perlin.cginc"
+#include "Assets/Shaders/Cubemap.cginc"
 
-[numthreads(16, 16, 1)]
+[numthreads(8, 8, 6)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)_MapWidth || id.y >= (uint)_MapHeight)
+    if (id.x >= (uint)_MapWidth || id.y >= (uint)_MapWidth || id.z >= 6)
 		return;
 
-	float2 uv = float2((id.x) / (float)_MapWidth,
-					   (id.y) / (float)_MapHeight);
-	//float2 uv = float2((id.x + 0.5) * (float)mapWidth - 1.0,
-	//                   (id.y + 0.5) * (float)mapHeight - 1.0);
-	int mapIndex = id.x + (id.y * _MapWidth);
+	float2 uv = cubemapXYZtoUV(id.x, id.y, id.z, _MapWidth);
+
 	float3 offset = float3(_xOffset, _yOffset, _zOffset);
 	float3 offset2 = float3(_xOffset2, _yOffset2, _zOffset2);
 
 	//float height = sphereNoise(uv, offset, seed, multiplier, octaves, lacunarity, persistence, heightRange, ridgedNoise);
 	float height = sphereHeight(uv, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping,
-		                            offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2,									_MinimumHeight, _MaximumHeight);
+		                            offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2,
+		                            _MinimumHeight, _MaximumHeight);
 
-	heightMap[mapIndex] = height;
+	int mapIndex = id.x + (id.y * _MapWidth);
+
+	if (id.z == 0) heightMap1[mapIndex] = height;
+	else if (id.z == 1) heightMap2[mapIndex] = height;
+	else if (id.z == 2) heightMap3[mapIndex] = height;
+	else if (id.z == 3) heightMap4[mapIndex] = height;
+	else if (id.z == 4) heightMap5[mapIndex] = height;
+	else if (id.z == 5) heightMap6[mapIndex] = height;
 }

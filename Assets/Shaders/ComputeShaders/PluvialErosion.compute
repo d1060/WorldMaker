@@ -22,6 +22,8 @@ float sedimentDissolvingConstant = 1;
 float sedimentDepositionConstant = 1;
 float waterEvaporationRetention = 0.75;
 
+#include "Assets/Shaders/Cubemap.cginc"
+
 // Notations:
 // - terrain height b
 // - water height d
@@ -65,13 +67,15 @@ float interpolate(RWStructuredBuffer<float> map, float2 coordinates)
     return value;
 }
 
-[numthreads(8,8,1)]
+[numthreads(8,8,6)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight || id.z >= 6)
         return;
 
-    int index = id.x + mapWidth * id.y;
+    uint index = id.x + mapWidth * 6 * id.y;
+    uint3 cubemap = uint3(id.x, id.y, id.z);
+
     float height = heightMap[index];
     float waterHeight = waterHeightMap[index];
 
@@ -80,20 +84,10 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float d1 = humidityScale + waterHeightMap[index];
 
     // Calculate outflow.
-    int leftX = id.x - 1;
-    int rightX = id.x + 1;
-    int topY = id.y + 1;
-    int bottomY = id.y - 1;
-
-    if (leftX < 0) leftX += mapWidth;
-    if (rightX >= mapWidth) rightX -= mapWidth;
-    if (topY >= mapHeight) topY = mapHeight - 1;
-    if (bottomY < 0) bottomY = 0;
-
-    int indexLeft = leftX + mapWidth * id.y;
-    int indexRight = rightX + mapWidth * id.y;
-    int indexTop = id.x + mapWidth * topY;
-    int indexBottom = id.x + mapWidth * bottomY;
+    int indexLeft = toIndex(getLeftCoordinates(cubemap, mapWidth), mapWidth);
+    int indexRight = toIndex(getRightCoordinates(cubemap, mapWidth), mapWidth);
+    int indexTop = toIndex(getTopCoordinates(cubemap, mapWidth), mapWidth);
+    int indexBottom = toIndex(getBottomCoordinates(cubemap, mapWidth), mapWidth);
 
     float outflowLeft = gravity * (height + waterHeight - heightMap[indexLeft] - waterHeightMap[indexLeft]);
     float outflowRight = gravity * (height + waterHeight - heightMap[indexRight] - waterHeightMap[indexRight]);

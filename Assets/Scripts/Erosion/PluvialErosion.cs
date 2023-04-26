@@ -75,11 +75,11 @@ public class PluvialErosion
 
     public void Init(ref float[] heightMap, ref float[] humidityMap)
     {
-        riverSourcesMap = new float[mapWidth * mapHeight];
-        waterHeightMap = new float[mapWidth * mapHeight];
-        sedimentMap = new float[mapWidth * mapHeight];
-        outflowMap = new float4[mapWidth * mapHeight];
-        velocityMap = new float2[mapWidth * mapHeight];
+        riverSourcesMap = new float[mapWidth * mapWidth * 6];
+        waterHeightMap = new float[mapWidth * mapWidth * 6];
+        sedimentMap = new float[mapWidth * mapWidth * 6];
+        outflowMap = new float4[mapWidth * mapWidth * 6];
+        velocityMap = new float2[mapWidth * mapWidth * 6];
         random = new System.Random();
 
         for (int i = 0; i < numRiverSources; i++)

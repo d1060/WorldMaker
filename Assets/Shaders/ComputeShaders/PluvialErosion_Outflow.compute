@@ -13,10 +13,12 @@ RWStructuredBuffer<float> heightMap;
 RWStructuredBuffer<float4> outflowMap; // x == left, y == right, z == top, w = bottom
 RWStructuredBuffer<float> waterHeightMap;
 
+#include "Assets/Shaders/Cubemap.cginc"
+
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    if (id.x >= 6 * (uint)mapWidth || id.y >= (uint)mapHeight)
         return;
 
     #include "Assets/Shaders/ComputeShaders/indexes.cginc"
@@ -28,8 +30,8 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     float outflowLeft = outflowMap[index].x + gravity * (height + waterHeight - heightMap[indexL] - waterHeightMap[indexL]);
     float outflowRight = outflowMap[index].y + gravity * (height + waterHeight - heightMap[indexR] - waterHeightMap[indexR]);
-    float outflowTop = outflowMap[index].z + gravity * (height + waterHeight - heightMap[indexU] - waterHeightMap[indexU]);
-    float outflowBottom = outflowMap[index].w + gravity * (height + waterHeight - heightMap[indexD] - waterHeightMap[indexD]);
+    float outflowTop = outflowMap[index].z + gravity * (height + waterHeight - heightMap[indexT] - waterHeightMap[indexT]);
+    float outflowBottom = outflowMap[index].w + gravity * (height + waterHeight - heightMap[indexB] - waterHeightMap[indexB]);
 
     if (outflowLeft < 0) outflowLeft = 0;
     if (outflowRight < 0) outflowRight = 0;

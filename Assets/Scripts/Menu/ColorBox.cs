@@ -121,4 +121,9 @@ public class ColorBox : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             Destroy(colorPickerControl.gameObject);
         }
     }
+
+    public void DestroyColorPicker()
+    {
+        Destroy(gameObjectColorPicker);
+    }
 }

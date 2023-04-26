@@ -97,4 +97,9 @@ public class GradientSliderHandleColorBox : MonoBehaviour, IPointerDownHandler, 
             Destroy(colorPickerControl.gameObject);
         }
     }
+
+    public void DestroyColorPicker()
+    {
+        Destroy(gameObjectColorPicker);
+    }
 }

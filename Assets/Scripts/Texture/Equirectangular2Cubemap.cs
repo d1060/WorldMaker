@@ -146,7 +146,10 @@ public class Equirectangular2Cubemap
             x = (2 * cubeMap.x - 1);
             z = (1 - 2 * cubeMap.y);
         }
-        return new Vector3(x, y, z);
+
+        Vector3 cartesian = new Vector3(x, y, z);
+        cartesian.Normalize();
+        return cartesian;
     }
 
     void CSMain(int x, int y)
@@ -171,7 +174,6 @@ public class Equirectangular2Cubemap
             }
         }
         Vector3 cartesian = cubemapToCartesian(cubeMap, faceId);
-        cartesian.Normalize();
         Vector2 polar = cartesianToPolarRatio(cartesian);
         // Shifts for the center meridian
         polar.x -= 0.125f;

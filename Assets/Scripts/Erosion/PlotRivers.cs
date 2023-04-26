@@ -43,7 +43,7 @@ public class PlotRivers
                 Vector3 pointInSpace = new Vector3((float)(random.NextDouble() - 0.5), (float)(random.NextDouble() - 0.5), (float)(random.NextDouble() - 0.5));
                 Vector2 pointInMap = pointInSpace.CartesianToPolarRatio(1);
                 uint mapX = (uint)(pointInMap.x * textureSettings.textureWidth);
-                uint mapY = (uint)(pointInMap.y * textureSettings.textureHeight);
+                uint mapY = (uint)(pointInMap.y * textureSettings.textureWidth);
 
                 uint dropPointIndex = mapY * (uint)textureSettings.textureWidth + mapX;
                 if (heightMap[dropPointIndex] <= textureSettings.waterLevel)
@@ -54,7 +54,7 @@ public class PlotRivers
                 dropPoints[i] = dropPointIndex;
             }
 
-            flowMap = new Color[textureSettings.textureWidth * textureSettings.textureHeight];
+            flowMap = new Color[textureSettings.textureWidth * textureSettings.textureWidth];
             flowMap = flowTex.GetPixels();
             flowVectors = new Dictionary<Vector2i, Vector2i>();
         }
@@ -90,7 +90,7 @@ public class PlotRivers
     void RunInCPU(ref uint[] dropPoints, ref float[] heightMap, ref Texture2D flowTex)
     {
         int gridSearch = textureSettings.textureWidth / GRID_SEARCH_DIVISOR;
-        Color[] flowMap = new Color[textureSettings.textureWidth * textureSettings.textureHeight];
+        Color[] flowMap = new Color[textureSettings.textureWidth * textureSettings.textureWidth];
         flowMap = flowTex.GetPixels();
 
         Dictionary<Vector2i, Vector2i> flowVectors = new Dictionary<Vector2i, Vector2i>();
@@ -125,7 +125,7 @@ public class PlotRivers
         List<int> lowerYsToBlock = new List<int>();
         List<int> higherYsToBlock = new List<int>();
 
-        for (int i = 1; i < textureSettings.textureHeight / 2; i ++)
+        for (int i = 1; i < textureSettings.textureWidth / 2; i ++)
         {
             for (int gridX = xy.x - i; gridX <= xy.x + i; gridX += 1)
             {
@@ -135,7 +135,7 @@ public class PlotRivers
 
                 for (int gridY = xy.y - i; gridY <= xy.y + i; gridY += 1)
                 {
-                    if (gridY < 0 || gridY >= textureSettings.textureHeight)
+                    if (gridY < 0 || gridY >= textureSettings.textureWidth)
                         continue;
 
                     if (gridX == xy.x - i || gridX == xy.x + i || gridY == xy.y - i || gridY == xy.y + i)
@@ -281,7 +281,7 @@ public class PlotRivers
         if (lastX < 0) lastX += textureSettings.textureWidth;
         if (nextX >= textureSettings.textureWidth) nextX -= textureSettings.textureWidth;
         if (lastY < 0) lastY = 0;
-        if (nextY >= textureSettings.textureHeight) nextY = textureSettings.textureHeight - 1;
+        if (nextY >= textureSettings.textureWidth) nextY = textureSettings.textureWidth - 1;
 
         Vector2i point1 = new Vector2i(lastX, point.y);
         Vector2i point2 = new Vector2i(nextX, point.y);
@@ -423,7 +423,7 @@ public class PlotRivers
         {
             int yDelta = (int)(i - plotRiversSettings.brushSize);
             int brushY = point.y + yDelta;
-            if (brushY < 0 || brushY >= textureSettings.textureHeight)
+            if (brushY < 0 || brushY >= textureSettings.textureWidth)
                 continue;
 
             for (int j = 0; j < 2 * plotRiversSettings.brushSize + 1; j++)

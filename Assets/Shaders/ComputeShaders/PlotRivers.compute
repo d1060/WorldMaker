@@ -2,29 +2,117 @@
 #pragma kernel CSMain
 
 int mapWidth;
-int mapHeight;
 RWTexture2D<float4> result;
-RWStructuredBuffer<float> inciseFlowMap;
-float riverAmount1;
-float riverAmount2;
+StructuredBuffer<float> inciseFlowMap12;
+StructuredBuffer<float> inciseFlowMap34;
+StructuredBuffer<float> inciseFlowMap56;
+float lowerLimit;
+float higherLimit;
 float3 riverColor;
 float maxValue;
+
+#include "Assets/Shaders/Cubemap.cginc"
+
+float getInciseFlowMapValueAtCoordinates(uint3 coordinates)
+{
+    uint index = coordinates.x + coordinates.y * mapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += mapWidth * mapWidth;
+
+    if (coordinates.z <= 0) return inciseFlowMap12[index];
+    else if (coordinates.z <= 1) return inciseFlowMap12[index];
+    else if (coordinates.z <= 2) return inciseFlowMap34[index];
+    else if (coordinates.z <= 3) return inciseFlowMap34[index];
+    else if (coordinates.z <= 4) return inciseFlowMap56[index];
+    else return inciseFlowMap56[index];
+}
+
+float getCoordinatesAlpha(uint3 cubemap)
+{
+    float inciseFlowValue = getInciseFlowMapValueAtCoordinates(cubemap) / maxValue;
+    if (inciseFlowValue <= 0)
+        return 0;
+
+    //inciseFlowValue = pow(abs(inciseFlowValue), 1.0 / 2.0);
+
+    float alpha = 1;
+
+    if (inciseFlowValue < lowerLimit)
+        return 0;
+    else if (inciseFlowValue < higherLimit)
+        alpha = (inciseFlowValue - lowerLimit) / (higherLimit - lowerLimit);
+
+    alpha = pow(abs(alpha), 1.0 / 2.0);
+
+    return alpha;
+}
+
+float highestOf(float f1, float f2, float f3, float f4, float f5, float f6, float f7, float f8, float f9)
+{
+    if (f1 >= f2 && f1 >= f3 && f1 >= f4 && f1 >= f5 && f1 >= f6 && f1 >= f7 && f1 >= f8 && f1 >= f9)
+        return f1;
+    if (f2 >= f3 && f2 >= f4 && f2 >= f5 && f2 >= f6 && f2 >= f7 && f2 >= f8 && f2 >= f9)
+        return f2;
+    if (f3 >= f4 && f3 >= f5 && f3 >= f6 && f3 >= f7 && f3 >= f8 && f3 >= f9)
+        return f3;
+    if (f4 >= f5 && f4 >= f6 && f4 >= f7 && f4 >= f8 && f4 >= f9)
+        return f4;
+    if (f5 >= f6 && f5 >= f7 && f5 >= f8 && f5 >= f9)
+        return f5;
+    if (f6 >= f7 && f6 >= f8 && f6 >= f9)
+        return f6;
+    if (f7 >= f8 && f7 >= f9)
+        return f7;
+    if (f8 >= f9)
+        return f8;
+    return f9;
+}
 
 [numthreads(32,32,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapHeight)
+    if (id.x >= (uint)mapWidth * 4 || id.y >= (uint)mapWidth * 2)
         return;
-    int index = id.x + id.y * mapWidth;
 
-    float lowerLimit = riverAmount1 < riverAmount2 ? riverAmount1 : riverAmount2;
-    float higherLimit = riverAmount1 >= riverAmount2 ? riverAmount1 : riverAmount2;
-    float inciseFlowValue = inciseFlowMap[index] / maxValue;
-    float alpha = 1;
-    if (inciseFlowValue < lowerLimit)
-        alpha = 0;
-    else if (inciseFlowValue < higherLimit)
-        alpha = (inciseFlowValue - lowerLimit) / (higherLimit - lowerLimit);
+    float2 uv = float2((float)id.x / (4 * mapWidth), (float)id.y / (2 * mapWidth));
+    float3 cartesian = uvToCartesian(uv);
+    float3 cubemap = cartesianToCubemap(cartesian);
+    cubemap.x *= mapWidth;
+    cubemap.y *= mapWidth;
+
+    uint3 cubemapC = uint3((uint)cubemap.x, (uint)cubemap.y, (uint)cubemap.z);
+    uint3 cubemapR = getRightCoordinates(cubemapC, mapWidth);
+    uint3 cubemapU = getTopCoordinates(cubemapC, mapWidth);
+    uint3 cubemapL = getLeftCoordinates(cubemapC, mapWidth);
+    uint3 cubemapD = getBottomCoordinates(cubemapC, mapWidth);
+    uint3 cubemapUR = getTopRightCoordinates(cubemapC, mapWidth);
+    uint3 cubemapUL = getTopLeftCoordinates(cubemapC, mapWidth);
+    uint3 cubemapDR = getBottomRightCoordinates(cubemapC, mapWidth);
+    uint3 cubemapDL = getBottomLeftCoordinates(cubemapC, mapWidth);
+
+    //float rateX = cubemap.x - cubemapC.x;
+    //float rateY = cubemap.y - cubemapC.y;
+
+    float alphaC = getCoordinatesAlpha(cubemapC);
+    float alphaR = getCoordinatesAlpha(cubemapR);
+    float alphaU = getCoordinatesAlpha(cubemapU);
+    float alphaL = getCoordinatesAlpha(cubemapL);
+    float alphaB = getCoordinatesAlpha(cubemapD);
+    float alphaUR = getCoordinatesAlpha(cubemapUR);
+    float alphaUL = getCoordinatesAlpha(cubemapUL);
+    float alphaDR = getCoordinatesAlpha(cubemapDR);
+    float alphaDL = getCoordinatesAlpha(cubemapDL);
+
+    //float alphaXdelta0 = (alphaR - alphaC) * rateX + alphaC;
+    //float alphaXdelta1 = (alphaUR - alphaU) * rateX + alphaU;
+    //float alpha = (alphaXdelta1 - alphaXdelta0) * rateY + alphaXdelta0;
+    float alpha = highestOf(alphaC, alphaR, alphaU, alphaL, alphaB, alphaUR, alphaUL, alphaDR, alphaDL);
+
+    if (alpha <= 0)
+        return;
+
     float4 color = float4(riverColor.r, riverColor.g, riverColor.b, alpha);
-    result[int2(id.x, id.y)] = color;
+
+    result[id.xy] = color;
 }

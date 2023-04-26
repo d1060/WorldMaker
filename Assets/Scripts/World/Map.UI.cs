@@ -29,8 +29,12 @@ public partial class Map : MonoBehaviour
 
     GameObject raiseTerrainImage = null;
     GameObject lowerTerrainImage = null;
+    GameObject alterTerrainHint = null;
     ButtonToggle terrainToggleButton = null;
     ButtonToggle waypointToggleButton = null;
+    ButtonToggle showGlobeToggleButton = null;
+    ButtonToggle temperatureToggleButton = null;
+
     Slider brushSizeSlider = null;
     Slider brushStrengthSlider = null;
 
@@ -78,6 +82,28 @@ public partial class Map : MonoBehaviour
         }
     }
 
+    GameObject AlterTerrainHint
+    {
+        get
+        {
+            if (alterTerrainHint == null)
+            {
+                Canvas canvas = cam.GetComponentInChildren<Canvas>();
+                if (canvas != null)
+                {
+                    foreach (Transform child in canvas.transform)
+                    {
+                        if (child.name == "Alter Terrain Hint Panel")
+                        {
+                            alterTerrainHint = child.gameObject;
+                        }
+                    }
+                }
+            }
+            return alterTerrainHint;
+        }
+    }
+
     ButtonToggle TerrainToggleButton
     {
         get
@@ -119,6 +145,50 @@ public partial class Map : MonoBehaviour
                 }
             }
             return waypointToggleButton;
+        }
+    }
+
+    ButtonToggle ShowGlobeToggleButton
+    {
+        get
+        {
+            if (showGlobeToggleButton == null)
+            {
+                Canvas canvas = cam.GetComponentInChildren<Canvas>();
+                if (canvas != null)
+                {
+                    foreach (Transform child in canvas.transform)
+                    {
+                        if (child.name == "Map Mode Button")
+                        {
+                            showGlobeToggleButton = child.GetComponent<ButtonToggle>();
+                        }
+                    }
+                }
+            }
+            return showGlobeToggleButton;
+        }
+    }
+
+    ButtonToggle TemperatureToggleButton
+    {
+        get
+        {
+            if (temperatureToggleButton == null)
+            {
+                Canvas canvas = cam.GetComponentInChildren<Canvas>();
+                if (canvas != null)
+                {
+                    foreach (Transform child in canvas.transform)
+                    {
+                        if (child.name == "Temperature Button")
+                        {
+                            temperatureToggleButton = child.GetComponent<ButtonToggle>();
+                        }
+                    }
+                }
+            }
+            return temperatureToggleButton;
         }
     }
 
@@ -204,11 +274,11 @@ public partial class Map : MonoBehaviour
     {
         if (doTerrainBrush)
         {
-            BrushStrengthSlider.value += delta / 2;
+            BrushStrengthSlider.value += delta / 10;
             if (terrainBrush != null)
             {
                 TerrainBrush terrainBrushScript = terrainBrush.GetComponent<TerrainBrush>();
-                terrainBrushScript.strength = BrushStrengthSlider.value;
+                terrainBrushScript.strength = BrushStrengthSlider.value / 100;
             }
             return true;
         }
@@ -373,12 +443,12 @@ public partial class Map : MonoBehaviour
     {
         get
         {
-            return textureSettings.desertColor;
+            return TextureManager.instance.Settings.desertColor;
         }
 
         set
         {
-            textureSettings.desertColor = value;
+            TextureManager.instance.Settings.desertColor = value;
             UpdateSurfaceMaterialProperties();
             MapData.instance.Save();
         }
@@ -388,7 +458,7 @@ public partial class Map : MonoBehaviour
     {
         get
         {
-            return textureSettings.desertThreshold1.ToString();
+            return TextureManager.instance.Settings.desertThreshold1.ToString();
         }
 
         set
@@ -396,7 +466,7 @@ public partial class Map : MonoBehaviour
             double dValue = 0;
             if (System.Double.TryParse(value, out dValue))
             {
-                textureSettings.desertThreshold1 = (float)dValue;
+                TextureManager.instance.Settings.desertThreshold1 = (float)dValue;
                 UpdateSurfaceMaterialProperties();
                 MapData.instance.Save();
             }
@@ -407,7 +477,7 @@ public partial class Map : MonoBehaviour
     {
         get
         {
-            return textureSettings.desertThreshold2.ToString();
+            return TextureManager.instance.Settings.desertThreshold2.ToString();
         }
 
         set
@@ -415,7 +485,7 @@ public partial class Map : MonoBehaviour
             double dValue = 0;
             if (System.Double.TryParse(value, out dValue))
             {
-                textureSettings.desertThreshold2 = (float)dValue;
+                TextureManager.instance.Settings.desertThreshold2 = (float)dValue;
                 UpdateSurfaceMaterialProperties();
                 MapData.instance.Save();
             }
@@ -427,12 +497,12 @@ public partial class Map : MonoBehaviour
     {
         get
         {
-            return textureSettings.iceColor;
+            return TextureManager.instance.Settings.iceColor;
         }
 
         set
         {
-            textureSettings.iceColor = value;
+            TextureManager.instance.Settings.iceColor = value;
             UpdateSurfaceMaterialProperties();
             MapData.instance.Save();
         }
@@ -442,7 +512,7 @@ public partial class Map : MonoBehaviour
     {
         get
         {
-            return textureSettings.iceTemperatureThreshold1.ToString();
+            return TextureManager.instance.Settings.iceTemperatureThreshold1.ToString();
         }
 
         set
@@ -450,7 +520,7 @@ public partial class Map : MonoBehaviour
             double dValue = 0;
             if (System.Double.TryParse(value, out dValue))
             {
-                textureSettings.iceTemperatureThreshold1 = (float)dValue;
+                TextureManager.instance.Settings.iceTemperatureThreshold1 = (float)dValue;
                 UpdateSurfaceMaterialProperties();
                 MapData.instance.Save();
             }
@@ -461,7 +531,7 @@ public partial class Map : MonoBehaviour
     {
         get
         {
-            return textureSettings.iceTemperatureThreshold2.ToString();
+            return TextureManager.instance.Settings.iceTemperatureThreshold2.ToString();
         }
 
         set
@@ -469,46 +539,10 @@ public partial class Map : MonoBehaviour
             double dValue = 0;
             if (System.Double.TryParse(value, out dValue))
             {
-                textureSettings.iceTemperatureThreshold2 = (float)dValue;
+                TextureManager.instance.Settings.iceTemperatureThreshold2 = (float)dValue;
                 UpdateSurfaceMaterialProperties();
                 MapData.instance.Save();
             }
-        }
-    }
-
-    public string TextureWidth
-    {
-        get
-        {
-            return textureSettings.textureWidth.ToString();
-        }
-    }
-
-    public void SetTextureWidth(string value)
-    {
-        if (value != null && value.Length > 0 && !updatingFieldCyclically)
-        {
-            int width = 1;
-            try
-            {
-                width = Int32.Parse(value);
-            }
-            catch
-            {
-            }
-            if (width > SystemInfo.maxTextureSize)
-            {
-                width = SystemInfo.maxTextureSize;
-                UpdateUIInputField(setupPanelTransform, "Texture Width Text Box", width.ToString());
-            }
-
-            if (textureSettings.textureWidth != width)
-            {
-                ResetEroded();
-            }
-
-            textureSettings.textureWidth = width;
-            MapData.instance.Save();
         }
     }
 
@@ -516,23 +550,61 @@ public partial class Map : MonoBehaviour
     {
         get
         {
-            return textureSettings.textureHeight.ToString();
+            return (TextureManager.instance.Settings.textureWidth * 2).ToString();
+        }
+    }
+
+    public string TextureWidth
+    {
+        get
+        {
+            return (TextureManager.instance.Settings.textureWidth * 4).ToString();
+        }
+    }
+
+    public void SetTextureWidth(string value)
+    {
+        if (value != null && value.Length > 0 && !updatingFieldCyclically)
+        {
+            int width = 2;
+            try
+            {
+                width = Int32.Parse(value);
+            }
+            catch
+            {
+            }
+
+            if (width > SystemInfo.maxTextureSize)
+            {
+                width = SystemInfo.maxTextureSize;
+                UpdateUIInputField(setupPanelTransform, "Texture Width Text Box", width.ToString());
+            }
+
+            if (TextureManager.instance.Settings.textureWidth != width / 2)
+            {
+                ResetEroded();
+            }
+
+            TextureManager.instance.Settings.textureWidth = width / 2;
+            UpdateUITextMeshPro(setupPanelTransform, "Texture Width Text", (width * 2).ToString() + (TextureManager.instance.Settings.textureWidth * 4 < 10000 ? " " : "") + " x");
+            MapData.instance.Save();
         }
     }
 
     bool cyclicalNoiseTypeUpdate = false;
     public void SetNormalNoiseType(bool normalNoise)
     {
-        textureSettings.Ridged = !normalNoise;
+        TextureManager.instance.Settings.Ridged = !normalNoise;
         if (!cyclicalNoiseTypeUpdate)
         {
             cyclicalNoiseTypeUpdate = true;
-            UpdateUIToggle(noisePanelTransform, "Toggle Ridged Noise", textureSettings.Ridged);
+            UpdateUIToggle(noisePanelTransform, "Toggle Ridged Noise", TextureManager.instance.Settings.Ridged);
             cyclicalNoiseTypeUpdate = false;
         }
         if (!firstUpdate)
         {
-            GenerateHeightMap(true);
+            //GenerateHeightMap(true);
             UndoErosion();
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
@@ -542,16 +614,16 @@ public partial class Map : MonoBehaviour
 
     public void SetRidgedNoiseType(bool ridged)
     {
-        textureSettings.Ridged = ridged;
+        TextureManager.instance.Settings.Ridged = ridged;
         if (!cyclicalNoiseTypeUpdate)
         {
             cyclicalNoiseTypeUpdate = true;
-            UpdateUIToggle(noisePanelTransform, "Toggle Regular Noise", !textureSettings.Ridged);
+            UpdateUIToggle(noisePanelTransform, "Toggle Regular Noise", !TextureManager.instance.Settings.Ridged);
             cyclicalNoiseTypeUpdate = false;
         }
         if (!firstUpdate)
         {
-            GenerateHeightMap(true);
+            //GenerateHeightMap(true);
             UndoErosion();
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
@@ -559,60 +631,99 @@ public partial class Map : MonoBehaviour
         }
     }
 
-    public void SetTextureHeight(string value)
-    {
-        if (value != null && value.Length > 0 && !updatingFieldCyclically)
-        {
-            int height = 1;
-            try
-            {
-                height = Int32.Parse(value);
-            }
-            catch
-            {
-            }
-            if (height > SystemInfo.maxTextureSize)
-            {
-                height = SystemInfo.maxTextureSize;
-                UpdateUIInputField(setupPanelTransform, "Texture Height Text Box", height.ToString());
-            }
+    //public void SetTextureHeight(string value)
+    //{
+    //    if (value != null && value.Length > 0 && !updatingFieldCyclically)
+    //    {
+    //        int height = 1;
+    //        try
+    //        {
+    //            height = Int32.Parse(value);
+    //        }
+    //        catch
+    //        {
+    //        }
+    //        if (height > SystemInfo.maxTextureSize)
+    //        {
+    //            height = SystemInfo.maxTextureSize;
+    //            UpdateUIInputField(setupPanelTransform, "Texture Height Text Box", height.ToString());
+    //        }
 
-            if (textureSettings.textureHeight != height)
-            {
-                ResetEroded();
-            }
+    //        if (TextureManager.instance.Settings.textureWidth != height)
+    //        {
+    //            ResetEroded();
+    //        }
 
-            textureSettings.textureHeight = height;
-            MapData.instance.Save();
-        }
-    }
+    //        TextureManager.instance.Settings.textureWidth = height;
+    //        MapData.instance.Save();
+    //    }
+    //}
 
     public void SetNoiseLayer1()
     {
-        textureSettings.SelectedLayer = 1;
-        MapData.instance.textureSettings = textureSettings;
+        TextureManager.instance.Settings.SelectedLayer = 1;
         UpdateNoiseLayerFields();
     }
 
     public void SetNoiseLayer2()
     {
-        textureSettings.SelectedLayer = 2;
-        MapData.instance.textureSettings = textureSettings;
+        TextureManager.instance.Settings.SelectedLayer = 2;
         UpdateNoiseLayerFields();
     }
 
     public void NewMapDetail(float value)
     {
-        textureSettings.Detail = value;
+        TextureManager.instance.Settings.Detail = value;
         if (!firstUpdate)
         {
-            MapData.instance.textureSettings = textureSettings;
             minHeights.Clear();
             maxHeights.Clear();
 
-            GenerateHeightMap(true);
+            //GenerateHeightMap(true);
             UndoErosion();
             //GenerateHeightMap();
+            UpdateSurfaceMaterialProperties();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewXOffset(float value)
+    {
+        TextureManager.instance.Settings.XOffset = value;
+        if (!firstUpdate)
+        {
+            minHeights.Clear();
+            maxHeights.Clear();
+
+            UndoErosion();
+            UpdateSurfaceMaterialProperties();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewYOffset(float value)
+    {
+        TextureManager.instance.Settings.YOffset = value;
+        if (!firstUpdate)
+        {
+            minHeights.Clear();
+            maxHeights.Clear();
+
+            UndoErosion();
+            UpdateSurfaceMaterialProperties();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewZOffset(float value)
+    {
+        TextureManager.instance.Settings.ZOffset = value;
+        if (!firstUpdate)
+        {
+            minHeights.Clear();
+            maxHeights.Clear();
+
+            UndoErosion();
             UpdateSurfaceMaterialProperties();
             MapData.instance.Save();
         }
@@ -620,10 +731,9 @@ public partial class Map : MonoBehaviour
 
     public void NewMapScaling(float value)
     {
-        textureSettings.Scale = value;
+        TextureManager.instance.Settings.Scale = value;
         if (!firstUpdate)
         {
-            MapData.instance.textureSettings = textureSettings;
             UndoErosion();
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
@@ -633,11 +743,10 @@ public partial class Map : MonoBehaviour
 
     public void NewSmoothness(float value)
     {
-        textureSettings.Persistence = value;
+        TextureManager.instance.Settings.Persistence = value;
         if (!firstUpdate)
         {
-            MapData.instance.textureSettings = textureSettings;
-            GenerateHeightMap(true);
+            //GenerateHeightMap(true);
             UndoErosion();
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
@@ -647,10 +756,9 @@ public partial class Map : MonoBehaviour
 
     public void NewLandMasses(float value)
     {
-        textureSettings.Multiplier = value;
+        TextureManager.instance.Settings.Multiplier = value;
         if (!firstUpdate)
         {
-            MapData.instance.textureSettings = textureSettings;
             UndoErosion();
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
@@ -660,11 +768,10 @@ public partial class Map : MonoBehaviour
 
     public void NewDomainWarping(float value)
     {
-        textureSettings.DomainWarping = value;
+        TextureManager.instance.Settings.DomainWarping = value;
         if (!firstUpdate)
         {
-            MapData.instance.textureSettings = textureSettings;
-            GenerateHeightMap(true);
+            //GenerateHeightMap(true);
             UndoErosion();
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
@@ -674,11 +781,10 @@ public partial class Map : MonoBehaviour
 
     public void NewLayerStrength(float value)
     {
-        textureSettings.LayerStrength = value;
+        TextureManager.instance.Settings.LayerStrength = value;
         if (!firstUpdate)
         {
-            MapData.instance.textureSettings = textureSettings;
-            GenerateHeightMap(true);
+            //GenerateHeightMap(true);
             UndoErosion();
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
@@ -688,10 +794,9 @@ public partial class Map : MonoBehaviour
 
     public void NewHeightExponent(float value)
     {
-        textureSettings.HeightExponent = value;
+        TextureManager.instance.Settings.HeightExponent = value;
         if (!firstUpdate)
         {
-            MapData.instance.textureSettings = textureSettings;
             UndoErosion();
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
@@ -701,10 +806,9 @@ public partial class Map : MonoBehaviour
 
     public void NewWaterLevel(float value)
     {
-        textureSettings.waterLevel = value;
+        TextureManager.instance.Settings.waterLevel = value;
         if (!firstUpdate)
         {
-            MapData.instance.textureSettings = textureSettings;
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties(false);
             MapData.instance.Save();
@@ -713,26 +817,24 @@ public partial class Map : MonoBehaviour
 
     public void NewWaterLevelStr(string value)
     {
-        textureSettings.waterLevel = value.ToFloat() / 100;
+        TextureManager.instance.Settings.waterLevel = value.ToFloat() / 100;
         if (!firstUpdate)
         {
-            MapData.instance.textureSettings = textureSettings;
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties(false);
             MapData.instance.Save();
-            UpdateUISlider(setupPanelTransform, "Water Level Slider", textureSettings.waterLevel);
+            UpdateUISlider(setupPanelTransform, "Water Level Slider", TextureManager.instance.Settings.waterLevel);
         }
     }
 
     public void NewLowerHeightLimit(float value)
     {
         float value1 = GetUISlider(setupPanelTransform, "Height Limits Slider 1");
-        textureSettings.minHeight = value1;
+        TextureManager.instance.Settings.minHeight = value1;
 
         if (!firstUpdate)
         {
-            MapData.instance.LowestHeight = textureSettings.minHeight;
-            MapData.instance.textureSettings = textureSettings;
+            MapData.instance.LowestHeight = TextureManager.instance.Settings.minHeight;
 
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties(false);
@@ -744,12 +846,11 @@ public partial class Map : MonoBehaviour
     public void NewUpperHeightLimit(float value)
     {
         float value2 = GetUISlider(setupPanelTransform, "Height Limits Slider 2");
-        textureSettings.maxHeight = value2;
+        TextureManager.instance.Settings.maxHeight = value2;
 
         if (!firstUpdate)
         {
-            MapData.instance.HighestHeight = textureSettings.maxHeight;
-            MapData.instance.textureSettings = textureSettings;
+            MapData.instance.HighestHeight = TextureManager.instance.Settings.maxHeight;
 
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties(false);
@@ -781,8 +882,8 @@ public partial class Map : MonoBehaviour
     #region Erosion
     public void SetErosionNoiseMerge(float value)
     {
-        textureSettings.erosionNoiseMerge = value;
-        if (erodedHeightMap == null || originalHeightMap == null || mergedHeightMap == null)
+        TextureManager.instance.Settings.erosionNoiseMerge = value;
+        if (TextureManager.instance.HeightMap1 == null)
             return;
 
         HeightMap2Texture();
@@ -805,6 +906,11 @@ public partial class Map : MonoBehaviour
     public void SetErosionMaxDropletLifetime(string value)
     {
         erosionSettings.maxLifetime = value.ToInt();
+        if (erosionSettings.maxLifetime > 256)
+        {
+            erosionSettings.maxLifetime = 256;
+            UpdateUIInputField(erosionPanelTransform, "Lifetime Text Box", erosionSettings.maxLifetime.ToString());
+        }
         MapData.instance.Save();
     }
 
@@ -875,33 +981,14 @@ public partial class Map : MonoBehaviour
         }
     }
 
-    public void NewFlowExponent(string value)
+    public void NewFlowExponent(float value)
     {
-        double dValue = 0;
-        if (System.Double.TryParse(value, out dValue))
+        inciseFlowSettings.exponent = value;
+        MapData.instance.inciseFlowSettings = inciseFlowSettings;
+        if (!firstUpdate)
         {
-            inciseFlowSettings.exponent = (float)dValue;
-            MapData.instance.inciseFlowSettings = inciseFlowSettings;
-            if (!firstUpdate)
-            {
-                PerformInciseFlow(false, false, false);
-                MapData.instance.Save();
-            }
-        }
-    }
-
-    public void NewFlowAmount(string value)
-    {
-        double dValue = 0;
-        if (System.Double.TryParse(value, out dValue))
-        {
-            inciseFlowSettings.amount = (float)dValue;
-            MapData.instance.inciseFlowSettings = inciseFlowSettings;
-            if (!firstUpdate)
-            {
-                PerformInciseFlow(false, false, false);
-                MapData.instance.Save();
-            }
+            PerformInciseFlow(false, false, false);
+            MapData.instance.Save();
         }
     }
 
@@ -990,12 +1077,12 @@ public partial class Map : MonoBehaviour
         {
             PerformInciseFlow(false, true, true);
             MapData.instance.Save();
-        }
 
-        if (inciseFlowSettings.plotRiversRandomly || inciseFlowSettings.plotRivers)
-            planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
-        else
-            planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+            if (inciseFlowSettings.plotRiversRandomly || inciseFlowSettings.plotRivers)
+                planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
+            else
+                planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+        }
     }
 
     public Color InciseFlowRiverColor
@@ -1143,9 +1230,10 @@ public partial class Map : MonoBehaviour
         {
         }
 
-        if (textureSettings.textureWidth != width)
+        if (TextureManager.instance.Settings.textureWidth != width / 2)
         {
-            textureSettings.textureWidth = width;
+            TextureManager.instance.Settings.textureWidth = width / 2;
+            UpdateUITextMeshPro(setupPanelTransform, "Texture Width Text", (width * 2).ToString() + (TextureManager.instance.Settings.textureWidth * 4 < 10000 ? " " : "") + " x");
             MapData.instance.Save();
         }
     }
@@ -1313,15 +1401,15 @@ public partial class Map : MonoBehaviour
 
     public void OnLandGradientChanged(GradientSlider gradientSlider)
     {
-        textureSettings.landColorStages = gradientSlider.Stages;
-        textureSettings.land1Color = gradientSlider.Colors;
+        TextureManager.instance.Settings.landColorStages = gradientSlider.Stages;
+        TextureManager.instance.Settings.land1Color = gradientSlider.Colors;
         UpdateSurfaceMaterialProperties();
     }
 
     public void OnOnceanGradientChanged(GradientSlider gradientSlider)
     {
-        textureSettings.oceanStages = gradientSlider.Stages;
-        textureSettings.oceanColors = gradientSlider.Colors;
+        TextureManager.instance.Settings.oceanStages = gradientSlider.Stages;
+        TextureManager.instance.Settings.oceanColors = gradientSlider.Colors;
         UpdateSurfaceMaterialProperties();
     }
 
@@ -1400,8 +1488,9 @@ public partial class Map : MonoBehaviour
 
         if (setupPanelTransform != null)
         {
-            UpdateUIInputField(setupPanelTransform, "Texture Width Text Box", TextureWidth);
-            UpdateUIInputField(setupPanelTransform, "Texture Height Text Box", TextureHeight);
+            UpdateUIInputField(setupPanelTransform, "Texture Width Text Box", TextureHeight);
+            UpdateUITextMeshPro(setupPanelTransform, "Texture Width Text", TextureWidth + (TextureManager.instance.Settings.textureWidth * 4 < 10000 ? " " : "") + " x");
+            //UpdateUIInputField(setupPanelTransform, "Texture Height Text Box", TextureWidth);
             // Setup the Seed Field
             UpdateUIInputField(setupPanelTransform, "Seed Text Box", mapSettings.Seed.ToString());
             // Setup the Radius Field.
@@ -1412,47 +1501,35 @@ public partial class Map : MonoBehaviour
             UpdateUIInputField(setupPanelTransform, "MainTexture Text Box", System.IO.Path.GetFileName(mapSettings.MainTexturePath));
             // Setup the Landmask Field
             UpdateUIInputField(setupPanelTransform, "LandMask Text Box", System.IO.Path.GetFileName(mapSettings.LandMaskPath));
-            UpdateUISlider(setupPanelTransform, "Water Level Slider", textureSettings.waterLevel);
+            UpdateUISlider(setupPanelTransform, "Water Level Slider", TextureManager.instance.Settings.waterLevel);
             SetHeightLimits();
             UpdateUIToggle(setupPanelTransform, "Toggle Keep Seed", AppData.instance.KeepSeedOnRegenerate);
             UpdateUIToggle(setupPanelTransform, "Toggle Auto Regenerate", AppData.instance.AutoRegenerate);
             UpdateUIToggle(setupPanelTransform, "Toggle Use Images", mapSettings.UseImages);
 
-            if (textureSettings.SelectedLayer == 1)
+            if (TextureManager.instance.Settings.SelectedLayer == 1)
                 SelectButton(setupPanelTransform, "Button Layer 1");
             else
                 SelectButton(setupPanelTransform, "Button Layer 2");
 
-            UpdateUIGradientSlider(gradientPanelTransform, textureSettings.landColorStages, textureSettings.land1Color, textureSettings.oceanStages, textureSettings.oceanColors);
+            UpdateUIGradientSlider(gradientPanelTransform, TextureManager.instance.Settings.landColorStages, TextureManager.instance.Settings.land1Color, TextureManager.instance.Settings.oceanStages, TextureManager.instance.Settings.oceanColors);
 
-            UpdateUIInputField(gradientPanelTransform, "Desert Range 1 Text Box", textureSettings.desertThreshold1.ToString());
-            UpdateUIInputField(gradientPanelTransform, "Desert Range 2 Text Box", textureSettings.desertThreshold2.ToString());
-            UpdateUIInputField(gradientPanelTransform, "Ice Range 1 Text Box", textureSettings.iceTemperatureThreshold1.ToString());
-            UpdateUIInputField(gradientPanelTransform, "Ice Range 2 Text Box", textureSettings.iceTemperatureThreshold2.ToString());
+            UpdateUIInputField(gradientPanelTransform, "Desert Range 1 Text Box", TextureManager.instance.Settings.desertThreshold1.ToString());
+            UpdateUIInputField(gradientPanelTransform, "Desert Range 2 Text Box", TextureManager.instance.Settings.desertThreshold2.ToString());
+            UpdateUIInputField(gradientPanelTransform, "Ice Range 1 Text Box", TextureManager.instance.Settings.iceTemperatureThreshold1.ToString());
+            UpdateUIInputField(gradientPanelTransform, "Ice Range 2 Text Box", TextureManager.instance.Settings.iceTemperatureThreshold2.ToString());
         }
 
         UpdateNoiseLayerFields();
 
         if (gradientPanelTransform != null)
         {
-            UpdateUIColorPanel(gradientPanelTransform, "Desert Color Panel", textureSettings.desertColor);
-            UpdateUIColorPanel(gradientPanelTransform, "Ice Color Panel", textureSettings.iceColor);
+            UpdateUIColorPanel(gradientPanelTransform, "Desert Color Panel", TextureManager.instance.Settings.desertColor);
+            UpdateUIColorPanel(gradientPanelTransform, "Ice Color Panel", TextureManager.instance.Settings.iceColor);
         }
 
         if (contextMenuPanelTransform != null)
         {
-            if (mapSettings.UseImages)
-            {
-                if (mapSettings.HeightMapPath == null || mapSettings.HeightMapPath == "")
-                    AppData.instance.SaveHeightMap = false;
-
-                if (mapSettings.MainTexturePath == null || mapSettings.MainTexturePath == "")
-                    AppData.instance.SaveMainMap = false;
-
-                if (mapSettings.LandMaskPath == null || mapSettings.LandMaskPath == "")
-                    AppData.instance.SaveLandMask = false;
-            }
-
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Main Map", AppData.instance.SaveMainMap);
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Height Map", AppData.instance.SaveHeightMap);
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Land Mask", AppData.instance.SaveLandMask);
@@ -1469,7 +1546,7 @@ public partial class Map : MonoBehaviour
 
         if (erosionPanelTransform != null)
         {
-            UpdateUISlider(erosionPanelTransform, "Noise Merge Slider", textureSettings.erosionNoiseMerge);
+            UpdateUISlider(erosionPanelTransform, "Noise Merge Slider", TextureManager.instance.Settings.erosionNoiseMerge);
             UpdateUIInputField(erosionPanelTransform, "Iterations Text Box", erosionSettings.numErosionIterations.ToString());
             UpdateUISlider(erosionPanelTransform, "Brush Radius Slider", erosionSettings.erosionBrushRadius);
             UpdateUIInputField(erosionPanelTransform, "Lifetime Text Box", erosionSettings.maxLifetime.ToString());
@@ -1497,8 +1574,7 @@ public partial class Map : MonoBehaviour
         if (inciseFlowPanelTransform != null)
         {
             UpdateUISlider(inciseFlowPanelTransform, "Flow Strength Slider", inciseFlowSettings.strength);
-            UpdateUIInputField(inciseFlowPanelTransform, "Flow Exponent Text Box", inciseFlowSettings.exponent.ToString());
-            UpdateUIInputField(inciseFlowPanelTransform, "Flow Amount Text Box", inciseFlowSettings.amount.ToString());
+            UpdateUISlider(inciseFlowPanelTransform, "Flow Exponent Slider", inciseFlowSettings.exponent);
             UpdateUISlider(inciseFlowPanelTransform, "Min Amount Slider", inciseFlowSettings.minAmount);
             UpdateUISlider(inciseFlowPanelTransform, "Flow Curve Strength Slider", inciseFlowSettings.chiselStrength);
             UpdateUISlider(inciseFlowPanelTransform, "Flow Height Influence Slider", inciseFlowSettings.heightInfluence);
@@ -1530,15 +1606,18 @@ public partial class Map : MonoBehaviour
     {
         if (noisePanelTransform != null)
         {
-            UpdateUIToggle(noisePanelTransform, "Toggle Regular Noise", !textureSettings.Ridged);
-            UpdateUIToggle(noisePanelTransform, "Toggle Ridged Noise", textureSettings.Ridged);
-            UpdateUISlider(noisePanelTransform, "Domain Warping Slider", textureSettings.DomainWarping);
-            UpdateUISlider(noisePanelTransform, "Layer Strength Slider", textureSettings.LayerStrength);
-            UpdateUISlider(noisePanelTransform, "Map Detail Slider", textureSettings.Detail);
-            UpdateUISlider(noisePanelTransform, "Map Scaling Slider", textureSettings.Scale);
-            UpdateUISlider(noisePanelTransform, "Smoothness Slider", textureSettings.Persistence);
-            UpdateUISlider(noisePanelTransform, "Landmasses Slider", textureSettings.Multiplier);
-            UpdateUISlider(noisePanelTransform, "Height Exponent Slider", textureSettings.HeightExponent);
+            UpdateUIToggle(noisePanelTransform, "Toggle Regular Noise", !TextureManager.instance.Settings.Ridged);
+            UpdateUIToggle(noisePanelTransform, "Toggle Ridged Noise", TextureManager.instance.Settings.Ridged);
+            UpdateUISlider(noisePanelTransform, "X Offset Slider", TextureManager.instance.Settings.XOffset);
+            UpdateUISlider(noisePanelTransform, "Y Offset Slider", TextureManager.instance.Settings.YOffset);
+            UpdateUISlider(noisePanelTransform, "Z Offset Slider", TextureManager.instance.Settings.ZOffset);
+            UpdateUISlider(noisePanelTransform, "Domain Warping Slider", TextureManager.instance.Settings.DomainWarping);
+            UpdateUISlider(noisePanelTransform, "Layer Strength Slider", TextureManager.instance.Settings.LayerStrength);
+            UpdateUISlider(noisePanelTransform, "Map Detail Slider", TextureManager.instance.Settings.Detail);
+            UpdateUISlider(noisePanelTransform, "Map Scaling Slider", TextureManager.instance.Settings.Scale);
+            UpdateUISlider(noisePanelTransform, "Smoothness Slider", TextureManager.instance.Settings.Persistence);
+            UpdateUISlider(noisePanelTransform, "Landmasses Slider", TextureManager.instance.Settings.Multiplier);
+            UpdateUISlider(noisePanelTransform, "Height Exponent Slider", TextureManager.instance.Settings.HeightExponent);
         }
     }
 
@@ -1671,6 +1750,30 @@ public partial class Map : MonoBehaviour
         {
             slider.value = sliderValue;
         }
+    }
+
+    public void UpdateUITextMeshPro(Transform panelTransform, string tmproName, string tmproValue)
+    {
+        Transform textBoxTransform = null;
+        foreach (Transform setupPanelChildTransform in panelTransform.transform)
+        {
+            if (setupPanelChildTransform.name == tmproName)
+            {
+                textBoxTransform = setupPanelChildTransform;
+                break;
+            }
+        }
+
+        if (textBoxTransform == null)
+            return;
+
+        GameObject textBox = textBoxTransform.gameObject;
+        TextMeshProUGUI tmproField = textBox.GetComponent<TextMeshProUGUI>();
+
+        if (tmproField == null)
+            return;
+
+        tmproField.text = tmproValue;
     }
 
     private float GetUISlider(Transform panelTransform, string sliderName)
@@ -1811,29 +1914,55 @@ public partial class Map : MonoBehaviour
         }
     }
 
-    public void RunInciseFlowButton()
-    {
-        ApplyInciseFlow();
-    }
-
     public void StartInciseFlowPreview()
     {
+        worldNameText.interactable = false;
         PerformInciseFlow(true, true, true);
     }
 
     public void StopInciseFlowPreview()
     {
-        inciseFlowMap = null;
-        if (!isInciseFlowApplied)
-        {
-            flowMap = null;
-            flowTexture = null;
-            flowTextureRandom = null;
-            planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
-        }
-
+        //TextureManager.instance.InciseFlowMap = null;
+        //if (!isInciseFlowApplied)
+        //{
+        //    //TextureManager.instance.FlowMap = null;
+        //    TextureManager.instance.FlowTexture = null;
+        //    //TextureManager.instance.FlowTextureRandom = null;
+        //    planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+        //}
         HeightMap2Texture();
-        UpdateSurfaceMaterialHeightMap(erodedHeightMap != null);
+        UpdateSurfaceMaterialHeightMap(TextureManager.instance.HeightMap1 != null);
+        worldNameText.interactable = true;
+    }
+
+    public void ErosionMenuShiftIn()
+    {
+        worldNameText.interactable = false;
+    }
+
+    public void ErosionMenuShiftOut()
+    {
+        worldNameText.interactable = true;
+    }
+
+    public void WorldMenuShiftIn()
+    {
+        worldNameText.interactable = false;
+    }
+
+    public void WorldMenuShiftOut()
+    {
+        worldNameText.interactable = true;
+    }
+
+    public void MenuShiftIn()
+    {
+        worldNameText.interactable = false;
+    }
+
+    public void MenuShiftOut()
+    {
+        worldNameText.interactable = true;
     }
 
     void HideErodingTerrainPanel()
@@ -1946,9 +2075,9 @@ public partial class Map : MonoBehaviour
 
         RectTransform rectTransform = mainMenuPanelTransform as RectTransform;
         Vector2 prevAnchoredPosition = new Vector2(rectTransform.anchoredPosition.x, rectTransform.anchoredPosition.y);
-        rectTransform.sizeDelta = new Vector2(rectTransform.sizeDelta.x, 25 +
-            (AppData.instance.RecentWorlds.Count > 0 ? 10 : 0) +
-            AppData.instance.RecentWorlds.Count * 10);
+        rectTransform.sizeDelta = new Vector2(rectTransform.sizeDelta.x, 24 +
+            (AppData.instance.RecentWorlds.Count > 0 ? 8 : 0) +
+            AppData.instance.RecentWorlds.Count * 8);
         rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x, prevAnchoredPosition.y);
     }
 
@@ -2006,7 +2135,7 @@ public partial class Map : MonoBehaviour
         rectTransform.anchorMax = parentRectTransform.anchorMax;
         rectTransform.localScale = new Vector3(1, 1, 1);
         rectTransform.localPosition = new Vector3(10, 0, 0);
-        rectTransform.anchoredPosition = new Vector2(5, 0 - (index * 10 + 32));
+        rectTransform.anchoredPosition = new Vector2(5, 0 - (index * 8 + 26));
         rectTransform.sizeDelta = new Vector2(parentRectTransform.sizeDelta.x - 10, 10);
 
         Button button = gameObject.GetComponent<Button>();
@@ -2045,7 +2174,6 @@ public partial class Map : MonoBehaviour
                         string fileName = AppData.instance.RecentWorlds[recentWorldId];
                         if (File.Exists(fileName) && MapData.instance.Load(fileName))
                         {
-                            textureSettings = MapData.instance.textureSettings;
                             mapSettings = MapData.instance.mapSettings;
                             erosionSettings = MapData.instance.erosionSettings;
                             plotRiversSettings = MapData.instance.plotRiversSettings;

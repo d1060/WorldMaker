@@ -12,9 +12,12 @@ class InciseFlow
 
     InciseFlow()
     {
+        heightMap = null;
+        inciseFlowMap = null;
+        drainageIndexesMap = null;
     }
 
-    public static InciseFlow instance
+public static InciseFlow instance
     {
         get
         {
@@ -91,22 +94,22 @@ class InciseFlow
         return new float2(f.x / magnitude, f.y / magnitude);
     }
 
-    public int mapWidth;
-    public int mapHeight;
+    public int mapWidth = 512;
+    public int mapHeight = 512;
     public float logBase = 2;
     public float amount = 1;
     public float heightFactor = 0.05f;
     public float minAmount = 0;
     public float strength = 1;
-    public float maxFlowStrength;
-    public float curveFactor;
-    public float heightInfluence;
-    public float waterLevel;
+    public float maxFlowStrength = 0.1f;
+    public float curveFactor = 1.1f;
+    public float heightInfluence = 1;
+    public float waterLevel = 0.7f;
     public float blur = 0;
-    public float[] flowMap;
-    public float[] heightMap;
-    public float[] inciseFlowMap;
-    public int[] drainageIndexesMap;
+    public float[] flowMap = null;
+    public float[] heightMap = null;
+    public float[] inciseFlowMap = null;
+    public int[] drainageIndexesMap = null;
 
     public void Run()
     {
