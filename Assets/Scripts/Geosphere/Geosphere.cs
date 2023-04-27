@@ -17,7 +17,7 @@ public class Geosphere : MonoBehaviour
     int prevDivisions = 5;
     float prevRadius = 200.0f;
     Vector3 targetCameraPosition = Vector3.zero;
-    new Camera camera = null;
+    Camera camera = null;
     public float minNavigationSpeed = 0.04f;
     public float smoothTime = 0.1f;
     private Vector3 velocity = Vector3.zero;

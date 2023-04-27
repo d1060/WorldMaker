@@ -90,7 +90,7 @@ Material:
     - _DesertThreshold1: 10
     - _DesertThreshold2: 20
     - _DetailNormalMapScale: 1
-    - _DomainWarping: 0.55380034
+    - _DomainWarping: 0.6426012
     - _DomainWarping2: 0.898079
     - _DrawType: 0
     - _DstBlend: 0
@@ -116,7 +116,7 @@ Material:
     - _IsHeightmapSet: 0
     - _IsLandmaskSet: 0
     - _IsMainmapSet: 0
-    - _Lacunarity: 1.6283267
+    - _Lacunarity: 1.7018614
     - _Lacunarity2: 1.6880908
     - _LandGlossiness: 0.376
     - _LandMetallic: 0
@@ -124,11 +124,11 @@ Material:
     - _LayerStrength2: 0.58581924
     - _LightFalloff: 16.55
     - _LightIntensity: 1
-    - _MaxHeight: 0.89704984
+    - _MaxHeight: 0.94607276
     - _Metallic: 0
     - _MinHeight: 0.156864
     - _Mode: 0
-    - _Multiplier: 2.133469
+    - _Multiplier: 2.2302768
     - _Multiplier2: 2.924182
     - _NormalScale: 10
     - _OcclusionStrength: 1
@@ -140,7 +140,7 @@ Material:
     - _Octaves: 15
     - _Octaves2: 13
     - _Parallax: 0.02
-    - _Persistence: 0.46700287
+    - _Persistence: 0.471874
     - _Persistence2: 0.69903696
     - _RidgedNoise: 1
     - _RidgedNoise2: 1
@@ -155,12 +155,12 @@ Material:
     - _TextureWidth: 2048
     - _UVSec: 0
     - _UnderwaterNormalScale: 0.5
-    - _WaterLevel: 0.7342952
-    - _XOffset: 0.08447481
+    - _WaterLevel: 0.66070825
+    - _XOffset: 0.19547692
     - _XOffset2: 0.14873621
-    - _YOffset: 0.19823718
+    - _YOffset: 0.36493605
     - _YOffset2: 0.38053253
-    - _ZOffset: 0.3807435
+    - _ZOffset: 0.538143
     - _ZOffset2: 0.051870674
     - _ZWrite: 1
     m_Colors:

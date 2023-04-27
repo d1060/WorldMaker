@@ -223,10 +223,18 @@ public class CameraController : MonoBehaviour
                 map.MouseMapHit = hitPoint;
             }
 
+            Vector3 planeHitPoint = new Vector3();
             if (mouseWheel != 0)
             {
+                if (!isMapHit)
+                {
+                    float intersectionDistance = 0;
+                    Plane zZero = new Plane(new Vector3(0, 0, -1), 0.0f);
+                    zZero.Raycast(ray, out intersectionDistance);
+                    Vector3 hitPoint = ray.GetPoint(intersectionDistance);
+                }
                 //Debug.Log("Doing Zoom.");
-                DoZoom(mouseWheel, isMapHit, mapHit);
+                DoZoom(mouseWheel, isMapHit ? mapHit.point : planeHitPoint);
             }
 
             if ((xAxisMovement != 0 || yAxisMovement != 0) && isMouseButtonDown && prevMousePosition.x != float.MinValue)
@@ -380,52 +388,35 @@ public class CameraController : MonoBehaviour
         return false;
     }
 
-    void DoZoom(float zoomChange, bool isMapHit, RaycastHit hit)
+    void DoZoom(float zoomChange, Vector3 hitPoint)
     {
         zoomChange *= zoomSpeed;
 
-        if (isMapHit)
+        if (!map.ShowGlobe)
         {
-            Vector3 zoomDirection = hit.point - transform.position;
+            Vector3 zoomDirection = hitPoint - transform.position;
+
             zoomDirection.Normalize();
             zoomDirection *= zoomChange;
             Vector3 cameraPosition = targetCameraPosition;
 
-            //float xDelta = zoomDirection.x;
-            //float yDelta = zoomDirection.y;
             float zDelta = zoomDirection.z;
             Vector3 cameraPan = new Vector3(0, 0, zDelta);
 
             cameraPosition += cameraPan;
 
-            //if (xDelta != 0)
-            //{
-                //map.Shift(-xDelta);
-                //globe.Shift(map.CenterScreenWorldPosition, cam);
-            //}
+            if (cameraPosition.z > -minCameraDistance) cameraPosition.z = -minCameraDistance;
+            if (cameraPosition.z < -maxCameraDistance) cameraPosition.z = -maxCameraDistance;
 
-            //CalculateVisibleFlatLatitudeAndLongitude();
-
-            //zoomLevel = GetZoomLevel(-transform.position.z);
-
-            if (-cameraPosition.z >= minCameraDistance && -cameraPosition.z <= maxCameraDistance)
+            if (!IsInsidePlanes(cameraPosition))
             {
-                if (!map.ShowGlobe)
-                {
-                    if (!IsInsidePlanes(cameraPosition))
-                    {
-                        cameraPosition = MoveIntoPlanes(cameraPosition);
-                        CalculateVisibleFlatLatitudeAndLongitude();
-                        geosphere?.RotateCameraTo((visibleLowerLongitude + visibleUpperLongitude) / 2, (visibleLowerLatitude + visibleUpperLatitude) / 2);
-                    }
-                }
-
-                if (cameraPosition.z > -minCameraDistance) cameraPosition.z = -minCameraDistance;
-                if (cameraPosition.z < -maxCameraDistance) cameraPosition.z = -maxCameraDistance;
-
-                cameraPan = cameraPosition - targetCameraPosition;
-                targetCameraPosition += cameraPan;
+                cameraPosition = MoveIntoPlanes(cameraPosition);
+                CalculateVisibleFlatLatitudeAndLongitude();
+                geosphere?.RotateCameraTo((visibleLowerLongitude + visibleUpperLongitude) / 2, (visibleLowerLatitude + visibleUpperLatitude) / 2);
             }
+
+            cameraPan = cameraPosition - targetCameraPosition;
+            targetCameraPosition += cameraPan;
 
             geosphere?.ZoomCameraTo(-transform.position.z);
         }

@@ -485,7 +485,7 @@ public partial class Map : MonoBehaviour
                 heightmapRT = new RenderTexture(heightmap.width, heightmap.height, 16, RenderTextureFormat.ARGBHalf);
                 heightmapRT.name = "Heightmap Render Texture";
                 heightmapRT.enableRandomWrite = true;
-                heightmapRT.wrapMode = TextureWrapMode.Mirror;
+                heightmapRT.wrapMode = TextureWrapMode.Repeat;
                 heightmapRT.Create();
 
                 RenderTexture prevActive = RenderTexture.active;
@@ -501,7 +501,7 @@ public partial class Map : MonoBehaviour
                 RenderTexture newRT = new RenderTexture(TextureManager.instance.Settings.textureWidth * 4, TextureManager.instance.Settings.textureWidth * 2, 16, RenderTextureFormat.ARGBHalf);
                 newRT.name = "Heightmap Render Texture";
                 newRT.enableRandomWrite = true;
-                newRT.wrapMode = TextureWrapMode.Mirror;
+                newRT.wrapMode = TextureWrapMode.Repeat;
                 newRT.Create();
 
                 RenderTexture prevActive = RenderTexture.active;
@@ -518,7 +518,7 @@ public partial class Map : MonoBehaviour
                 heightmapRT = new RenderTexture(TextureManager.instance.Settings.textureWidth * 4, TextureManager.instance.Settings.textureWidth * 2, 16, RenderTextureFormat.ARGBHalf);
                 heightmapRT.name = "Heightmap Render Texture";
                 heightmapRT.enableRandomWrite = true;
-                heightmapRT.wrapMode = TextureWrapMode.Mirror;
+                heightmapRT.wrapMode = TextureWrapMode.Repeat;
                 heightmapRT.Create();
             }
 
@@ -534,7 +534,7 @@ public partial class Map : MonoBehaviour
 
         if (heightmapRT != null)
         {
-            heightmapRT.wrapMode = TextureWrapMode.Mirror;
+            heightmapRT.wrapMode = TextureWrapMode.Repeat;
             planetSurfaceMaterial.SetTexture("_HeightMap", heightmapRT);
         }
 
@@ -749,7 +749,7 @@ public partial class Map : MonoBehaviour
             if (heightmapRT == null)
             {
                 heightmapRT = new RenderTexture(TextureManager.instance.Settings.textureWidth * 4, TextureManager.instance.Settings.textureWidth * 2, 16, RenderTextureFormat.ARGBHalf);
-                heightmapRT.wrapMode = TextureWrapMode.Mirror;
+                heightmapRT.wrapMode = TextureWrapMode.Repeat;
                 heightmapRT.name = "Heightmap Render Texture";
                 heightmapRT.enableRandomWrite = true;
                 heightmapRT.Create();

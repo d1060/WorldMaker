@@ -20,10 +20,7 @@ Shader "Noise/PlanetarySurfaceTexture"
         _Octaves("Number of Octaves", Range(1, 30)) = 10
         _Lacunarity("Lacunarity", Range(1, 2)) = 1.5
         _Persistence("Persistance", Range(0, 1)) = 0.7
-        _LayerStrength("Layer Strength", Range(0, 1)) = 1
         _HeightExponent("Height Exponent", Range(0, 10)) = 1
-        _RidgedNoise("Ridged Noise", Int) = 0
-        _DomainWarping("Domain Warping", Range(0, 4)) = 0
 
         _HeightMap("Heightmap", 2D) = "white" {}
         _MainMap("Main Map", 2D) = "white" {}
@@ -131,7 +128,6 @@ Shader "Noise/PlanetarySurfaceTexture"
         int _Octaves;
         float _Lacunarity;
         float _Persistence;
-        float _LayerStrength;
         float _HeightExponent;
         float _MinHeight;
         float _MaxHeight;
@@ -179,9 +175,6 @@ Shader "Noise/PlanetarySurfaceTexture"
         float _XOffset;
         float _YOffset;
         float _ZOffset;
-        int _RidgedNoise;
-        float _DomainWarping;
-        float _DomainWarping2;
         float _BakedNormalIntensity;
 
         // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.

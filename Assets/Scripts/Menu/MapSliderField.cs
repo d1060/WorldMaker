@@ -47,6 +47,7 @@ public class MapSliderField : MonoBehaviour, ISelectHandler, IDeselectHandler, I
     public void Init(float initialValue)
     {
         slider = GetComponent<Slider>();
+        if (slider == null) return;
         slider.value = initialValue;
         if (valueText == null)
         {
@@ -66,6 +67,7 @@ public class MapSliderField : MonoBehaviour, ISelectHandler, IDeselectHandler, I
 
     public void OnChanged()
     {
+        if (slider == null) return;
         float sValue = slider.value;
         if (valueText == null)
         {
@@ -99,6 +101,7 @@ public class MapSliderField : MonoBehaviour, ISelectHandler, IDeselectHandler, I
 
     public void OnTextChanged()
     {
+        if (slider == null) return;
         string levelText = valueText.text;
         if (levelText.EndsWith("%"))
             levelText = levelText.Remove(levelText.Length - 1, 1);

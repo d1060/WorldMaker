@@ -79,7 +79,13 @@ float getErodeValueFromFlowCoordinates(float flowHeight, uint3 coordinates)
         erodeValue = 0;
 
     erodeValue = pow(abs(erodeValue), curveFactor);
-    erodeValue = erodeValue * ((1 - heightInfluence) + heightInfluence * ((flowHeight - waterLevel) / (1 - waterLevel)));
+
+    float maxErosionValueAtHeightInfluence1 = flowHeight - waterLevel - 0.0001;
+    float erosionValueAtHeightInfluence1 = erodeValue;
+    if (erodeValue > maxErosionValueAtHeightInfluence1)
+        erosionValueAtHeightInfluence1 = maxErosionValueAtHeightInfluence1;
+
+    erodeValue = (erodeValue * (1 - heightInfluence)) + (erosionValueAtHeightInfluence1 * heightInfluence);
     erodeValue *= strength;
     return erodeValue;
 }
