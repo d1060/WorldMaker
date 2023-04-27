@@ -662,12 +662,14 @@ public partial class Map : MonoBehaviour
     public void SetNoiseLayer1()
     {
         TextureManager.instance.Settings.SelectedLayer = 1;
+        firstUpdate = true;
         UpdateNoiseLayerFields();
     }
 
     public void SetNoiseLayer2()
     {
         TextureManager.instance.Settings.SelectedLayer = 2;
+        firstUpdate = true;
         UpdateNoiseLayerFields();
     }
 
@@ -836,7 +838,7 @@ public partial class Map : MonoBehaviour
         {
             MapData.instance.LowestHeight = TextureManager.instance.Settings.minHeight;
 
-            //GenerateHeightMap();
+            ResetEroded();
             UpdateSurfaceMaterialProperties(false);
 
             MapData.instance.Save();
@@ -852,7 +854,7 @@ public partial class Map : MonoBehaviour
         {
             MapData.instance.HighestHeight = TextureManager.instance.Settings.maxHeight;
 
-            //GenerateHeightMap();
+            ResetEroded();
             UpdateSurfaceMaterialProperties(false);
 
             MapData.instance.Save();

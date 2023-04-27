@@ -10,11 +10,17 @@ public class Geosphere : MonoBehaviour
     public float Radius = 200.0f;
     public int divisions = 5;
     public float heightMultiplier = 1;
+    public float panDivisor = 1250;
     public Material material;
     [HideInInspector]
     List<GeoSphereSector> sectors = new List<GeoSphereSector>();
     int prevDivisions = 5;
     float prevRadius = 200.0f;
+    Vector3 targetCameraPosition = Vector3.zero;
+    new Camera camera = null;
+    public float minNavigationSpeed = 0.04f;
+    public float smoothTime = 0.1f;
+    private Vector3 velocity = Vector3.zero;
 
     // Start is called before the first frame update
     void Start()
@@ -22,11 +28,59 @@ public class Geosphere : MonoBehaviour
         prevDivisions = divisions;
         BuildSectors();
         BuildGameObject();
+        camera = transform.GetComponentInChildren<Camera>();
+        if (camera != null)
+            targetCameraPosition = camera.transform.localPosition;
     }
 
     // Update is called once per frame
     void Update()
     {
+    }
+
+    void FixedUpdate()
+    {
+        if (camera != null)
+        {
+            if (targetCameraPosition != camera.transform.localPosition)
+            {
+                camera.transform.localPosition = Vector3.SmoothDamp(camera.transform.localPosition, targetCameraPosition, ref velocity, smoothTime);
+                camera.transform.LookAt(transform);
+
+                if (camera.transform.localPosition.x < - Radius - CameraController.MaxCameraDistance)
+                {
+                    camera.transform.localPosition = new Vector3(- Radius - CameraController.MaxCameraDistance, camera.transform.localPosition.y, camera.transform.localPosition.z);
+                    targetCameraPosition = new Vector3(- Radius - CameraController.MaxCameraDistance, targetCameraPosition.y, targetCameraPosition.z);
+                }
+                else if (camera.transform.localPosition.x > Radius + CameraController.MaxCameraDistance)
+                {
+                    camera.transform.localPosition = new Vector3(Radius + CameraController.MaxCameraDistance, camera.transform.localPosition.y, camera.transform.localPosition.z);
+                    targetCameraPosition = new Vector3(Radius + CameraController.MaxCameraDistance, targetCameraPosition.y, targetCameraPosition.z);
+                }
+
+                if (camera.transform.localPosition.y < - Radius - CameraController.MaxCameraDistance)
+                {
+                    camera.transform.localPosition = new Vector3(transform.position.x, - Radius - CameraController.MaxCameraDistance, camera.transform.localPosition.z);
+                    targetCameraPosition = new Vector3(transform.position.x, - Radius - CameraController.MaxCameraDistance, targetCameraPosition.z);
+                }
+                else if (camera.transform.localPosition.y > Radius + CameraController.MaxCameraDistance)
+                {
+                    camera.transform.localPosition = new Vector3(transform.position.x, Radius + CameraController.MaxCameraDistance, camera.transform.localPosition.z);
+                    targetCameraPosition = new Vector3(transform.position.x, Radius + CameraController.MaxCameraDistance, targetCameraPosition.z);
+                }
+
+                if (camera.transform.localPosition.z < - Radius - CameraController.MaxCameraDistance)
+                {
+                    camera.transform.localPosition = new Vector3(transform.position.x, camera.transform.localPosition.y, - Radius - CameraController.MaxCameraDistance);
+                    targetCameraPosition = new Vector3(transform.position.x, targetCameraPosition.y, - Radius - CameraController.MaxCameraDistance);
+                }
+                else if (camera.transform.localPosition.z > + Radius + CameraController.MaxCameraDistance)
+                {
+                    camera.transform.localPosition = new Vector3(transform.position.x, camera.transform.localPosition.y, Radius + CameraController.MaxCameraDistance);
+                    targetCameraPosition = new Vector3(transform.position.x, targetCameraPosition.y, Radius + CameraController.MaxCameraDistance);
+                }
+            }
+        }
     }
 
     void OnValidate()
@@ -41,9 +95,17 @@ public class Geosphere : MonoBehaviour
         }
     }
 
+    public void ResetCameraTargetPosition()
+    {
+        if (camera != null)
+            targetCameraPosition = camera.transform.localPosition;
+    }
+
     public void MapHit()
     {
-        Camera camera = transform.GetComponentInChildren<Camera>();
+        if (camera == null)
+            return;
+
         Ray ray = camera.ScreenPointToRay(Input.mousePosition);
         ray = CameraController.GetRayBeyondCanvas(ray);
         RaycastHit mapHit;
@@ -57,7 +119,9 @@ public class Geosphere : MonoBehaviour
 
     public Vector3 MapHit(Vector3 mousePosition)
     {
-        Camera camera = transform.GetComponentInChildren<Camera>();
+        if (camera == null)
+            return new Vector3();
+
         Ray ray = camera.ScreenPointToRay(mousePosition);
         //ray = CameraController.GetRayBeyondCanvas(ray);
 
@@ -108,8 +172,23 @@ public class Geosphere : MonoBehaviour
 
     public void MoveCameraBy(float x, float y)
     {
-        float latitudeDelta = y / 1250;
-        float longitudeDelta = x / 1250;
+        float latitudeDelta = y / panDivisor;
+        float longitudeDelta = x / panDivisor;
+
+        Vector3 positionVector = targetCameraPosition;
+        float distance = positionVector.magnitude - Radius;
+
+        float cameraDistanceRatio = (distance < CameraController.MinCameraDistance ? CameraController.MinCameraDistance : distance) / CameraController.MaxCameraDistance;
+
+        if (longitudeDelta > 0)
+            longitudeDelta = (longitudeDelta - minNavigationSpeed) * cameraDistanceRatio + minNavigationSpeed;
+        else if (longitudeDelta < 0)
+            longitudeDelta = (longitudeDelta + minNavigationSpeed) * cameraDistanceRatio - minNavigationSpeed;
+
+        if (latitudeDelta > 0)
+            latitudeDelta = (latitudeDelta - minNavigationSpeed) * cameraDistanceRatio + minNavigationSpeed;
+        else if (latitudeDelta < 0)
+            latitudeDelta = (latitudeDelta + minNavigationSpeed) * cameraDistanceRatio - minNavigationSpeed;
 
         float latitude = 0;
         float longitude = 0;
@@ -128,8 +207,7 @@ public class Geosphere : MonoBehaviour
 
     public void RotateCameraTo(double longitude, double latitude)
     {
-        Camera camera = transform.GetComponentInChildren<Camera>();
-        float currentDistance = camera.transform.localPosition.magnitude;
+        float currentDistance = targetCameraPosition.magnitude;
 
         float yAngle = (float)((latitude - 0.5) * Mathf.PI);
         float xAngle = (float)((longitude - 0.5) * Mathf.PI * 2);
@@ -142,43 +220,39 @@ public class Geosphere : MonoBehaviour
 
         //newCameraPosition.Normalize();
         newCameraPosition *= currentDistance;
-        camera.transform.localPosition = newCameraPosition;
-        camera.transform.LookAt(transform);
+        targetCameraPosition = newCameraPosition;
         //HideHiddenFaces(camera);
     }
 
     public void ZoomCameraTo(double distance)
     {
-        Camera camera = transform.GetComponentInChildren<Camera>();
         double newDistance = distance + Radius;
-        Vector3 positionVector = camera.transform.localPosition;
+        Vector3 positionVector = targetCameraPosition;
         positionVector.Normalize();
         positionVector *= (float)newDistance;
-        camera.transform.localPosition = positionVector;
+        targetCameraPosition = positionVector;
         //SetLOD(camera);
         //HideHiddenFaces(camera);
     }
 
     public void Zoom(float zoomAmount, CameraController cameraController)
     {
-        Camera camera = transform.GetComponentInChildren<Camera>();
-        Vector3 positionVector = camera.transform.localPosition;
+        Vector3 positionVector = targetCameraPosition;
         float distance = positionVector.magnitude;
         distance -= zoomAmount;
-        if (distance - Radius < cameraController.MinCameraDistance)
-            distance = cameraController.MinCameraDistance + Radius;
-        else if (distance - Radius > cameraController.MaxCameraDistance)
-            distance = cameraController.MaxCameraDistance + Radius;
+        if (distance - Radius < CameraController.MinCameraDistance)
+            distance = CameraController.MinCameraDistance + Radius;
+        else if (distance - Radius > CameraController.MaxCameraDistance)
+            distance = CameraController.MaxCameraDistance + Radius;
 
         positionVector.Normalize();
         positionVector *= distance;
-        camera.transform.localPosition = positionVector;
+        targetCameraPosition = positionVector;
     }
 
     public void GetCameraLatitudeLongitude(ref float latitude, ref float longitude)
     {
-        Camera camera = transform.GetComponentInChildren<Camera>();
-        Vector3 cameraPosition = camera.transform.localPosition;
+        Vector3 cameraPosition = targetCameraPosition;
 
         GetPointLatitudeLongitude(cameraPosition, ref latitude, ref longitude);
     }
@@ -200,8 +274,7 @@ public class Geosphere : MonoBehaviour
 
     public float GetCameraDistance()
     {
-        Camera camera = transform.GetComponentInChildren<Camera>();
-        Vector3 cameraPosition = camera.transform.localPosition;
+        Vector3 cameraPosition = targetCameraPosition;
         return cameraPosition.magnitude - Radius;
     }
 

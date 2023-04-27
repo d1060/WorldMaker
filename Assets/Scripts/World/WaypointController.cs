@@ -113,10 +113,10 @@ public class WaypointController : MonoBehaviour
 
                     Vector3 positionVector = camera.transform.localPosition;
                     currentDistance = positionVector.magnitude - cameraController.map.geoSphere.Radius;
-                    if (currentDistance < cameraController.MinCameraDistance)
-                        currentDistance = cameraController.MinCameraDistance;
-                    else if (currentDistance > cameraController.MaxCameraDistance)
-                        currentDistance = cameraController.MaxCameraDistance;
+                    if (currentDistance < CameraController.MinCameraDistance)
+                        currentDistance = CameraController.MinCameraDistance;
+                    else if (currentDistance > CameraController.MaxCameraDistance)
+                        currentDistance = CameraController.MaxCameraDistance;
                     globePoint = hitPoint;
                 }
                 height = GetObjectHeightInUnityGlobe(globePoint);
@@ -124,7 +124,7 @@ public class WaypointController : MonoBehaviour
                 if (lastDistance != currentDistance)
                 {
                     lastDistance = currentDistance;
-                    float multiplier = ((currentDistance - cameraController.MinCameraDistance) / (cameraController.MaxCameraDistance - cameraController.MinCameraDistance)) * (sizeMultiplierAtMaxDistance - sizeMultiplierAtMinDistance) + sizeMultiplierAtMinDistance;
+                    float multiplier = ((currentDistance - CameraController.MinCameraDistance) / (CameraController.MaxCameraDistance - CameraController.MinCameraDistance)) * (sizeMultiplierAtMaxDistance - sizeMultiplierAtMinDistance) + sizeMultiplierAtMinDistance;
                     transform.localScale = new Vector3(multiplier*0.32f, multiplier, 1);
                 }
 

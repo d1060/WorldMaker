@@ -6,10 +6,8 @@
 int mapWidth;
 float minHeight;
 float maxHeight;
-//float waterLevel;
 float erosionNoiseMerge;
 int flowErosionSet;
-//float normalScale;
 
 StructuredBuffer<float> heightMap12;
 StructuredBuffer<float> heightMap34;
@@ -20,28 +18,6 @@ StructuredBuffer<float> flowErosionMap34;
 StructuredBuffer<float> flowErosionMap56;
 
 RWTexture2D<float4> result;
-
-//float GetHeight(int x, int y)
-//{
-//    if (y < 0) y = 0;
-//    if (y >= mapHeight) y = mapHeight - 1;
-//
-//    if (x < 0) x += 6 * mapWidth;
-//    if (x >= 6 * mapWidth) x -= 6 * mapWidth;
-//
-//    int index = x + y * 6 * mapWidth;
-//    float erodedHeight = erodedHeightMap[index] - inciseFlowMap[index];
-//    if (erodedHeight < 0) erodedHeight = 0;
-//
-//    float originalHeight = originalHeightMap[index];
-//    float mergedHeight = erodedHeight;
-//    if (erosionNoiseMerge >= 1)
-//        mergedHeight = originalHeight;
-//    else if (erosionNoiseMerge > 0)
-//        mergedHeight = erodedHeight * (1 - erosionNoiseMerge) + originalHeight * erosionNoiseMerge;
-//
-//    return mergedHeight;
-//}
 
 #include "Assets/Shaders/Cubemap.cginc"
 
@@ -127,7 +103,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         }
     }
 
-    //int index = cubemapX + cubemapY * mapWidth;
     uint3 iCubemap = uint3(cubemapX, cubemapY, cubemap.z);
     float height = getMapValueAtCoordinates(iCubemap, mapWidth);
     height = erodeHeight(iCubemap, mapWidth, height);

@@ -531,6 +531,31 @@ public static partial class ExtensionMethods
         return children;
     }
 
+    public static Transform GetChildNamed_Recursive(this Transform transform, string name)
+    {
+        List<Transform> children = GetAllChildrenRecursive(transform);
+        foreach (Transform child in children)
+        {
+            if (child.name.Contains(name))
+                return child;
+        }
+        return null;
+    }
+
+    static List<Transform> GetAllChildrenRecursive(Transform transform)
+    {
+        List<Transform> children = new List<Transform>();
+        foreach (Transform child in transform)
+        {
+            children.Add(child);
+            if (child.childCount > 0)
+            {
+                children.AddRange(GetAllChildrenRecursive(child));
+            }
+        }
+        return children;
+    }
+
     public static void SaveAsPNG(this Texture2D _texture, string _fullPath)
     {
         try

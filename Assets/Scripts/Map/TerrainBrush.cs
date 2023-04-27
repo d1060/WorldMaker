@@ -122,10 +122,10 @@ public class TerrainBrush : MonoBehaviour
 
                 Vector3 positionVector = camera.transform.localPosition;
                 currentDistance = positionVector.magnitude - map.geoSphere.Radius;
-                if (currentDistance < cameraController.MinCameraDistance)
-                    currentDistance = cameraController.MinCameraDistance;
-                else if (currentDistance > cameraController.MaxCameraDistance)
-                    currentDistance = cameraController.MaxCameraDistance;
+                if (currentDistance < CameraController.MinCameraDistance)
+                    currentDistance = CameraController.MinCameraDistance;
+                else if (currentDistance > CameraController.MaxCameraDistance)
+                    currentDistance = CameraController.MaxCameraDistance;
 
                 Vector3 forward = map.geoSphere.transform.position - hitPoint;
                 forward.Normalize();
@@ -151,7 +151,7 @@ public class TerrainBrush : MonoBehaviour
         if (lastDistance != currentDistance)
         {
             lastDistance = currentDistance;
-            thickness = (currentDistance / cameraController.MaxCameraDistance) * startingThickness;
+            thickness = (currentDistance / CameraController.MaxCameraDistance) * startingThickness;
         }
 
         if (prevDivisions != numberOfDivisions || prevRadius != radius || prevThickness != thickness)

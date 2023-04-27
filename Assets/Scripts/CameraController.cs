@@ -22,16 +22,20 @@ public class CameraController : MonoBehaviour
     public Geosphere geosphere;
     public float navigationKeySpeed = 4f;
     public float navigationKeyDelay = 1.0f;
-    float minCameraDistance = 4;
-    float maxCameraDistance = 190;
-    float zoomMultiplier = 10;
+    public float minNavigationSpeed = 0.04f;
+    static float minCameraDistance = 4;
+    static float maxCameraDistance = 190;
+    public float zoomSpeed = 25;
     Vector3 cameraStartingPosition;
     Vector3 targetCameraPosition;
     Plane[] boundaryPlanes;
     Camera cam = null;
-    int zoomLevel = 1;
+    //int zoomLevel = 1;
     public GameObject contextMenu;
     Canvas canvas;
+    TMP_InputField mainTextureTextBox;
+    TMP_InputField heightmapTextBox;
+    TMP_InputField landMaskTextBox;
 
     DateTime navigationKeyStart;
     bool navigationKeyDown = false;
@@ -48,15 +52,13 @@ public class CameraController : MonoBehaviour
     double visibleLowerLatitude = 0;
     double visibleUpperLatitude = 1;
 
-    public int ZoomLevel { get { return zoomLevel; } }
+    //public int ZoomLevel { get { return zoomLevel; } }
     public double VisibleLowerLongitude { get { return visibleLowerLongitude; } }
     public double VisibleUpperLongitude { get { return visibleUpperLongitude; } }
     public double VisibleLowerLatitude { get { return visibleLowerLatitude; } }
     public double VisibleUpperLatitude { get { return visibleUpperLatitude; } }
-    public float MinCameraDistance { get { return minCameraDistance; } }
-    public float MaxCameraDistance { get { return maxCameraDistance; } }
-
-
+    public static float MinCameraDistance { get { return minCameraDistance; } }
+    public static float MaxCameraDistance { get { return maxCameraDistance; } }
 
     // Start is called before the first frame update
     void Start()
@@ -74,6 +76,7 @@ public class CameraController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        //Debug.Log("FPS: " + 1.0f / Time.deltaTime);
         float xAxisMovement = Input.GetAxis("Mouse X");
         float yAxisMovement = Input.GetAxis("Mouse Y");
         if (Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightAlt) || Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift))
@@ -201,9 +204,10 @@ public class CameraController : MonoBehaviour
         }
 
         // Only moves camera if no UI element was pressed.
-        if (graphicRaycastResults.Count == 0 && !isLeftMouseButtonDown)
+        if (graphicRaycastResults.Count == 0 && !isLeftMouseButtonDown && (xAxisMovement != 0 || yAxisMovement != 0 || mouseWheel != 0))
         {
-            cam = GetComponent<Camera>();
+            //Debug.Log("Moving camera by " + xAxisMovement + " x " + yAxisMovement + " y" + " wheel " + mouseWheel);
+            //Debug.Log("Moving camera to " + targetCameraPosition);
             ray = cam.ScreenPointToRay(Input.mousePosition);
             ray = GetRayBeyondCanvas(ray);
             bool isMapHit = Physics.Raycast(ray, out mapHit);
@@ -265,10 +269,86 @@ public class CameraController : MonoBehaviour
 
         lastXAxisMovement = xAxisMovement;
         lastYAxisMovement = yAxisMovement;
+    }
 
+    private void FixedUpdate()
+    {
         if (targetCameraPosition != transform.position)
         {
             transform.position = Vector3.SmoothDamp(transform.position, targetCameraPosition, ref velocity, smoothTime);
+
+            if (transform.position.x <= -map.mapWidth / 2)
+            {
+                transform.position = new Vector3(transform.position.x + map.mapWidth, transform.position.y, transform.position.z);
+                targetCameraPosition = new Vector3(targetCameraPosition.x + map.mapWidth, targetCameraPosition.y, targetCameraPosition.z);
+            }
+            else if (transform.position.x > map.mapWidth / 2)
+            {
+                transform.position = new Vector3(transform.position.x - map.mapWidth, transform.position.y, transform.position.z);
+                targetCameraPosition = new Vector3(targetCameraPosition.x - map.mapWidth, targetCameraPosition.y, targetCameraPosition.z);
+            }
+
+            if (transform.position.z > -minCameraDistance)
+            {
+                transform.position = new Vector3(transform.position.x, transform.position.y, -minCameraDistance);
+                targetCameraPosition = new Vector3(targetCameraPosition.x, targetCameraPosition.y, -minCameraDistance);
+            }
+            if (transform.position.z < -maxCameraDistance)
+            {
+                transform.position = new Vector3(transform.position.x, transform.position.y, -maxCameraDistance);
+                targetCameraPosition = new Vector3(targetCameraPosition.x, targetCameraPosition.y, -maxCameraDistance);
+            }
+        }
+    }
+
+    TMP_InputField MainTextureTextBox
+    {
+        get
+        {
+            if (mainTextureTextBox == null)
+            {
+                if (canvas != null)
+                {
+                    Transform tbTransform = canvas.transform.GetChildNamed_Recursive("MainTexture Text Box");
+                    if (tbTransform != null)
+                        mainTextureTextBox = tbTransform.GetComponent<TMP_InputField>();
+                }
+            }
+            return mainTextureTextBox;
+        }
+    }
+
+    TMP_InputField HeightmapTextBox
+    {
+        get
+        {
+            if (heightmapTextBox == null)
+            {
+                if (canvas != null)
+                {
+                    Transform tbTransform = canvas.transform.GetChildNamed_Recursive("Heightmap Text Box");
+                    if (tbTransform != null)
+                        heightmapTextBox = tbTransform.GetComponent<TMP_InputField>();
+                }
+            }
+            return heightmapTextBox;
+        }
+    }
+
+    TMP_InputField LandMaskTextBox
+    {
+        get
+        {
+            if (landMaskTextBox == null)
+            {
+                if (canvas != null)
+                {
+                    Transform tbTransform = canvas.transform.GetChildNamed_Recursive("LandMask Text Box");
+                    if (tbTransform != null)
+                        landMaskTextBox = tbTransform.GetComponent<TMP_InputField>();
+                }
+            }
+            return landMaskTextBox;
         }
     }
 
@@ -302,31 +382,31 @@ public class CameraController : MonoBehaviour
 
     void DoZoom(float zoomChange, bool isMapHit, RaycastHit hit)
     {
-        zoomChange *= zoomMultiplier;
+        zoomChange *= zoomSpeed;
 
         if (isMapHit)
         {
             Vector3 zoomDirection = hit.point - transform.position;
             zoomDirection.Normalize();
             zoomDirection *= zoomChange;
-            Vector3 cameraPosition = transform.position;
+            Vector3 cameraPosition = targetCameraPosition;
 
-            float xDelta = zoomDirection.x;
-            float yDelta = zoomDirection.y;
+            //float xDelta = zoomDirection.x;
+            //float yDelta = zoomDirection.y;
             float zDelta = zoomDirection.z;
-            Vector3 cameraPan = new Vector3(0, yDelta, zDelta);
+            Vector3 cameraPan = new Vector3(0, 0, zDelta);
 
             cameraPosition += cameraPan;
 
-            if (xDelta != 0)
-            {
-                map.Shift(-xDelta);
+            //if (xDelta != 0)
+            //{
+                //map.Shift(-xDelta);
                 //globe.Shift(map.CenterScreenWorldPosition, cam);
-            }
+            //}
 
-            CalculateVisibleFlatLatitudeAndLongitude();
+            //CalculateVisibleFlatLatitudeAndLongitude();
 
-            zoomLevel = GetZoomLevel(-transform.position.z);
+            //zoomLevel = GetZoomLevel(-transform.position.z);
 
             if (-cameraPosition.z >= minCameraDistance && -cameraPosition.z <= maxCameraDistance)
             {
@@ -340,10 +420,11 @@ public class CameraController : MonoBehaviour
                     }
                 }
 
-                if (cameraPosition.z > -minCameraDistance)
-                    cameraPosition.z = -minCameraDistance;
+                if (cameraPosition.z > -minCameraDistance) cameraPosition.z = -minCameraDistance;
+                if (cameraPosition.z < -maxCameraDistance) cameraPosition.z = -maxCameraDistance;
 
-                targetCameraPosition = cameraPosition;
+                cameraPan = cameraPosition - targetCameraPosition;
+                targetCameraPosition += cameraPan;
             }
 
             geosphere?.ZoomCameraTo(-transform.position.z);
@@ -363,7 +444,7 @@ public class CameraController : MonoBehaviour
             if (cameraPosition.z > -minCameraDistance)
                 cameraPosition.z = -minCameraDistance;
 
-            targetCameraPosition = cameraPosition;
+            targetCameraPosition += cameraPosition;
         }
     }
 
@@ -391,8 +472,8 @@ public class CameraController : MonoBehaviour
         float xDelta = from.x - to.x;
         float yDelta = from.y - to.y;
 
-        Vector3 cameraPan = new Vector3(0, yDelta, 0);
-        Vector3 cameraPosition = cam.transform.position + cameraPan;
+        Vector3 cameraPan = new Vector3(xDelta, yDelta, 0);
+        Vector3 cameraPosition = targetCameraPosition + cameraPan;
 
         if (map.ShowGlobe)
         {
@@ -407,7 +488,6 @@ public class CameraController : MonoBehaviour
                     float latitude = 0;
                     float longitude = 0;
                     geosphere.GetCameraLatitudeLongitude(ref latitude, ref longitude);
-                    map.ShiftTo(longitude);
                 }
                 prevGlobePoint = globePoint;
             }
@@ -416,20 +496,10 @@ public class CameraController : MonoBehaviour
         {
             if (!IsInsidePlanes(cameraPosition))
                 cameraPosition = MoveIntoPlanes(cameraPosition);
-
-            if (xDelta != 0)
-            {
-                map.Shift(-xDelta);
-            }
         }
 
-        cameraPosition.z = cam.transform.position.z;
-        targetCameraPosition = cameraPosition;
-
-        CalculateVisibleFlatLatitudeAndLongitude();
-
-        if (!map.ShowGlobe)
-            geosphere?.RotateCameraTo((visibleLowerLongitude + visibleUpperLongitude)/2, (visibleLowerLatitude + visibleUpperLatitude)/2);
+        cameraPan = cameraPosition - targetCameraPosition;
+        targetCameraPosition += cameraPan;
     }
 
     void DoFixedPan(float xAxisMovement, float yAxisMovement)
@@ -437,49 +507,60 @@ public class CameraController : MonoBehaviour
         if (xAxisMovement == 0 && yAxisMovement == 0)
             return;
 
-        worldNameText.interactable = false;
+        //worldNameText.interactable = false;
+        //MainTextureTextBox.interactable = true;
+        //HeightmapTextBox.interactable = true;
+        //LandMaskTextBox.interactable = true;
 
         float xDelta = xAxisMovement;
         float yDelta = yAxisMovement;
 
-        float cameraDistanceRatio = (-transform.position.z < minCameraDistance ? minCameraDistance : -transform.position.z) / maxCameraDistance;
-        xDelta *= cameraDistanceRatio;
-        yDelta *= cameraDistanceRatio;
-
-        Vector3 cameraPan = new Vector3(0, yDelta, 0);
-        Vector3 cameraPosition = cam.transform.position + cameraPan;
+        Vector3 cameraPan = new Vector3(xDelta * 2, yDelta, 0);
 
         if (map.ShowGlobe)
         {
             if (geosphere != null)
             {
+                EventSystem.current.SetSelectedGameObject(geosphere.gameObject);
+
                 float latitude = 0;
                 float longitude = 0;
                 geosphere.GetCameraLatitudeLongitude(ref latitude, ref longitude);
-                geosphere.MoveCameraBy(xDelta, yDelta);
-                map.ShiftTo(longitude + xDelta / 1000);
+                geosphere.MoveCameraBy(xDelta * 2, yDelta);
             }
         }
         else
         {
+            EventSystem.current.SetSelectedGameObject(map.gameObject);
+
+            float cameraDistanceRatio = (-transform.position.z < minCameraDistance ? minCameraDistance : -transform.position.z) / maxCameraDistance;
+
+            if (xDelta > 0)
+                xDelta = (xDelta - minNavigationSpeed) * cameraDistanceRatio + minNavigationSpeed;
+            else if (xDelta < 0)
+                xDelta = (xDelta + minNavigationSpeed) * cameraDistanceRatio - minNavigationSpeed;
+
+            if (yDelta > 0)
+                yDelta = (yDelta - minNavigationSpeed) * cameraDistanceRatio + minNavigationSpeed;
+            else if (yDelta < 0)
+                yDelta = (yDelta + minNavigationSpeed) * cameraDistanceRatio - minNavigationSpeed;
+
+            cameraPan = new Vector3(xDelta * 2, yDelta, 0);
+
+            Vector3 cameraPosition = targetCameraPosition + cameraPan;
+
             if (!IsInsidePlanes(cameraPosition))
                 cameraPosition = MoveIntoPlanes(cameraPosition);
 
-            if (xDelta != 0)
-            {
-                map.Shift(-xDelta);
-            }
+            cameraPan = cameraPosition - targetCameraPosition;
         }
 
-        cameraPosition.z = cam.transform.position.z;
-        targetCameraPosition = cameraPosition;
+        targetCameraPosition += cameraPan;
 
-        CalculateVisibleFlatLatitudeAndLongitude();
-
-        if (!map.ShowGlobe)
-            geosphere?.RotateCameraTo((visibleLowerLongitude + visibleUpperLongitude) / 2, (visibleLowerLatitude + visibleUpperLatitude) / 2);
-
-        worldNameText.interactable = true;
+        //worldNameText.interactable = true;
+        //MainTextureTextBox.interactable = true;
+        //HeightmapTextBox.interactable = true;
+        //LandMaskTextBox.interactable = true;
     }
 
     public void BringCameraIntoViewPlanes()
@@ -488,6 +569,8 @@ public class CameraController : MonoBehaviour
         if (!IsInsidePlanes(cameraPosition))
         {
             cameraPosition = MoveIntoPlanes(cameraPosition);
+
+            transform.position = cameraPosition;
             targetCameraPosition = cameraPosition;
         }
     }
@@ -507,40 +590,56 @@ public class CameraController : MonoBehaviour
 
     bool IsInsidePlanes(Vector3 position)
     {
-        for (int i = 0; i <= 3; i++) // Left 0, Right 1, Down 2, Up 3, Near 4, Far 5
-        {
-            Plane plane = boundaryPlanes[i];
-            if (plane.GetDistanceToPoint(position) < 0)
-                return false;
-        }
-        return true;
+        float maxY = (map.mapHeight / 2 - cameraStartingPosition.y) * (position.z - cameraStartingPosition.z) / -cameraStartingPosition.z;
+        float minY = (-map.mapHeight / 2 - cameraStartingPosition.y) * (position.z - cameraStartingPosition.z) / -cameraStartingPosition.z;
+
+        return position.y <= maxY && position.y >= minY;
+
+        //for (int i = 0; i <= 3; i++) // Left 0, Right 1, Down 2, Up 3, Near 4, Far 5
+        //{
+        //    Plane plane = boundaryPlanes[i];
+        //    if (plane.GetDistanceToPoint(position) < 0)
+        //        return false;
+        //}
+        //return true;
     }
 
     Vector3 MoveIntoPlanes(Vector3 point)
     {
-        if (boundaryPlanes[2].GetDistanceToPoint(point) >= 0 &&
-            boundaryPlanes[3].GetDistanceToPoint(point) >= 0)
-            return point;
+        //if (boundaryPlanes[2].GetDistanceToPoint(point) >= 0 &&
+        //    boundaryPlanes[3].GetDistanceToPoint(point) >= 0)
+        //    return point;
 
-        Plane cameraPlane = new Plane(-transform.forward, point);
+        //Plane cameraPlane = new Plane(-transform.forward, point);
 
-        Line3d lineBottom = cameraPlane.IntersectionWith(boundaryPlanes[2]);
-        Line3d lineTop = cameraPlane.IntersectionWith(boundaryPlanes[3]);
+        //Line3d lineBottom = cameraPlane.IntersectionWith(boundaryPlanes[2]);
+        //Line3d lineTop = cameraPlane.IntersectionWith(boundaryPlanes[3]);
 
-        float distanceToTop = lineTop.DistanceToPoint(point);
-        float distanceToBottom = lineBottom.DistanceToPoint(point);
+        //float distanceToTop = lineTop.DistanceToPoint(point);
+        //float distanceToBottom = lineBottom.DistanceToPoint(point);
 
-        Vector3 movedPoint = point;
+        //Vector3 movedPoint = point;
 
-        if (distanceToTop < distanceToBottom)
-        {
-            movedPoint = lineTop.ProjectionFrom(point);
-        }
-        else
-        {
-            movedPoint = lineBottom.ProjectionFrom(point);
-        }
-        return movedPoint;
+        //if (distanceToTop < distanceToBottom)
+        //{
+        //    movedPoint = lineTop.ProjectionFrom(point);
+        //}
+        //else
+        //{
+        //    movedPoint = lineBottom.ProjectionFrom(point);
+        //}
+        //return movedPoint;
+
+        if (point.z > -minCameraDistance) point.z = -minCameraDistance;
+        if (point.z < -maxCameraDistance) point.z = -maxCameraDistance;
+
+        float maxY = (map.mapHeight / 2 - cameraStartingPosition.y) * (point.z - cameraStartingPosition.z) / -cameraStartingPosition.z;
+        float minY = (-map.mapHeight / 2 - cameraStartingPosition.y) * (point.z - cameraStartingPosition.z) / -cameraStartingPosition.z;
+
+        if (point.y > maxY) point.y = maxY;
+        if (point.y < minY) point.y = minY;
+
+        return point;
     }
 
     int GetZoomLevel(float distance)

@@ -55,10 +55,10 @@ public class WaypointSize : MonoBehaviour
                 Camera camera = cameraController.map.geoSphere.transform.GetComponentInChildren<Camera>();
                 Vector3 positionVector = camera.transform.localPosition;
                 currentDistance = positionVector.magnitude - cameraController.map.geoSphere.Radius;
-                if (currentDistance < cameraController.MinCameraDistance)
-                    currentDistance = cameraController.MinCameraDistance;
-                else if (currentDistance > cameraController.MaxCameraDistance)
-                    currentDistance = cameraController.MaxCameraDistance;
+                if (currentDistance < CameraController.MinCameraDistance)
+                    currentDistance = CameraController.MinCameraDistance;
+                else if (currentDistance > CameraController.MaxCameraDistance)
+                    currentDistance = CameraController.MaxCameraDistance;
                 globePoint = map.MapToGlobePoint(transform.position);
                 //height = GetObjectHeightInGlobe(globePoint);
             }
@@ -68,7 +68,7 @@ public class WaypointSize : MonoBehaviour
             if (lastDistance != currentDistance)
             {
                 lastDistance = currentDistance;
-                float multiplierRatio = ((currentDistance - cameraController.MinCameraDistance) / (cameraController.MaxCameraDistance - cameraController.MinCameraDistance));
+                float multiplierRatio = ((currentDistance - CameraController.MinCameraDistance) / (CameraController.MaxCameraDistance - CameraController.MinCameraDistance));
                 float multiplier = multiplierRatio * (sizeMultiplierAtMaxDistance - sizeMultiplierAtMinDistance) + sizeMultiplierAtMinDistance;
                 transform.localScale = new Vector3(multiplier * 0.32f, multiplier, 1);
 

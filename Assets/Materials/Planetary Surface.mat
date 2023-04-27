@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Planetary Surface
-  m_Shader: {fileID: 4800000, guid: 398f651102b27db429700ea8400ffad4, type: 3}
+  m_Shader: {fileID: 4800000, guid: 8d15a961452ea4941a96959689076637, type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -90,8 +90,8 @@ Material:
     - _DesertThreshold1: 10
     - _DesertThreshold2: 20
     - _DetailNormalMapScale: 1
-    - _DomainWarping: 1
-    - _DomainWarping2: 1
+    - _DomainWarping: 0.55380034
+    - _DomainWarping2: 0.898079
     - _DrawType: 0
     - _DstBlend: 0
     - _GlossMapScale: 1
@@ -102,13 +102,13 @@ Material:
     - _GrayscaleContrast: 1
     - _GrayscaleGammaCorrection: 1
     - _HeightExponent: 2
-    - _HeightExponent2: 2.1195648
+    - _HeightExponent2: 2
     - _HeightRange: 0.36877266
     - _HeightRange2: 0.18669486
     - _HeightmapHeight: 2014
     - _HeightmapWidth: 12084
     - _HighHumidityLightnessPercentage: 0.549
-    - _HumiditySeed: 952736.6
+    - _HumiditySeed: 151800.97
     - _IceTemperatureThreshold1: 0
     - _IceTemperatureThreshold2: -20
     - _IsEroded: 0
@@ -116,20 +116,20 @@ Material:
     - _IsHeightmapSet: 0
     - _IsLandmaskSet: 0
     - _IsMainmapSet: 0
-    - _Lacunarity: 1.7650981
-    - _Lacunarity2: 1.69
+    - _Lacunarity: 1.6283267
+    - _Lacunarity2: 1.6880908
     - _LandGlossiness: 0.376
     - _LandMetallic: 0
-    - _LayerStrength: 1
-    - _LayerStrength2: 1
-    - _LightFalloff: 17
+    - _LayerStrength: 0.41418076
+    - _LayerStrength2: 0.58581924
+    - _LightFalloff: 16.55
     - _LightIntensity: 1
-    - _MaxHeight: 0.8872528
+    - _MaxHeight: 0.89704984
     - _Metallic: 0
-    - _MinHeight: 0
+    - _MinHeight: 0.156864
     - _Mode: 0
-    - _Multiplier: 3.1958716
-    - _Multiplier2: 4.31594
+    - _Multiplier: 2.133469
+    - _Multiplier2: 2.924182
     - _NormalScale: 10
     - _OcclusionStrength: 1
     - _OceanColorStep1: 0
@@ -137,31 +137,31 @@ Material:
     - _OceanColorStep3: 1
     - _OceanColorStep4: 1
     - _OceanColorSteps: 3
-    - _Octaves: 13
-    - _Octaves2: 14
+    - _Octaves: 15
+    - _Octaves2: 13
     - _Parallax: 0.02
-    - _Persistence: 0.5921538
-    - _Persistence2: 0.7588247
+    - _Persistence: 0.46700287
+    - _Persistence2: 0.69903696
     - _RidgedNoise: 1
     - _RidgedNoise2: 1
-    - _Seed: 285255.72
-    - _Seed2: 331515.03
+    - _Seed: 643847.5
+    - _Seed2: 88127.02
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _SunDisk: 0
-    - _TemperatureSeed: 596390.6
+    - _SunDisk: 0.0065
+    - _TemperatureSeed: 698688.1
     - _TextureHeight: 2048
     - _TextureWidth: 2048
     - _UVSec: 0
-    - _UnderwaterNormalScale: 2.1
-    - _WaterLevel: 0.81273705
-    - _XOffset: 0.33151504
-    - _XOffset2: 0.54599655
-    - _YOffset: 0.21675692
-    - _YOffset2: 0.94809824
-    - _ZOffset: 0.9527367
-    - _ZOffset2: 0.05583087
+    - _UnderwaterNormalScale: 0.5
+    - _WaterLevel: 0.7342952
+    - _XOffset: 0.08447481
+    - _XOffset2: 0.14873621
+    - _YOffset: 0.19823718
+    - _YOffset2: 0.38053253
+    - _ZOffset: 0.3807435
+    - _ZOffset2: 0.051870674
     - _ZWrite: 1
     m_Colors:
     - _AtmosphericColor: {r: 1, g: 1, b: 1, a: 1}

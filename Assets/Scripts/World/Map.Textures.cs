@@ -41,8 +41,6 @@ public partial class Map : MonoBehaviour
                 string fileNameExtension = System.IO.Path.GetExtension(savedFile);
                 AppData.instance.LastSavedImageFolder = fileNamePath;
 
-                //int isEroded = planetSurfaceMaterial.GetInt("_IsEroded");
-                //planetSurfaceMaterial.SetInt("_IsEroded", 0);
                 GenerateHeightMap();
 
                 if (AppData.instance.SaveMainMap)
@@ -75,13 +73,6 @@ public partial class Map : MonoBehaviour
                 {
                     SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Temperature" + fileNameExtension), SphereShaderDrawType.Temperature);
                 }
-
-                //if (AppData.instance.SaveRivers && TextureManager.instance.FlowTexture != null)
-                //{
-                //    SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Rivers" + fileNameExtension), TextureManager.instance.FlowTexture);
-                //}
-
-                //planetSurfaceMaterial.SetInt("_IsEroded", isEroded);
 
                 AppData.instance.Save();
             }
@@ -128,8 +119,6 @@ public partial class Map : MonoBehaviour
         planetSurfaceMaterial.SetFloat("_DrawType", prevDrawMode);
 
         UnityEngine.Object.Destroy(source);
-        //Destroy(exportRT);
-        //exportRT = null;
     }
 
     Texture2D ShaderToTexture(SphereShaderDrawType drawMode, int dimensions)
@@ -160,8 +149,6 @@ public partial class Map : MonoBehaviour
         source.ReadPixels(new Rect(0, 0, dimensions, dimensions), 0, 0);
         source.Apply();
         RenderTexture.active = prevActive;
-        //Destroy(exportRT);
-        //exportRT = null;
         planetSurfaceMaterial.SetFloat("_DrawType", prevDrawMode);
         return source;
     }
@@ -179,7 +166,6 @@ public partial class Map : MonoBehaviour
     {
         string savePath = Path.GetDirectoryName(savedFile);
         string saveFile = Path.GetFileNameWithoutExtension(savedFile);
-        //string saveExtension = Path.GetExtension(savedFile);
 
         string baseFolder = Path.Combine(savePath, saveFile, "Surface");
         if (AppData.instance.SaveMainMap || AppData.instance.SaveLandMask)
@@ -338,9 +324,6 @@ public partial class Map : MonoBehaviour
         baseTexture.ReadPixels(new Rect(0, 0, baseTexture.width, baseTexture.height), 0, 0);
         RenderTexture.active = prevActive;
         baseTexture.Apply();
-
-        //Destroy(transparencyRT);
-        //transparencyRT = null;
     }
 
     void ExportCubeMapFile(ref Texture2D map, string folder, string filePosfix, int dimension, int face, int division, int divisionX, int divisionY, float offsetPixels, bool saveAsPng = false)
@@ -436,13 +419,9 @@ public partial class Map : MonoBehaviour
 
         if (mapSettings.UseImages)
         {
-            //if (mapSettings.HeightMapPath == "" || !File.Exists(mapSettings.HeightMapPath))
-                //planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
-            //else
             if (mapSettings.HeightMapPath != "" && File.Exists(mapSettings.HeightMapPath))
             {
                 UpdateSurfaceMaterialHeightMap();
-                //planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
             }
 
             if (mapSettings.MainTexturePath == "" || !File.Exists(mapSettings.MainTexturePath))
@@ -463,20 +442,13 @@ public partial class Map : MonoBehaviour
         }
         else
         {
-            //planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
             planetSurfaceMaterial.SetInt("_IsMainmapSet", 0);
             planetSurfaceMaterial.SetInt("_IsLandmaskSet", 0);
-        }
-
-        if (resetEroded && !mapSettings.UseImages)
-        {
-            ResetEroded();
         }
     }
 
     public void ResetEroded()
     {
-        //TextureManager.instance.ErodedHeightMap = null;
         TextureManager.instance.HeightMap1 = null;
         TextureManager.instance.HeightMap2 = null;
         TextureManager.instance.HeightMap3 = null;
@@ -485,8 +457,6 @@ public partial class Map : MonoBehaviour
         TextureManager.instance.HeightMap6 = null;
         TextureManager.instance.InciseFlowMap = null;
         TextureManager.instance.FlowErosionMap = null;
-        //TextureManager.instance.MergedHeightMap = null;
-        //drainageIndexesMap = null;
 
         connectivityMap1 = null;
         connectivityMap2 = null;
@@ -495,9 +465,11 @@ public partial class Map : MonoBehaviour
         connectivityMap5 = null;
         connectivityMap6 = null;
 
-        //basinsHeightMap = null;
         planetSurfaceMaterial.SetInt("_IsEroded", 0);
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+
+        GenerateHeightMap();
+        HeightMap2Texture();
     }
 
     public void UpdateSurfaceMaterialHeightMap(bool isEroded = false)
@@ -552,37 +524,19 @@ public partial class Map : MonoBehaviour
 
             Texture2HeightMap(ref heightmapRT);
 
-            //if (TextureManager.instance.ErodedHeightMap == null || TextureManager.instance.ErodedHeightMap.Length != heightmapRT.width * heightmapRT.height)
-            //    TextureManager.instance.ErodedHeightMap = new float[heightmapRT.width * heightmapRT.width * 6];
-            //Array.Copy(TextureManager.instance.OriginalHeightMap, TextureManager.instance.ErodedHeightMap, TextureManager.instance.OriginalHeightMap.Length);
-
-            //if (TextureManager.instance.MergedHeightMap == null || TextureManager.instance.MergedHeightMap.Length != heightmapRT.width * heightmapRT.height)
-            //    TextureManager.instance.MergedHeightMap = new float[heightmapRT.width * heightmapRT.width * 6];
-            //Array.Copy(TextureManager.instance.OriginalHeightMap, TextureManager.instance.MergedHeightMap, TextureManager.instance.OriginalHeightMap.Length);
-
             if (TextureManager.instance.Settings.textureWidth != heightmapRT.height / 2)
             {
                 TextureManager.instance.Settings.textureWidth = heightmapRT.height / 2;
                 UpdateUIInputField(setupPanelTransform, "Texture Width Text Box", TextureHeight);
                 UpdateUITextMeshPro(setupPanelTransform, "Texture Width Text", TextureWidth + (TextureManager.instance.Settings.textureWidth * 4 < 10000 ? " " : "") + " x");
             }
-
-            //if (TextureManager.instance.Settings.textureWidth != heightmapRT.height)
-            //{
-            //    TextureManager.instance.Settings.textureWidth = heightmapRT.height;
-            //    UpdateUIInputField(setupPanelTransform, "Texture Height Text Box", TextureHeight);
-            //}
         }
 
         if (heightmapRT != null)
         {
             heightmapRT.wrapMode = TextureWrapMode.Mirror;
             planetSurfaceMaterial.SetTexture("_HeightMap", heightmapRT);
-            //planetSurfaceMaterial.SetFloat("_HeightmapWidth", heightmapRT.width);
-            //planetSurfaceMaterial.SetFloat("_HeightmapHeight", heightmapRT.height);
         }
-        //else
-        //    planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
 
         if (isEroded && heightmapRT != null)
             planetSurfaceMaterial.SetInt("_IsEroded", 1);
@@ -649,8 +603,6 @@ public partial class Map : MonoBehaviour
         if (TextureManager.instance.HeightMap1 == null)
         {
             TextureManager.instance.InstantiateHeightMap();
-            //TextureManager.instance.InstantiateErodedHeightMap();
-            //TextureManager.instance.InstantiateMergedHeightMap();
 
             ComputeBuffer mapBuffer1 = new ComputeBuffer(TextureManager.instance.HeightMap1.Length, sizeof(float));
             mapBuffer1.SetData(TextureManager.instance.HeightMap1);
@@ -676,16 +628,9 @@ public partial class Map : MonoBehaviour
             mapBuffer1.SetData(TextureManager.instance.HeightMap6);
             heightMapComputeShader.SetBuffer(0, "heightMap6", mapBuffer6);
 
-            //if (resetHeightLimits)
-            //{
-                //heightMapComputeShader.SetFloat("_MinimumHeight", 0);
-                //heightMapComputeShader.SetFloat("_MaximumHeight", 1);
-            //}
-            //else
-            //{
-                heightMapComputeShader.SetFloat("_MinimumHeight", MapData.instance.LowestHeight);
-                heightMapComputeShader.SetFloat("_MaximumHeight", MapData.instance.HighestHeight);
-            //}
+            heightMapComputeShader.SetFloat("_MinimumHeight", MapData.instance.LowestHeight);
+            heightMapComputeShader.SetFloat("_MaximumHeight", MapData.instance.HighestHeight);
+
             heightMapComputeShader.SetInt("_MapWidth", TextureManager.instance.Settings.textureWidth);
 
             heightMapComputeShader.SetFloat("_Seed", TextureManager.instance.Settings.surfaceNoiseSettings.seed);
@@ -714,7 +659,7 @@ public partial class Map : MonoBehaviour
             heightMapComputeShader.SetFloat("_LayerStrength2", TextureManager.instance.Settings.surfaceNoiseSettings2.layerStrength);
             heightMapComputeShader.SetFloat("_DomainWarping2", TextureManager.instance.Settings.surfaceNoiseSettings2.domainWarping);
 
-            heightMapComputeShader.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 8f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 8f), 6);
+            heightMapComputeShader.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 8f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 8f), 1);
 
             mapBuffer1.GetData(TextureManager.instance.HeightMap1);
             mapBuffer2.GetData(TextureManager.instance.HeightMap2);
@@ -730,53 +675,12 @@ public partial class Map : MonoBehaviour
             //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "heightMap5.png"));
             //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "heightMap6.png"));
 
-            //ImageTools.SaveTextureRawCubemapFloatArray(TextureManager.instance.OriginalHeightMap, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Test-Heightmap-Original-Raw.png"));
-
-            //if (resetHeightLimits)
-            //{
-            //    float minHeight = 0, maxHeight = 0;
-            //    TextureManager.instance.HeightMapMinMaxHeights(ref minHeight, ref maxHeight);
-
-            //    if (minHeight != maxHeight)
-            //    {
-            //        MapData.instance.LowestHeight = minHeight;
-            //        MapData.instance.HighestHeight = maxHeight;
-            //    }
-
-            //    SetHeightLimits();
-            //}
-
             mapBuffer1.Release();
             mapBuffer2.Release();
             mapBuffer3.Release();
             mapBuffer4.Release();
             mapBuffer5.Release();
             mapBuffer6.Release();
-
-            //if (resetHeightLimits)
-            //{
-            //    Array.Clear(TextureManager.instance.HeightMap1, 0, TextureManager.instance.HeightMap1.Length);
-            //    TextureManager.instance.HeightMap1 = null;
-            //    Array.Clear(TextureManager.instance.HeightMap2, 0, TextureManager.instance.HeightMap2.Length);
-            //    TextureManager.instance.HeightMap2 = null;
-            //    Array.Clear(TextureManager.instance.HeightMap3, 0, TextureManager.instance.HeightMap3.Length);
-            //    TextureManager.instance.HeightMap3 = null;
-            //    Array.Clear(TextureManager.instance.HeightMap4, 0, TextureManager.instance.HeightMap4.Length);
-            //    TextureManager.instance.HeightMap4 = null;
-            //    Array.Clear(TextureManager.instance.HeightMap5, 0, TextureManager.instance.HeightMap5.Length);
-            //    TextureManager.instance.HeightMap5 = null;
-            //    Array.Clear(TextureManager.instance.HeightMap6, 0, TextureManager.instance.HeightMap6.Length);
-            //    TextureManager.instance.HeightMap6 = null;
-
-            //    //GenerateHeightMap(false);
-            //}
-            //else
-            //{
-            //    //Array.Copy(TextureManager.instance.OriginalHeightMap, TextureManager.instance.ErodedHeightMap, TextureManager.instance.OriginalHeightMap.Length);
-            //    //Array.Copy(TextureManager.instance.OriginalHeightMap, TextureManager.instance.MergedHeightMap, TextureManager.instance.OriginalHeightMap.Length);
-            //}
-
-            //HeightMap2Texture();
         }
     }
 
@@ -983,9 +887,11 @@ public partial class Map : MonoBehaviour
         planetSurfaceMaterial.SetInt("_IsMainMapSet", 0);
         planetSurfaceMaterial.SetInt("_IsLandMaskSet", 0);
         //planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
-        heightmapRT.Release();
         if (heightmapRT != null)
+        {
+            heightmapRT.Release();
             UnityEngine.Object.Destroy(heightmapRT);
+        }
         heightmapRT = null;
         TextureManager.instance.Landmap = null;
         TextureManager.instance.Landmask = null;
@@ -1001,20 +907,20 @@ public partial class Map : MonoBehaviour
         //isInciseFlowApplied = false;
 
         //GenerateHeightMap();
-        planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
+        //planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
 
-        if (heightmapRT != null)
-        {
-            Destroy(heightmapRT);
-            heightmapRT = null;
-        }
+        //if (heightmapRT != null)
+        //{
+        //    Destroy(heightmapRT);
+        //    heightmapRT = null;
+        //}
 
-        if (mapSettings.UseImages)
-        {
-            UpdateSurfaceMaterialHeightMap();
+        //if (mapSettings.UseImages)
+        //{
+            //UpdateSurfaceMaterialHeightMap();
             if (heightmapRT != null)
                 planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
-        }
+        //}
     }
     
     public ComputeShader landMaskShader;

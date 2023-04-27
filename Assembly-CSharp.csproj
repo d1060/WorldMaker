@@ -8,7 +8,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <RootNamespace></RootNamespace>
+    <RootNamespace>
+    </RootNamespace>
     <ProjectGuid>{77E14EBA-E8C6-C4C3-EE62-00FEA749DA4D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -140,10 +141,11 @@
     <Compile Include="Assets\Scripts\Erosion\ErosionSettings.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Shaders\ComputeShaders\HeightmapAndTexture.compute" />
+    <None Include="Assets\Shaders\SurfaceTexture.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
     <None Include="Assets\Shaders\ComputeShaders\MaxMin.compute" />
-    <None Include="Assets\Shaders\ComputeShaders\Erosion2.compute" />
     <None Include="Assets\Shaders\ComputeShaders\HeightmapConnectivity.compute" />
     <None Include="Assets\Libraries\Log.dll" />
     <None Include="Assets\Shaders\ComputeShaders\Heightmap.compute" />

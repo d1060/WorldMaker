@@ -37,6 +37,8 @@ public partial class Map : MonoBehaviour
     Vector3 mouseMapHit = Vector3.zero;
     bool firstUpdate = true;
     public Material pathMaterial;
+    public float smoothTime = 0.1f;
+    private Vector3 velocity = Vector3.zero;
 
     //MapSector mainMap;
     GameObject waypointMarker;
@@ -90,9 +92,13 @@ public partial class Map : MonoBehaviour
         UpdateMenuFields();
         UpdateRecentWorldsPanel();
         GenerateSeeds();
-        //GenerateHeightMap(true);
         UpdateSurfaceMaterialProperties(false);
-        LoadTerrainTransformations();
+        if (!LoadTerrainTransformations())
+        {
+            GenerateHeightMap();
+            HeightMap2Texture();
+            UpdateSurfaceMaterialHeightMap(true);
+        }
 
         cameraController = cam.GetComponent<CameraController>();
         NameGenerator.instance.Load();
@@ -115,70 +121,72 @@ public partial class Map : MonoBehaviour
             firstUpdate = false;
         }
 
-        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.S))
+        bool isCTRLPressed = Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl);
+
+        if (isCTRLPressed && Input.GetKeyDown(KeyCode.S))
         {
             SaveData();
         }
 
-        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.I))
+        if (isCTRLPressed && Input.GetKeyDown(KeyCode.I))
         {
             SaveImages();
         }
 
-        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.R))
+        if (isCTRLPressed && Input.GetKeyDown(KeyCode.R))
         {
             ReGenerateWorld();
         }
 
-        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.E))
+        if (isCTRLPressed && Input.GetKeyDown(KeyCode.E))
         {
             StartCoroutine(PerformErosionCycle());
         }
 
-        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.P))
+        if (isCTRLPressed && Input.GetKeyDown(KeyCode.P))
         {
             PerformPlotRiversRandomly();
         }
 
-        //if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.V))
+        //if (isCTRLPressed && Input.GetKeyDown(KeyCode.V))
         //{
         //    StartCoroutine(PerformPluvialErosion());
         //}
 
-        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.U))
+        if (isCTRLPressed && Input.GetKeyDown(KeyCode.U))
         {
             UndoErosion();
         }
 
-        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.T))
+        if (isCTRLPressed && Input.GetKeyDown(KeyCode.T))
         {
             //Show Temperature
             TemperatureToggleButton?.Toggle();
             DoShowTemperature(!showTemperature);
         }
 
-        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.G))
+        if (isCTRLPressed && Input.GetKeyDown(KeyCode.G))
         {
             //Show Globe
             ShowGlobeToggleButton?.Toggle();
             DoShowGlobe(!showGlobe);
         }
 
-        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.W))
+        if (isCTRLPressed && Input.GetKeyDown(KeyCode.W))
         {
             //Edit Waypoints
             WaypointToggleButton?.Toggle();
             DoRuler(!doRuler);
         }
 
-        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.A))
+        if (isCTRLPressed && Input.GetKeyDown(KeyCode.A))
         {
             //Alter Terrain
             TerrainToggleButton?.Toggle();
             DoTerrainBrush(!doTerrainBrush);
         }
 
-        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKeyDown(KeyCode.L))
+        if (isCTRLPressed && Input.GetKeyDown(KeyCode.L))
         {
             if (LoadData())
             {
@@ -316,7 +324,8 @@ public partial class Map : MonoBehaviour
         if (!showGlobe)
         {
             ShowPlaneMap();
-            cameraController.CalculateVisibleFlatLatitudeAndLongitude();
+            EventSystem.current.SetSelectedGameObject(this.gameObject);
+            //cameraController.CalculateVisibleFlatLatitudeAndLongitude();
             cameraController.BringCameraIntoViewPlanes();
             geoSphereCamera.enabled = false;
             Component geolightComponent = geoSphereCamera.GetChildWithName("Geosphere Directional Light");
@@ -329,11 +338,19 @@ public partial class Map : MonoBehaviour
             Component lightComponent = cam.GetChildWithName("Directional Light");
             if (lightComponent != null)
                 lightComponent.gameObject.SetActive(true);
+            geoSphere.gameObject.SetActive(false);
         }
         else
         {
             HidePlaneMap();
             geoSphereCamera.enabled = true;
+            geoSphere.gameObject.SetActive(true);
+            EventSystem.current.SetSelectedGameObject(geoSphere.gameObject);
+
+            cameraController.CalculateVisibleFlatLatitudeAndLongitude();
+            geoSphere.RotateCameraTo((cameraController.VisibleLowerLongitude + cameraController.VisibleUpperLongitude) / 2, (cameraController.VisibleLowerLatitude + cameraController.VisibleUpperLatitude) / 2);
+            geoSphere.ResetCameraTargetPosition();
+
             Component geolightComponent = geoSphereCamera.GetChildWithName("Geosphere Directional Light");
             if (geolightComponent != null)
                 geolightComponent.gameObject.SetActive(true);
@@ -348,55 +365,36 @@ public partial class Map : MonoBehaviour
         worldNameText.interactable = true;
     }
 
+    int frameCounter = 0;
+    float timeCounter = 0.0f;
+    float lastFramerate = 0.0f;
+    public float refreshTime = 0.5f;
     public void UpdateDebugText()
     {
+        if (!debugText.activeSelf)
+            return;
+
         TextMeshProUGUI textmeshPro = debugText.GetComponent<TextMeshProUGUI>();
         if (textmeshPro == null)
             return;
+
+        if (timeCounter < refreshTime)
+        {
+            timeCounter += Time.deltaTime;
+            frameCounter++;
+        }
+        else
+        {
+            lastFramerate = (float)frameCounter / timeCounter;
+            frameCounter = 0;
+            timeCounter = 0.0f;
+        }
 
         float longitude = ((cam.transform.position.x - transform.position.x) / mapWidth) + 0.5f;
         float latitude = ((cam.transform.position.y - transform.position.y) / mapHeight) + 0.5f;
 
         textmeshPro.text =
-            "Lon: " + longitude.ToString("####0.##") + ", Lat: " + latitude.ToString("####0.##");
-    }
-
-    public void Shift(float x)
-    {
-        Vector3 position = transform.position;
-        position.x += x;
-
-        if (position.x < -mapWidth / 2)
-        {
-            position.x += mapWidth;
-        }
-        else if (position.x > mapWidth / 2)
-        {
-            position.x -= mapWidth;
-        }
-
-        transform.position = position;
-
-        centerScreenWorldPosition = new Vector2((mapWidth / 2 - transform.position.x) / mapWidth, (cam.transform.position.y + mapHeight/2) / mapHeight);
-    }
-
-    public void ShiftTo(float longitude)
-    {
-        Vector3 position = transform.position;
-        position.x = (float)((1 - longitude) * mapWidth - mapWidth / 2);
-
-        if (position.x < -mapWidth / 2)
-        {
-            position.x += mapWidth;
-        }
-        else if (position.x > mapWidth / 2)
-        {
-            position.x -= mapWidth;
-        }
-
-        transform.position = position;
-
-        centerScreenWorldPosition = new Vector2((mapWidth / 2 - transform.position.x) / mapWidth, (cam.transform.position.y + mapHeight / 2) / mapHeight);
+            "Lon: " + longitude.ToString("####0.##") + ", Lat: " + latitude.ToString("####0.##") + " FPS: " + lastFramerate.ToString("####0.##");
     }
 
     public void ReGenerateLandColors()
@@ -467,18 +465,14 @@ public partial class Map : MonoBehaviour
 
         if (!keepSeed || reGenerateHeightMap)
         {
-            //TextureManager.instance.ErodedHeightMap = null;
-            TextureManager.instance.HeightMap1 = null;
-            TextureManager.instance.HeightMap2 = null;
-            TextureManager.instance.HeightMap3 = null;
-            TextureManager.instance.HeightMap4 = null;
-            TextureManager.instance.HeightMap5 = null;
-            TextureManager.instance.HeightMap6 = null;
-            //TextureManager.instance.MergedHeightMap = null;
+            ResetEroded();
+
             planetSurfaceMaterial.SetInt("_IsEroded", 0);
             planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
 
             GenerateHeightMap();
+
+            HeightMap2Texture();
 
             //float minHeight = 0, maxHeight = 0;
             //TextureManager.instance.HeightMapMinMaxHeights(ref minHeight, ref maxHeight);
@@ -852,11 +846,11 @@ public partial class Map : MonoBehaviour
             Directory.Delete(tempDataFolder);
     }
 
-    void LoadTerrainTransformations()
+    bool LoadTerrainTransformations()
     {
         string tempDataFolder = Path.Combine(Application.persistentDataPath, "Temp", mapSettings.Seed.ToString());
         if (!Directory.Exists(tempDataFolder))
-            return;
+            return false;
 
         bool updateMaterial = false;
         //bool updateFlow = false;
@@ -1028,6 +1022,7 @@ public partial class Map : MonoBehaviour
         //        planetSurfaceMaterial.SetTexture("_FlowTex", TextureManager.instance.FlowTextureRandom);
         //    planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
         //}
+        return updateMaterial;
     }
 
     float[] LoadFloatArrayFromFile(string fileName)

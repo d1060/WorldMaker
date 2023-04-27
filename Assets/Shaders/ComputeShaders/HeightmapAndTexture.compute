@@ -1,0 +1,134 @@
+#pragma kernel CSMain
+
+RWStructuredBuffer<float> heightMap12;
+RWStructuredBuffer<float> heightMap34;
+RWStructuredBuffer<float> heightMap56;
+
+StructuredBuffer<float> flowErosionMap12;
+StructuredBuffer<float> flowErosionMap34;
+StructuredBuffer<float> flowErosionMap56;
+
+RWTexture2D<float4> result;
+
+int _MapWidth;
+float _MinimumHeight;
+float _MaximumHeight;
+
+float _Seed;
+int _Octaves;
+float _Lacunarity;
+float _Persistence;
+float _Multiplier;
+float _xOffset;
+float _yOffset;
+float _zOffset;
+int _RidgedNoise;
+float _DomainWarping;
+float _HeightExponent;
+float _LayerStrength;
+
+float _xOffset2;
+float _yOffset2;
+float _zOffset2;
+float _Seed2;
+float _Multiplier2;
+int _Octaves2;
+float _Lacunarity2;
+float _Persistence2;
+int _RidgedNoise2;
+float _HeightExponent2;
+float _LayerStrength2;
+float _DomainWarping2;
+
+float _ErosionNoiseMerge;
+
+#include "Assets/Shaders/Simplex.cginc"
+#include "Assets/Shaders/Cubemap.cginc"
+
+float getFlowErosionValueAtCoordinates(uint3 coordinates)
+{
+    uint index = coordinates.x + coordinates.y * _MapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += _MapWidth * _MapWidth;
+
+    if (coordinates.z <= 0) return flowErosionMap12[index];
+    else if (coordinates.z <= 1) return flowErosionMap12[index];
+    else if (coordinates.z <= 2) return flowErosionMap34[index];
+    else if (coordinates.z <= 3) return flowErosionMap34[index];
+    else if (coordinates.z <= 4) return flowErosionMap56[index];
+    else return flowErosionMap56[index];
+}
+
+float getMapValueAtCoordinates(uint3 coordinates)
+{
+    uint index = coordinates.x + coordinates.y * _MapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += _MapWidth * _MapWidth;
+
+    if (coordinates.z <= 0) return heightMap12[index];
+    else if (coordinates.z <= 1) return heightMap12[index];
+    else if (coordinates.z <= 2) return heightMap34[index];
+    else if (coordinates.z <= 3) return heightMap34[index];
+    else if (coordinates.z <= 4) return heightMap56[index];
+    else return heightMap56[index];
+}
+
+void setMapValueAtCoordinates(uint3 coordinates, float height)
+{
+    uint index = coordinates.x + coordinates.y * _MapWidth;
+
+    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
+        index += _MapWidth * _MapWidth;
+
+    if (coordinates.z <= 0) heightMap12[index] = height;
+    else if (coordinates.z <= 1) heightMap12[index] = height;
+    else if (coordinates.z <= 2) heightMap34[index] = height;
+    else if (coordinates.z <= 3) heightMap34[index] = height;
+    else if (coordinates.z <= 4) heightMap56[index] = height;
+    else heightMap56[index] = height;
+}
+
+float erodeHeight(uint3 coordinates, float height)
+{
+    int index = coordinates.x + coordinates.z * _MapWidth + coordinates.y * 6 * _MapWidth;
+    float erodedHeight = getFlowErosionValueAtCoordinates(coordinates);
+    if (erodedHeight <= 0)
+        return height;
+
+    float mergedHeight = height - erodedHeight * _ErosionNoiseMerge;
+
+    if (mergedHeight <= 0)
+        return 0;
+
+    return mergedHeight;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+	if (id.x >= (uint)_MapWidth || id.y >= (uint)_MapWidth || id.z >= 6)
+		return;
+
+    uint3 cubemap = uint3(id.x, id.y, id.z);
+	float2 uv = cubemapXYZtoUV(id.x, id.y, id.z, _MapWidth);
+    float3 cartesian = uvToCartesian(uv);
+
+	float3 offset = float3(_xOffset, _yOffset, _zOffset);
+	float3 offset2 = float3(_xOffset2, _yOffset2, _zOffset2);
+
+	float height = sphereHeight(uv, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping,
+		offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2,
+		_MinimumHeight, _MaximumHeight);
+
+    setMapValueAtCoordinates(cubemap, height);
+
+    float erodedHeight = erodeHeight(cubemap, height);
+
+    uint textureWidth = uv.x * _MapWidth * 4;
+    uint textureHeight = uv.y * _MapWidth * 2;
+    uint2 textureCoordinates = uint2(textureWidth, textureHeight);
+
+    result[textureCoordinates] = float4(erodedHeight, erodedHeight, erodedHeight, 1);
+}

@@ -58,10 +58,10 @@ public class Waypoint
             Camera camera = cameraController.map.geoSphere.transform.GetComponentInChildren<Camera>();
             Vector3 positionVector = camera.transform.localPosition;
             currentDistance = positionVector.magnitude - cameraController.map.geoSphere.Radius;
-            if (currentDistance < cameraController.MinCameraDistance)
-                currentDistance = cameraController.MinCameraDistance;
-            else if (currentDistance > cameraController.MaxCameraDistance)
-                currentDistance = cameraController.MaxCameraDistance;
+            if (currentDistance < CameraController.MinCameraDistance)
+                currentDistance = CameraController.MinCameraDistance;
+            else if (currentDistance > CameraController.MaxCameraDistance)
+                currentDistance = CameraController.MaxCameraDistance;
         }
         LineRenderer lineRenderer = pathGameObject.AddComponent<LineRenderer>();
         lineRenderer.materials = new Material[] { map.pathMaterial };
@@ -135,7 +135,7 @@ public class Waypoint
         lineRenderer.positionCount = linePositions.Length;
         lineRenderer.SetPositions(linePositions);
 
-        float multiplierRatio = ((currentDistance - cameraController.MinCameraDistance) / (cameraController.MaxCameraDistance - cameraController.MinCameraDistance));
+        float multiplierRatio = ((currentDistance - CameraController.MinCameraDistance) / (CameraController.MaxCameraDistance - CameraController.MinCameraDistance));
         lineRenderer.widthMultiplier = multiplierRatio;
 
         if (isGlobe)
