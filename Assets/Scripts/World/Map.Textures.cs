@@ -470,6 +470,7 @@ public partial class Map : MonoBehaviour
 
         GenerateHeightMap();
         HeightMap2Texture();
+        GenerateEquirectangularNoiseTexture();
     }
 
     public void UpdateSurfaceMaterialHeightMap(bool isEroded = false)
@@ -597,6 +598,7 @@ public partial class Map : MonoBehaviour
     public ComputeShader erosionUpdateShader;
     public ComputeShader heightmap2TextureShader;
     public ComputeShader texture2HeightmapShader;
+    public ComputeShader equirectangularNoiseComputeShader;
 
     void GenerateHeightMap(bool resetHeightLimits = false)
     {
@@ -682,6 +684,58 @@ public partial class Map : MonoBehaviour
             mapBuffer5.Release();
             mapBuffer6.Release();
         }
+    }
+
+    RenderTexture noiseRT;
+    public void GenerateEquirectangularNoiseTexture()
+    {
+        if (equirectangularNoiseComputeShader == null)
+            return;
+
+        equirectangularNoiseComputeShader.SetInt("_MapWidth", TextureManager.instance.Settings.textureWidth * 2);
+
+        equirectangularNoiseComputeShader.SetFloat("_MinimumHeight", MapData.instance.LowestHeight);
+        equirectangularNoiseComputeShader.SetFloat("_MaximumHeight", MapData.instance.HighestHeight);
+
+        equirectangularNoiseComputeShader.SetFloat("_Seed1", TextureManager.instance.Settings.TemperatureNoiseSeed);
+        equirectangularNoiseComputeShader.SetFloat("_Seed2", TextureManager.instance.Settings.HumidityNoiseSeed);
+        equirectangularNoiseComputeShader.SetFloat("_Seed3", TextureManager.instance.Settings.surfaceNoiseSettings.seed);
+        equirectangularNoiseComputeShader.SetFloat("_Seed4", TextureManager.instance.Settings.surfaceNoiseSettings2.seed);
+
+        equirectangularNoiseComputeShader.SetInt("_Octaves", TextureManager.instance.Settings.temperatureNoiseSettings.octaves);
+        equirectangularNoiseComputeShader.SetFloat("_Lacunarity", TextureManager.instance.Settings.temperatureNoiseSettings.lacunarity);
+        equirectangularNoiseComputeShader.SetFloat("_Persistence", TextureManager.instance.Settings.temperatureNoiseSettings.persistence);
+        equirectangularNoiseComputeShader.SetFloat("_Multiplier", TextureManager.instance.Settings.temperatureNoiseSettings.multiplier);
+        equirectangularNoiseComputeShader.SetFloat("_xOffset", TextureManager.instance.Settings.temperatureNoiseSettings.noiseOffset.x);
+        equirectangularNoiseComputeShader.SetFloat("_yOffset", TextureManager.instance.Settings.temperatureNoiseSettings.noiseOffset.y);
+        equirectangularNoiseComputeShader.SetFloat("_zOffset", TextureManager.instance.Settings.temperatureNoiseSettings.noiseOffset.z);
+        equirectangularNoiseComputeShader.SetInt("_RidgedNoise", TextureManager.instance.Settings.temperatureNoiseSettings.ridged ? 1 : 0);
+        equirectangularNoiseComputeShader.SetFloat("_DomainWarping", TextureManager.instance.Settings.temperatureNoiseSettings.domainWarping);
+        equirectangularNoiseComputeShader.SetFloat("_HeightExponent", TextureManager.instance.Settings.temperatureNoiseSettings.heightExponent);
+
+        if (noiseRT != null && (noiseRT.width != TextureManager.instance.Settings.textureWidth * 4 || noiseRT.height != TextureManager.instance.Settings.textureWidth * 2))
+        {
+            Destroy(noiseRT);
+            noiseRT = null;
+        }
+
+        if (noiseRT == null)
+        {
+            noiseRT = new RenderTexture(TextureManager.instance.Settings.textureWidth * 4, TextureManager.instance.Settings.textureWidth * 2, 16, RenderTextureFormat.ARGBHalf);
+            noiseRT.wrapMode = TextureWrapMode.Repeat;
+            noiseRT.name = "Heightmap Render Texture";
+            noiseRT.enableRandomWrite = true;
+            noiseRT.Create();
+        }
+
+        equirectangularNoiseComputeShader.SetTexture(0, "Result", noiseRT);
+
+        equirectangularNoiseComputeShader.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 4 / 32f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 2 / 32f), 1);
+
+        planetSurfaceMaterial.SetTexture("_NoiseMap", noiseRT);
+        planetSurfaceMaterial.SetInt("_IsNoiseMapSet", 1);
+
+        //noiseRT.SaveToFile(Path.Combine(Application.persistentDataPath, "NoiseTexture.png"));
     }
 
     RenderTexture heightmapRT;

@@ -112,6 +112,7 @@ float4 colorAtElevation(float height, float waterLevel, float temperature, float
     if (temperature < iceTemperatureThreshold1)
     {
         float temperatureRatio = (iceTemperatureThreshold1 - temperature) / (iceTemperatureThreshold1 - iceTemperatureThreshold2);
+        if (temperatureRatio > 1) temperatureRatio = 1;
         landColor = (iceColor - landColor) * temperatureRatio + landColor;
         //landColor = interpolateColor(temperatureRatio, iceColor, landColor);
     }

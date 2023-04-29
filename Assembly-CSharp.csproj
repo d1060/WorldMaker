@@ -141,6 +141,7 @@
     <Compile Include="Assets\Scripts\Erosion\ErosionSettings.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Shaders\ComputeShaders\EquirectangularNoise.compute" />
     <None Include="Assets\Shaders\ComputeShaders\HeightmapAndTexture.compute" />
     <None Include="Assets\Shaders\SurfaceTexture.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

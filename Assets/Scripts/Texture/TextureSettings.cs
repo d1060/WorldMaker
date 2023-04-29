@@ -186,6 +186,15 @@ public class TextureSettings
         surfaceMaterial.SetFloat("_LayerStrength2", surfaceNoiseSettings2.layerStrength);
         surfaceMaterial.SetFloat("_DomainWarping2", surfaceNoiseSettings2.domainWarping);
 
+        surfaceMaterial.SetFloat("_TemperatureExponent", MapData.instance.TemperatureExponent);
+        surfaceMaterial.SetFloat("_TemperatureRatio", MapData.instance.TemperatureRatio);
+        surfaceMaterial.SetFloat("_TemperatureElevationRatio", MapData.instance.TemperatureElevationRatio);
+        surfaceMaterial.SetFloat("_TemperatureWaterDrop", MapData.instance.TemperatureWaterDrop);
+        surfaceMaterial.SetFloat("_TemperatureLatitudeMultiplier", MapData.instance.TemperatureLatitudeMultiplier);
+        surfaceMaterial.SetFloat("_TemperatureLatitudeDrop", MapData.instance.TemperatureLatitudeDrop);
+        surfaceMaterial.SetFloat("_HumidityExponent", MapData.instance.HumidityExponent);
+        surfaceMaterial.SetFloat("_HumidityMultiplier", MapData.instance.HumidityMultiplier);
+
         int landColorSteps = landColorStages.Length < land1Color.Length ? landColorStages.Length : land1Color.Length;
         if (landColorSteps > 8) landColorSteps = 8;
         surfaceMaterial.SetInt("_ColorSteps", landColorSteps);

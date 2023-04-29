@@ -131,16 +131,16 @@ public partial class Map : MonoBehaviour
             TextureManager.instance.InstantiateFlowErosionMap();
 
         ComputeBuffer inciseFlowMapBuffer12 = new ComputeBuffer(TextureManager.instance.FlowErosionMap1.Length * 2, sizeof(float));
-        inciseFlowMapBuffer12.SetData(TextureManager.instance.FlowErosionMap1, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
-        inciseFlowMapBuffer12.SetData(TextureManager.instance.FlowErosionMap2, 0, TextureManager.instance.FlowErosionMap1.Length, TextureManager.instance.FlowErosionMap1.Length);
+        //inciseFlowMapBuffer12.SetData(TextureManager.instance.FlowErosionMap1, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
+        //inciseFlowMapBuffer12.SetData(TextureManager.instance.FlowErosionMap2, 0, TextureManager.instance.FlowErosionMap1.Length, TextureManager.instance.FlowErosionMap1.Length);
 
         ComputeBuffer inciseFlowMapBuffer34 = new ComputeBuffer(TextureManager.instance.FlowErosionMap3.Length * 2, sizeof(float));
-        inciseFlowMapBuffer34.SetData(TextureManager.instance.FlowErosionMap3, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
-        inciseFlowMapBuffer34.SetData(TextureManager.instance.FlowErosionMap4, 0, TextureManager.instance.FlowErosionMap1.Length, TextureManager.instance.FlowErosionMap1.Length);
+        //inciseFlowMapBuffer34.SetData(TextureManager.instance.FlowErosionMap3, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
+        //inciseFlowMapBuffer34.SetData(TextureManager.instance.FlowErosionMap4, 0, TextureManager.instance.FlowErosionMap1.Length, TextureManager.instance.FlowErosionMap1.Length);
 
         ComputeBuffer inciseFlowMapBuffer56 = new ComputeBuffer(TextureManager.instance.FlowErosionMap5.Length * 2, sizeof(float));
-        inciseFlowMapBuffer56.SetData(TextureManager.instance.FlowErosionMap5, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
-        inciseFlowMapBuffer56.SetData(TextureManager.instance.FlowErosionMap6, 0, TextureManager.instance.FlowErosionMap1.Length, TextureManager.instance.FlowErosionMap1.Length);
+        //inciseFlowMapBuffer56.SetData(TextureManager.instance.FlowErosionMap5, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
+        //inciseFlowMapBuffer56.SetData(TextureManager.instance.FlowErosionMap6, 0, TextureManager.instance.FlowErosionMap1.Length, TextureManager.instance.FlowErosionMap1.Length);
 
         ComputeBuffer heightMapBuffer12 = new ComputeBuffer(TextureManager.instance.HeightMap1.Length * 2, sizeof(float));
         heightMapBuffer12.SetData(TextureManager.instance.HeightMap1, 0, 0, TextureManager.instance.HeightMap1.Length);

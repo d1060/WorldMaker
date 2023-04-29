@@ -97,6 +97,7 @@ public partial class Map : MonoBehaviour
         {
             GenerateHeightMap();
             HeightMap2Texture();
+            GenerateEquirectangularNoiseTexture();
             UpdateSurfaceMaterialHeightMap(true);
         }
 
@@ -458,6 +459,15 @@ public partial class Map : MonoBehaviour
             MapData.instance.textureSettings.surfaceNoiseSettings2.heightExponent = 2; //Height Exponent: 2
             MapData.instance.textureSettings.surfaceNoiseSettings2.domainWarping = (float)random.NextDouble() + 0.5f; //Domain Warping: 0.5 - 1.5
             MapData.instance.textureSettings.surfaceNoiseSettings2.layerStrength = 1 - MapData.instance.textureSettings.surfaceNoiseSettings.layerStrength;
+
+            MapData.instance.TemperatureExponent = 2.718281f;
+            MapData.instance.TemperatureRatio = (float)random.NextDouble() * 20 + 10.0f;
+            MapData.instance.TemperatureElevationRatio = (float)random.NextDouble() * 2 + 5.0f;
+            MapData.instance.TemperatureWaterDrop = 1.0f;
+            MapData.instance.TemperatureLatitudeMultiplier = (float)random.NextDouble() * 20 + 20.0f;
+            MapData.instance.TemperatureLatitudeDrop = 0;
+            MapData.instance.HumidityExponent = 2.718281f;
+            MapData.instance.HumidityMultiplier = 10;
         }
 
         EventSystem eventSystem = cameraController.eventSystemObject.GetComponent<EventSystem>();
@@ -470,9 +480,10 @@ public partial class Map : MonoBehaviour
             planetSurfaceMaterial.SetInt("_IsEroded", 0);
             planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
 
-            GenerateHeightMap();
+            //GenerateHeightMap();
 
-            HeightMap2Texture();
+            //HeightMap2Texture();
+            //GenerateEquirectangularNoiseTexture();
 
             //float minHeight = 0, maxHeight = 0;
             //TextureManager.instance.HeightMapMinMaxHeights(ref minHeight, ref maxHeight);
@@ -484,6 +495,7 @@ public partial class Map : MonoBehaviour
         }
 
         UpdateSurfaceMaterialProperties();
+        firstUpdate = true;
         UpdateNoiseLayerFields();
     }
 
@@ -1011,6 +1023,7 @@ public partial class Map : MonoBehaviour
         if (updateMaterial)
         {
             HeightMap2Texture();
+            GenerateEquirectangularNoiseTexture();
             UpdateSurfaceMaterialHeightMap(true);
         }
 

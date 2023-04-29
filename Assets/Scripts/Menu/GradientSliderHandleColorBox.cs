@@ -62,7 +62,7 @@ public class GradientSliderHandleColorBox : MonoBehaviour, IPointerDownHandler, 
         // Opens up the color picker.
         gameObjectColorPicker = GameObject.Instantiate(colorPickerPrefab, transform);
         gameObjectColorPicker.name = "Color Picker";
-        gameObjectColorPicker.transform.rotation = Quaternion.identity;
+        //gameObjectColorPicker.transform.rotation = Quaternion.identity;
         gameObjectColorPicker.transform.localPosition = new Vector3(80, 0, 0);
         ColorPickerControl colorPickerControl = gameObjectColorPicker.GetComponent<ColorPickerControl>();
         colorPickerControl.CurrentColor = color;

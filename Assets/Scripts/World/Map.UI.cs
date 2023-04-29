@@ -11,6 +11,7 @@ using UnityEngine.EventSystems;
 
 public partial class Map : MonoBehaviour
 {
+    Transform uiCanvasTransform = null;
     Transform mainMenuPanelTransform = null;
     Transform setupPanelTransform = null;
     Transform worldNameTransform = null;
@@ -252,6 +253,9 @@ public partial class Map : MonoBehaviour
 
     public bool ChangeTerrainBrushSize(float delta)
     {
+        AppData.instance.BrushSize = BrushSizeSlider.value + delta * 10;
+        AppData.instance.Save();
+
         if (doTerrainBrush)
         {
             BrushSizeSlider.value += delta * 10;
@@ -272,6 +276,9 @@ public partial class Map : MonoBehaviour
 
     public bool ChangeTerrainBrushStrength(float delta)
     {
+        AppData.instance.BrushStrength = BrushStrengthSlider.value + delta / 10;
+        AppData.instance.Save();
+
         if (doTerrainBrush)
         {
             BrushStrengthSlider.value += delta / 10;
@@ -663,6 +670,8 @@ public partial class Map : MonoBehaviour
     {
         TextureManager.instance.Settings.SelectedLayer = 1;
         firstUpdate = true;
+        ActivateNoiseLayerFields(true);
+        ActivateNoiseClimateFields(false);
         UpdateNoiseLayerFields();
     }
 
@@ -670,7 +679,15 @@ public partial class Map : MonoBehaviour
     {
         TextureManager.instance.Settings.SelectedLayer = 2;
         firstUpdate = true;
+        ActivateNoiseLayerFields(true);
+        ActivateNoiseClimateFields(false);
         UpdateNoiseLayerFields();
+    }
+
+    public void SetNoiseLayerClimate()
+    {
+        ActivateNoiseLayerFields(false);
+        ActivateNoiseClimateFields(true);
     }
 
     public void NewMapDetail(float value)
@@ -801,6 +818,88 @@ public partial class Map : MonoBehaviour
         {
             UndoErosion();
             //GenerateHeightMap();
+            UpdateSurfaceMaterialProperties();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewIceCaps(float value)
+    {
+        float transition = TextureManager.instance.Settings.iceTemperatureThreshold2 - TextureManager.instance.Settings.iceTemperatureThreshold1;
+        TextureManager.instance.Settings.iceTemperatureThreshold1 = value;
+        TextureManager.instance.Settings.iceTemperatureThreshold2 = value + transition;
+        if (!firstUpdate)
+        {
+            UpdateSurfaceMaterialProperties();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewIceTransition(float value)
+    {
+        TextureManager.instance.Settings.iceTemperatureThreshold2 = TextureManager.instance.Settings.iceTemperatureThreshold1 + value;
+        if (!firstUpdate)
+        {
+            UpdateSurfaceMaterialProperties();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewTemperatureIntensity(float value)
+    {
+        MapData.instance.TemperatureRatio = value;
+        if (!firstUpdate)
+        {
+            UpdateSurfaceMaterialProperties();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewElevationRatio(float value)
+    {
+        MapData.instance.TemperatureElevationRatio = value;
+        if (!firstUpdate)
+        {
+            UpdateSurfaceMaterialProperties();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewWaterDrop(float value)
+    {
+        MapData.instance.TemperatureWaterDrop = value;
+        if (!firstUpdate)
+        {
+            UpdateSurfaceMaterialProperties();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewLatitudeMultiplier(float value)
+    {
+        MapData.instance.TemperatureLatitudeMultiplier = value;
+        if (!firstUpdate)
+        {
+            UpdateSurfaceMaterialProperties();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewHumidityRatio(float value)
+    {
+        MapData.instance.HumidityMultiplier = value;
+        if (!firstUpdate)
+        {
+            UpdateSurfaceMaterialProperties();
+            MapData.instance.Save();
+        }
+    }
+
+    public void NewHumidityTransition(float value)
+    {
+        TextureManager.instance.Settings.desertThreshold2 = TextureManager.instance.Settings.desertThreshold1 + value;
+        if (!firstUpdate)
+        {
             UpdateSurfaceMaterialProperties();
             MapData.instance.Save();
         }
@@ -1424,6 +1523,7 @@ public partial class Map : MonoBehaviour
         if (canvas == null)
             return;
 
+        uiCanvasTransform = canvas.transform;
         mainMenuPanelTransform = null;
         setupPanelTransform = null;
         worldNameTransform = null;
@@ -1487,6 +1587,9 @@ public partial class Map : MonoBehaviour
             if (worldNameTextMeshPro != null)
                 worldNameTextMeshPro.text = MapData.instance.WorldName;
         }
+
+        UpdateUISlider(uiCanvasTransform, "Brush Size Slider", AppData.instance.BrushSize);
+        UpdateUISlider(uiCanvasTransform, "Brush Strengh Slider", AppData.instance.BrushStrength);
 
         if (setupPanelTransform != null)
         {
@@ -1620,6 +1723,52 @@ public partial class Map : MonoBehaviour
             UpdateUISlider(noisePanelTransform, "Smoothness Slider", TextureManager.instance.Settings.Persistence);
             UpdateUISlider(noisePanelTransform, "Landmasses Slider", TextureManager.instance.Settings.Multiplier);
             UpdateUISlider(noisePanelTransform, "Height Exponent Slider", TextureManager.instance.Settings.HeightExponent);
+
+            UpdateUISlider(noisePanelTransform, "Ice Caps Slider", TextureManager.instance.Settings.iceTemperatureThreshold1);
+            UpdateUISlider(noisePanelTransform, "Ice Transition Slider", TextureManager.instance.Settings.iceTemperatureThreshold2 - TextureManager.instance.Settings.iceTemperatureThreshold1);
+            UpdateUISlider(noisePanelTransform, "Temperature Intensity Slider", MapData.instance.TemperatureRatio);
+            UpdateUISlider(noisePanelTransform, "Elevation Ratio Slider", MapData.instance.TemperatureElevationRatio);
+            UpdateUISlider(noisePanelTransform, "Water Drop Slider", MapData.instance.TemperatureWaterDrop);
+            UpdateUISlider(noisePanelTransform, "Latitude Multiplier Slider", MapData.instance.TemperatureLatitudeMultiplier);
+            UpdateUISlider(noisePanelTransform, "Humidity Ratio Slider", MapData.instance.HumidityMultiplier);
+            UpdateUISlider(noisePanelTransform, "Humidity Transition Slider", TextureManager.instance.Settings.desertThreshold2 - TextureManager.instance.Settings.desertThreshold1);
+        }
+    }
+
+    private void ActivateNoiseLayerFields(bool active)
+    {
+        if (noisePanelTransform != null)
+        {
+            UpdateUIElementActive(noisePanelTransform, "Text (TMP) Land Offset", active);
+            UpdateUIElementActive(noisePanelTransform, "Toggle Regular Noise", active);
+            UpdateUIElementActive(noisePanelTransform, "Toggle Ridged Noise", active);
+            UpdateUIElementActive(noisePanelTransform, "X Offset Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Y Offset Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Z Offset Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Domain Warping Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Layer Strength Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Map Detail Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Map Scaling Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Smoothness Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Landmasses Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Height Exponent Slider", active);
+        }
+    }
+
+    private void ActivateNoiseClimateFields(bool active)
+    {
+        if (noisePanelTransform != null)
+        {
+            UpdateUIElementActive(noisePanelTransform, "Text (TMP) Temperature", active);
+            UpdateUIElementActive(noisePanelTransform, "Ice Caps Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Ice Transition Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Temperature Intensity Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Elevation Ratio Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Water Drop Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Latitude Multiplier Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Text (TMP) Humidity", active);
+            UpdateUIElementActive(noisePanelTransform, "Humidity Ratio Slider", active);
+            UpdateUIElementActive(noisePanelTransform, "Humidity Transition Slider", active);
         }
     }
 
@@ -1824,6 +1973,28 @@ public partial class Map : MonoBehaviour
             return;
 
         toggle.isOn = toggleValue;
+    }
+
+    private void UpdateUIElementActive(Transform panelTransform, string elementName, bool active)
+    {
+        Transform elementTransform = null;
+        foreach (Transform setupPanelChildTransform in panelTransform.transform)
+        {
+            if (setupPanelChildTransform.name == elementName)
+            {
+                elementTransform = setupPanelChildTransform;
+                break;
+            }
+        }
+
+        if (elementTransform == null)
+            return;
+
+        GameObject elementGO = elementTransform.gameObject;
+        if (elementGO == null)
+            return;
+
+        elementGO.SetActive(active);
     }
 
     private void UpdateUIGradientSlider(Transform gradientPanelTransform, float[] landColorStages, Color32[] land1Color, float[] oceanStages, Color32[] oceanColors)

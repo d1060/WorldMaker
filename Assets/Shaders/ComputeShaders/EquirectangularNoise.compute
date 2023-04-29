@@ -1,0 +1,51 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+int _MapWidth;
+float _MinimumHeight;
+float _MaximumHeight;
+
+float _Seed1;
+float _Seed2;
+float _Seed3;
+float _Seed4;
+
+int _Octaves;
+float _Lacunarity;
+float _Persistence;
+float _Multiplier;
+float _xOffset;
+float _yOffset;
+float _zOffset;
+int _RidgedNoise;
+float _DomainWarping;
+float _HeightExponent;
+
+RWTexture2D<float4> Result;
+
+#include "Assets/Shaders/Simplex.cginc"
+
+[numthreads(32,32,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= 2 * (uint)_MapWidth || id.y >= (uint)_MapWidth)
+        return;
+
+    float2 uv = float2((float)id.x / (_MapWidth * 2), (float)id.y / _MapWidth);
+
+	float3 offset = float3(_xOffset, _yOffset, _zOffset);
+
+    float height1 = sphereNoise(uv, offset, _Seed1, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _DomainWarping, _MinimumHeight, _MaximumHeight);
+    height1 = pow(abs(height1), _HeightExponent);
+
+    float height2 = sphereNoise(uv, offset, _Seed2, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _DomainWarping, _MinimumHeight, _MaximumHeight);
+    height2 = pow(abs(height2), _HeightExponent);
+
+    float height3 = sphereNoise(uv, offset, _Seed3, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _DomainWarping, _MinimumHeight, _MaximumHeight);
+    height3 = pow(abs(height3), _HeightExponent);
+
+    float height4 = sphereNoise(uv, offset, _Seed4, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _DomainWarping, _MinimumHeight, _MaximumHeight);
+    height4 = pow(abs(height4), _HeightExponent);
+
+    Result[id.xy] = float4(height1, height2, height3, height4);
+}

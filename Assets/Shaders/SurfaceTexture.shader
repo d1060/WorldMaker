@@ -2,25 +2,10 @@ Shader "Noise/PlanetarySurfaceTexture"
 {
     Properties
     {
-        _TemperatureSeed("Temperature Seed", Float) = 1.345
-        _HumiditySeed("Humidity Seed", Float) = 1.987
         _WaterLevel("Water Level", Range(0, 1)) = 0.66
         [Enum(SphereShaderDrawType)] _DrawType("Draw Type", Float) = 0
 
-        _Seed("Land Seed", Float) = 2343
-
         _TextureWidth("Texture Width", Float) = 2048
-
-        _XOffset("X Offset", Range(0, 1)) = 0
-        _YOffset("Y Offset", Range(0, 1)) = 0
-        _ZOffset("Z Offset", Range(0, 1)) = 0
-        _MinHeight("Min Height", Range(0, 1)) = 0.15
-        _MaxHeight("Max Height", Range(0, 1)) = 0.75
-        _Multiplier("Noise Multiplier", Range(0.5, 10)) = 1
-        _Octaves("Number of Octaves", Range(1, 30)) = 10
-        _Lacunarity("Lacunarity", Range(1, 2)) = 1.5
-        _Persistence("Persistance", Range(0, 1)) = 0.7
-        _HeightExponent("Height Exponent", Range(0, 10)) = 1
 
         _HeightMap("Heightmap", 2D) = "white" {}
         _MainMap("Main Map", 2D) = "white" {}
@@ -29,6 +14,8 @@ Shader "Noise/PlanetarySurfaceTexture"
         _IsLandmaskSet("Is Land Mask Set", Int) = 0
         _FlowTex("FlowMap", 2D) = "black" {}
         _IsFlowTexSet("Is Flow Texture Set", Int) = 0
+        _NoiseMap("NoiseMap", 2D) = "black" {}
+        _IsNoiseMapSet("Is Noise Texture Set", Int) = 0
 
         _Glossiness("Smoothness", Range(0,1)) = 1.0
         _Metallic("Metallicity", Range(0,1)) = 0.4
@@ -72,9 +59,21 @@ Shader "Noise/PlanetarySurfaceTexture"
         _DesertColor("Desert Color", Color) = (0.75, 0.88, 0.55)
         _NormalScale("Normal Scale Multiplier", Range(0, 50)) = 50
         _UnderwaterNormalScale("Underwater Normal Scale", Range(0, 50)) = 20
+        _IceLandNormalScale("Ice Normal Scale on Land", Range(0, 100)) = 75
+        _IceWaterNormalScale("Ice Normal Scale on Water", Range(0, 100)) = 50
         _GrayscaleGammaCorrection("Grayscale Gamma", Range(0, 5)) = 2.2
         _GrayscaleContrast("Grayscale Contrast", Range(0, 5)) = 1
         _BakedNormalIntensity("Baked Normal Intensity", Range(0, 5)) = 1
+
+        _TemperatureExponent("Temperature Sigmoid Exponent", Range(0, 50)) = 2.718281
+        _TemperatureRatio("Temperature Ratio", Range(0, 100)) = 20 // From 0 to 20
+        _TemperatureElevationRatio("Temperature Elevation Ratio", Range(0, 50)) = 35 //World has 5km height, temperature falls 7 degrees for each km.
+        _TemperatureWaterDrop("Temperature Water Drop", Range(0, 20)) = 5
+        _TemperatureLatitudeMultiplier("Temperature Latitude Multiplier", Range(0, 100)) = 40
+        _TemperatureLatitudeDrop("Temperature Latitude Drop", Range(0, 100)) = 15
+
+        _HumidityExponent("Humidity Sigmoid Exponent", Range(0, 50)) = 2.718281
+        _HumidityMultiplier("Humidity Sigmoid Multiplier", Range(0, 100)) = 20
     }
 
     SubShader
@@ -109,6 +108,8 @@ Shader "Noise/PlanetarySurfaceTexture"
         int _IsLandmaskSet;
         sampler2D_float _FlowTex;
         int _IsFlowTexSet;
+        sampler2D_float _NoiseMap;
+        int _IsNoiseMapSet;
 
         struct Input
         {
@@ -121,16 +122,6 @@ Shader "Noise/PlanetarySurfaceTexture"
         half _Metallic;
         half _LandGlossiness;
         half _LandMetallic;
-        float _Multiplier;
-        float _Seed;
-        float _TemperatureSeed;
-        float _HumiditySeed;
-        int _Octaves;
-        float _Lacunarity;
-        float _Persistence;
-        float _HeightExponent;
-        float _MinHeight;
-        float _MaxHeight;
 
         float _WaterLevel;
         float _ColorStep1;
@@ -168,6 +159,8 @@ Shader "Noise/PlanetarySurfaceTexture"
         fixed4 _DesertColor;
         float _NormalScale;
         float _UnderwaterNormalScale;
+        float _IceLandNormalScale;
+        float _IceWaterNormalScale;
         float _GrayscaleGammaCorrection;
         float _GrayscaleContrast;
 
@@ -176,6 +169,16 @@ Shader "Noise/PlanetarySurfaceTexture"
         float _YOffset;
         float _ZOffset;
         float _BakedNormalIntensity;
+
+        float _TemperatureExponent;
+        float _TemperatureRatio;
+        float _TemperatureElevationRatio;
+        float _TemperatureWaterDrop;
+        float _TemperatureLatitudeMultiplier;
+        float _TemperatureLatitudeDrop;
+
+        float _HumidityExponent;
+        float _HumidityMultiplier;
 
         // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
         // See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
@@ -211,13 +214,71 @@ Shader "Noise/PlanetarySurfaceTexture"
             if (uv.x > 2) uv.x -= 2;
             else if (uv.x > 1) uv.x -= 1;
 
+            float2 uvLeft = float2(uv.x - LONGITUDE_STEP, uv.y);
+            if (uvLeft.x < 0) uvLeft.x += 1;
+
+            float2 uvRight = float2(uv.x + LONGITUDE_STEP, uv.y);
+            if (uvRight.x > 1) uvRight.x -= 1;
+
+            float2 uvTop = float2(uv.x, uv.y + LATITUDE_STEP);
+            if (uvTop.y > 1) uvTop.y = 1;
+
+            float2 uvBottom = float2(uv.x, uv.y - LATITUDE_STEP);
+            if (uvBottom.y < 0) uvBottom.y = 0;
+
             float height = 0;
             float3 offset = float3(_XOffset, _YOffset, _ZOffset);
 
             float4 c = tex2D(_HeightMap, uv);
             height = (c.r + c.g + c.b) / 3;
 
+            float temperature = 0;
+            float humidity = 0;
+
             bool isAboveWater = height > _WaterLevel;
+
+            if (_IsNoiseMapSet)
+            {
+                float4 n = tex2D(_NoiseMap, uv);
+                float4 nLeft = tex2D(_NoiseMap, uvLeft);
+                float4 nRight = tex2D(_NoiseMap, uvRight);
+                float4 nTop = tex2D(_NoiseMap, uvTop);
+                float4 nBottom = tex2D(_NoiseMap, uvBottom);
+
+                temperature = (n.r + (nLeft.r + nRight.r + nTop.r + nBottom.r) / 4) / 2;
+                humidity = n.g;
+
+                // Temperature
+                // Adjusts temperature with a sigmoid curve.
+                temperature = 1 / (1 + pow(_TemperatureExponent, 5 * (-2 * (temperature - 0.5))));
+                //temperature *= _TemperatureExponent;
+                //if (temperature <= 0.5) temperature = 0;
+                //else temperature = 1;
+
+                temperature = (temperature - 0.5) * _TemperatureRatio; // From 0 to 20
+
+                if (isAboveWater)
+                {
+                    // From -35 to 10
+                    float elevationRatio = ((height - _WaterLevel) / (1 - _WaterLevel));
+                    float temperatureDrop = elevationRatio * _TemperatureElevationRatio; //World has 5km height, temperature falls 7 degrees for each km.
+                    temperature -= temperatureDrop;
+                }
+                else
+                {
+                    temperature -= _TemperatureWaterDrop;
+                }
+
+                float actualLatitude = (abs(uv.y - 0.5) * 2);
+                float latitudeTemperature = 1 - actualLatitude; // 0 == 90 degrees, 1 = 0 degrees.
+                latitudeTemperature *= _TemperatureLatitudeMultiplier; // From 0 to 10
+                latitudeTemperature -= _TemperatureLatitudeDrop; // From -15 to 25
+                temperature += latitudeTemperature; // -15 to 45
+
+
+                // Adjusts humidity with a sigmoid curve.
+                humidity = 1 / (1 + pow(_HumidityExponent, _HumidityMultiplier * (humidity - 0.5)));
+            }
 
             if (_DrawType == 1) // Drawing a Heightmap.
             {
@@ -275,39 +336,7 @@ Shader "Noise/PlanetarySurfaceTexture"
             }
             else // DrawType != 1, 2, 7
             {
-                // Temperature
-                float temperature = sphereNoise(uv, offset, _TemperatureSeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, 0, 0, _MinHeight, _MaxHeight);
-                temperature -= 0.5;
-                temperature *= 10;
-                //temperature += 0.5;
-                // Adjusts temperature with a sigmoid curve.
-                temperature = 1 / (1 + pow(20, -temperature));
 
-                temperature *= 20; // From 0 to 20
-
-                if (isAboveWater)
-                {
-                    // From -35 to 10
-                    float elevationRatio = ((height - _WaterLevel) / (1 - _WaterLevel));
-                    float temperatureDrop = (elevationRatio * 5) * 7; //World has 5km height, temperature falls 7 degrees for each km.
-                    temperature -= temperatureDrop;
-                }
-                else
-                {
-                    temperature -= 5;
-                }
-
-                float actualLatitude = (abs(uv.y - 0.5) * 2);
-                float latitudeTemperature = 0.9 - actualLatitude;
-                //latitudeTemperature = pow(latitudeTemperature, 0.5f);
-                latitudeTemperature *= 40; // From 0 to 10
-                latitudeTemperature -= 15; // From -15 to 25
-                temperature += latitudeTemperature; // -15 to 45
-
-                // Humidity
-                float humidity = sphereNoise(uv, offset, _HumiditySeed, _Multiplier, _Octaves, _Lacunarity, _Persistence, 0, 0, _MinHeight, _MaxHeight);
-                // Adjusts humidity with a sigmoid curve.
-                humidity = 1 / (1 + pow(20, -humidity));
 
                 if (_DrawType == 3) // Drawing a Temperature mask.
                 {
@@ -408,26 +437,38 @@ Shader "Noise/PlanetarySurfaceTexture"
                         }
 
                         float3 normal;
+                        float normalScaleToUse = _NormalScale;
+                        float metallicityToUse = _LandMetallic;
+                        float glossinessToUse = _LandGlossiness;
                         if (!isAboveWater)
                         {
-                            float z = sqrt(1 - pow(horizontalDeltaHeight * _UnderwaterNormalScale, 2) - pow(verticalDeltaHeight * _UnderwaterNormalScale, 2));
-                            o.Metallic = _Metallic;
-                            o.Smoothness = _Glossiness; 
-                            normal = float3(
-                                horizontalDeltaHeight * _UnderwaterNormalScale,
-                                verticalDeltaHeight * _UnderwaterNormalScale,
-                                z);
+                            normalScaleToUse = _UnderwaterNormalScale;
+                            metallicityToUse = _Metallic;
+                            glossinessToUse = _Glossiness;
+
+                            if (temperature < _IceTemperatureThreshold1)
+                            {
+                                float temperatureRatio = (_IceTemperatureThreshold1 - temperature) / (_IceTemperatureThreshold1 - _IceTemperatureThreshold2);
+                                if (temperatureRatio > 1) temperatureRatio = 1;
+
+                                normalScaleToUse = (_IceWaterNormalScale - _UnderwaterNormalScale) * temperatureRatio + _UnderwaterNormalScale;
+                            }
                         }
-                        else
+                        else if (temperature < _IceTemperatureThreshold1)
                         {
-                            float z = sqrt(1 - pow(horizontalDeltaHeight * _NormalScale, 2) - pow(verticalDeltaHeight * _NormalScale, 2));
-                            o.Metallic = _LandMetallic;
-                            o.Smoothness = _LandGlossiness;
-                            normal = float3(
-                                horizontalDeltaHeight * _NormalScale,
-                                verticalDeltaHeight * _NormalScale,
-                                z);
+                            float temperatureRatio = (_IceTemperatureThreshold1 - temperature) / (_IceTemperatureThreshold1 - _IceTemperatureThreshold2);
+                            if (temperatureRatio > 1) temperatureRatio = 1;
+
+                            normalScaleToUse = (_IceLandNormalScale - _NormalScale) * temperatureRatio + _NormalScale;
                         }
+
+                        float z = sqrt(1 - pow(horizontalDeltaHeight * normalScaleToUse, 2) - pow(verticalDeltaHeight * normalScaleToUse, 2));
+                        o.Metallic = metallicityToUse;
+                        o.Smoothness = glossinessToUse;
+                        normal = float3(
+                            horizontalDeltaHeight * normalScaleToUse,
+                            verticalDeltaHeight * normalScaleToUse,
+                            z);
 
                         if (_DrawType == 8)
                         {
