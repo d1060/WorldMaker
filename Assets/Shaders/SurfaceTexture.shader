@@ -85,7 +85,6 @@ Shader "Noise/PlanetarySurfaceTexture"
         // Physically based Standard lighting model, and enable shadows on all light types
         #pragma surface surf Standard fullforwardshadows
         #include "Assets/Shaders/Simplex.cginc"
-        //#include "Assets/Shaders/Perlin.cginc"
         #include "Assets/Shaders/Sphere.cginc"
 
         // Use shader model 3.0 target, to get nicer looking lighting
@@ -208,22 +207,46 @@ Shader "Noise/PlanetarySurfaceTexture"
             return result;
         }
 
+        void getSphereCoordinatesOrthogonals(float3 sphereCoordinates, out float3 right, out float3 up)
+        {
+            float3 sphereTop = float3(0, 1, 0);
+
+            if (sphereCoordinates.x == 0 && sphereCoordinates.y == 1 && sphereCoordinates.z == 0)
+                sphereTop = float3(0, 0, 1);
+            else if (sphereCoordinates.x == 0 && sphereCoordinates.y == -1 && sphereCoordinates.z == 0)
+                sphereTop = float3(0, 0, -1);
+
+            right = cross(sphereTop, sphereCoordinates);
+            up = cross(sphereCoordinates, right);
+        }
+
+        float2 uvAdd(float3 sphereCoordinates, float3 vectorAdd)
+        {
+            float3 newSphereCoordinates = normalize(sphereCoordinates + (vectorAdd * LATITUDE_STEP));
+            return SphereToUv(newSphereCoordinates);
+        }
+
         void surf(Input IN, inout SurfaceOutputStandard o)
         {
             float2 uv = IN.uv_HeightMap;
             if (uv.x > 2) uv.x -= 2;
             else if (uv.x > 1) uv.x -= 1;
 
-            float2 uvLeft = float2(uv.x - LONGITUDE_STEP, uv.y);
+            float3 sphereCoordinates = UvToSphere(uv);
+            float3 right;
+            float3 up;
+            getSphereCoordinatesOrthogonals(sphereCoordinates, right, up);
+
+            float2 uvLeft = uvAdd(sphereCoordinates, -right);
             if (uvLeft.x < 0) uvLeft.x += 1;
 
-            float2 uvRight = float2(uv.x + LONGITUDE_STEP, uv.y);
+            float2 uvRight = uvAdd(sphereCoordinates, right);
             if (uvRight.x > 1) uvRight.x -= 1;
 
-            float2 uvTop = float2(uv.x, uv.y + LATITUDE_STEP);
+            float2 uvTop = uvAdd(sphereCoordinates, up);
             if (uvTop.y > 1) uvTop.y = 1;
 
-            float2 uvBottom = float2(uv.x, uv.y - LATITUDE_STEP);
+            float2 uvBottom = uvAdd(sphereCoordinates, -up);
             if (uvBottom.y < 0) uvBottom.y = 0;
 
             float height = 0;
@@ -358,20 +381,20 @@ Shader "Noise/PlanetarySurfaceTexture"
                 }
                 else // DrawType == 0, 4, 6 or 8
                 {
-                    float2 prevLongitude = float2(uv.x - LONGITUDE_STEP, uv.y);
-                    float2 prevLatitude = float2(uv.x, uv.y - LATITUDE_STEP);
+                    //float2 prevLongitude = float2(uv.x - LONGITUDE_STEP, uv.y);
+                    //float2 prevLatitude = float2(uv.x, uv.y - LATITUDE_STEP);
 
-                    if (prevLongitude.x < 0) prevLongitude.x += 1;
-                    if (prevLatitude.y < 0)  prevLatitude.y = 0;
+                    //if (prevLongitude.x < 0) prevLongitude.x += 1;
+                    //if (prevLatitude.y < 0)  prevLatitude.y = 0;
 
-                    float prevLongitudeHeight = 0;
-                    float prevLatitudeHeight = 0;
+                    //float prevLongitudeHeight = 0;
+                    //float prevLatitudeHeight = 0;
 
-                    float4 prevLongitudeColor = tex2D(_HeightMap, prevLongitude);
-                    prevLongitudeHeight = (prevLongitudeColor.r + prevLongitudeColor.g + prevLongitudeColor.b) / 3;
+                    float4 prevLongitudeColor = tex2D(_HeightMap, uvLeft);
+                    float prevLongitudeHeight = (prevLongitudeColor.r + prevLongitudeColor.g + prevLongitudeColor.b) / 3;
 
-                    float4 prevLatitudeColor = tex2D(_HeightMap, prevLatitude);
-                    prevLatitudeHeight = (prevLatitudeColor.r + prevLatitudeColor.g + prevLatitudeColor.b) / 3;
+                    float4 prevLatitudeColor = tex2D(_HeightMap, uvBottom);
+                    float prevLatitudeHeight = (prevLatitudeColor.r + prevLatitudeColor.g + prevLatitudeColor.b) / 3;
 
                     float verticalDeltaHeight = prevLatitudeHeight - height;
                     float horizontalDeltaHeight = prevLongitudeHeight - height;

@@ -45,7 +45,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _HeightMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 4df834c9e594a604290c513fdbac71be, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _LandMask:
@@ -65,7 +65,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NoiseMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 63116c00b7a55514e838cc21353e3693, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
@@ -115,10 +115,10 @@ Material:
     - _HumidityExponent: 2.718281
     - _HumidityMultiplier: 14.921534
     - _HumiditySeed: 958281.9
-    - _IceLandNormalScale: 20
-    - _IceTemperatureThreshold1: -3.1372957
+    - _IceLandNormalScale: 25
+    - _IceTemperatureThreshold1: -3.8719707
     - _IceTemperatureThreshold2: -3.921626
-    - _IceWaterNormalScale: 15
+    - _IceWaterNormalScale: 20
     - _IsEroded: 0
     - _IsFlowTexSet: 0
     - _IsHeightmapSet: 0
@@ -139,7 +139,7 @@ Material:
     - _Mode: 0
     - _Multiplier: 4.4310436
     - _Multiplier2: 3.7164304
-    - _NormalScale: 10
+    - _NormalScale: 25
     - _OcclusionStrength: 1
     - _OceanColorStep1: 0
     - _OceanColorStep2: 0.5
@@ -169,7 +169,7 @@ Material:
     - _TextureHeight: 2048
     - _TextureWidth: 2048
     - _UVSec: 0
-    - _UnderwaterNormalScale: 3
+    - _UnderwaterNormalScale: 5
     - _WaterLevel: 0.6606562
     - _XOffset: 0.040297594
     - _XOffset2: 0.70604634

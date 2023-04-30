@@ -145,6 +145,33 @@ float3 UvToSphere(float2 coords)
     return float3(x, y, z);
 }
 
+float2 SphereToUv(float3 cartesian)
+{
+    float2 polar;
+    float xzAtan2 = 0;
+
+    if (cartesian.x == 0)
+    {
+        if (cartesian.z > 0)
+            xzAtan2 = (SPHERE_PI / 2);
+        else
+            xzAtan2 = -(SPHERE_PI / 2);
+    }
+    else
+        xzAtan2 = atan2(cartesian.z, cartesian.x);
+
+    polar.x = xzAtan2;
+
+    polar.y = asin(cartesian.y);
+
+    polar.x /= (2 * SPHERE_PI);
+    polar.y /= SPHERE_PI;
+
+    if (polar.x < 0) polar.x += 1;
+    polar.y += 0.5;
+    return polar;
+}
+
 float fbm(float3 coords, float3 offset, int seed, float multiplier, int octaves, float lacunarity, float persistence, int ridged)
 {
     coords /= multiplier;

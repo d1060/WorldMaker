@@ -499,6 +499,14 @@ public partial class Map : MonoBehaviour
         UpdateNoiseLayerFields();
     }
 
+    public void ReGenerateClimateSeeds()
+    {
+        System.Random random = new System.Random();
+        TextureManager.instance.Settings.TemperatureNoiseSeed = (float)(random.NextDouble() * 1000000);
+        TextureManager.instance.Settings.HumidityNoiseSeed = (float)(random.NextDouble() * 1000000);
+        GenerateEquirectangularNoiseTexture();
+    }
+
     public void SaveData()
     {
         MapData.instance.Save();

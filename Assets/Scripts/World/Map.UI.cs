@@ -1759,6 +1759,7 @@ public partial class Map : MonoBehaviour
     {
         if (noisePanelTransform != null)
         {
+            UpdateUIElementActive(noisePanelTransform, "Button Regenerate Climate Seed", active);
             UpdateUIElementActive(noisePanelTransform, "Text (TMP) Temperature", active);
             UpdateUIElementActive(noisePanelTransform, "Ice Caps Slider", active);
             UpdateUIElementActive(noisePanelTransform, "Ice Transition Slider", active);
