@@ -6,16 +6,13 @@ using System;
 [Serializable]
 public class TextureSettings
 {
-    public int textureWidth = 256;
+    public int textureWidth = 512;
     //public int textureHeight = 128;
     public Color32 iceColor = new Color32(244, 244, 244, 255);
     [Range(0, -20)]
-    public float iceTemperatureThreshold1 = 0;
-    [Range(0, -50)]
-    public float iceTemperatureThreshold2 = -10;
+    public float iceTemperatureThreshold = 0;
     public Color32 desertColor = new Color32(192, 226, 142, 255);
-    public float desertThreshold1 = 10;
-    public float desertThreshold2 = 15;
+    public float desertThreshold = 10;
     public Color32[] land1Color = new Color32[] 
     {
         new Color32(176, 163, 110, 255),
@@ -56,12 +53,22 @@ public class TextureSettings
     [Range(0, 1)]
     public float minHeight = 0.15f;
     [Range(0, 1)]
-    public float maxHeight = 0.5f;
+    public float maxHeight = 0.75f;
     [Header("Terrain Settings")]
     public NoiseSettings surfaceNoiseSettings;
     public NoiseSettings surfaceNoiseSettings2;
     public NoiseSettings temperatureNoiseSettings;
+    public float temperatureExponent = 2.718281f;
+    public float temperatureRatio = 16;
+    public float temperatureElevationRatio = 10;
+    public float iceTransition = 0.25f;
+    public float temperatureWaterDrop = 2;
+    public float temperatureLatitudeMultiplier = 15;
+    public float temperatureLatitudeDrop = 0;
     public NoiseSettings humidityNoiseSettings;
+    public float humidityExponent = 2.718281f;
+    public float humidityMultiplier = 11;
+    public float humidityTransition = 10;
     [Range(0, 1)]
     public float highHumidityLightnessPercentage = 0.2f;
     [Range(0, 1)]
@@ -70,8 +77,6 @@ public class TextureSettings
     int selectedLayer = 1;
     public float[] TextureSteps { get { return textureSteps; } set { textureSteps = value; } }
     public int MaxZoomLevel { get { return zoomLevelDistances.Length - 1; } }
-    public float TemperatureNoiseSeed { get; set; }
-    public float HumidityNoiseSeed { get; set; }
     public float XOffset { get { return selectedLayer == 1 ? surfaceNoiseSettings.noiseOffset.x : surfaceNoiseSettings2.noiseOffset.x; } set { if (selectedLayer == 1) surfaceNoiseSettings.noiseOffset.x = value; else surfaceNoiseSettings2.noiseOffset.x = value; } }
     public float YOffset { get { return selectedLayer == 1 ? surfaceNoiseSettings.noiseOffset.y : surfaceNoiseSettings2.noiseOffset.y; } set { if (selectedLayer == 1) surfaceNoiseSettings.noiseOffset.y = value; else surfaceNoiseSettings2.noiseOffset.y = value; } }
     public float ZOffset { get { return selectedLayer == 1 ? surfaceNoiseSettings.noiseOffset.z : surfaceNoiseSettings2.noiseOffset.z; } set { if (selectedLayer == 1) surfaceNoiseSettings.noiseOffset.z = value; else surfaceNoiseSettings2.noiseOffset.z = value; } }
@@ -85,16 +90,18 @@ public class TextureSettings
     public float DomainWarping { get { return selectedLayer == 1 ? surfaceNoiseSettings.domainWarping : surfaceNoiseSettings2.domainWarping; ; } set { if (selectedLayer == 1) surfaceNoiseSettings.domainWarping = value; else surfaceNoiseSettings2.domainWarping = value; } }
     public int SelectedLayer { get { return selectedLayer; } set { selectedLayer = value; } }
 
+    public TextureSettings()
+    {
+        Clear();
+    }
+
     public void Clear()
     {
-        textureWidth = 256;
-        //textureHeight = 128;
+        textureWidth = 512;
         iceColor = new Color32(244, 244, 244, 255);
-        iceTemperatureThreshold1 = 0;
-        iceTemperatureThreshold2 = -10;
+        iceTemperatureThreshold = 0;
         desertColor = new Color32(192, 226, 142, 255);
-        desertThreshold1 = 10;
-        desertThreshold2 = 15;
+        desertThreshold = 10;
         land1Color = new Color32[]
         {
             new Color32(176, 163, 110, 255),
@@ -132,6 +139,8 @@ public class TextureSettings
 
         waterLevel = 0.6f;
         surfaceNoiseSettings = new NoiseSettings();
+        surfaceNoiseSettings2 = new NoiseSettings();
+        surfaceNoiseSettings2.layerStrength = 0;
         temperatureNoiseSettings = new NoiseSettings();
         humidityNoiseSettings = new NoiseSettings();
         highHumidityLightnessPercentage = 0.2f;
@@ -160,8 +169,8 @@ public class TextureSettings
             surfaceMaterial.SetFloat("_MinHeight", MapData.instance.HighestHeight);
             surfaceMaterial.SetFloat("_MaxHeight", MapData.instance.LowestHeight);
         }
-        surfaceMaterial.SetFloat("_TemperatureSeed", TemperatureNoiseSeed);
-        surfaceMaterial.SetFloat("_HumiditySeed", HumidityNoiseSeed);
+        surfaceMaterial.SetFloat("_TemperatureSeed", temperatureNoiseSettings.seed);
+        surfaceMaterial.SetFloat("_HumiditySeed", humidityNoiseSettings.seed);
         surfaceMaterial.SetFloat("_Multiplier", surfaceNoiseSettings.multiplier);
         surfaceMaterial.SetInt("_Octaves", surfaceNoiseSettings.octaves);
         surfaceMaterial.SetFloat("_Lacunarity", surfaceNoiseSettings.lacunarity);
@@ -186,14 +195,14 @@ public class TextureSettings
         surfaceMaterial.SetFloat("_LayerStrength2", surfaceNoiseSettings2.layerStrength);
         surfaceMaterial.SetFloat("_DomainWarping2", surfaceNoiseSettings2.domainWarping);
 
-        surfaceMaterial.SetFloat("_TemperatureExponent", MapData.instance.TemperatureExponent);
-        surfaceMaterial.SetFloat("_TemperatureRatio", MapData.instance.TemperatureRatio);
-        surfaceMaterial.SetFloat("_TemperatureElevationRatio", MapData.instance.TemperatureElevationRatio);
-        surfaceMaterial.SetFloat("_TemperatureWaterDrop", MapData.instance.TemperatureWaterDrop);
-        surfaceMaterial.SetFloat("_TemperatureLatitudeMultiplier", MapData.instance.TemperatureLatitudeMultiplier);
-        surfaceMaterial.SetFloat("_TemperatureLatitudeDrop", MapData.instance.TemperatureLatitudeDrop);
-        surfaceMaterial.SetFloat("_HumidityExponent", MapData.instance.HumidityExponent);
-        surfaceMaterial.SetFloat("_HumidityMultiplier", MapData.instance.HumidityMultiplier);
+        surfaceMaterial.SetFloat("_TemperatureExponent", MapData.instance.textureSettings.temperatureExponent);
+        surfaceMaterial.SetFloat("_TemperatureRatio", MapData.instance.textureSettings.temperatureRatio);
+        surfaceMaterial.SetFloat("_TemperatureElevationRatio", MapData.instance.textureSettings.temperatureElevationRatio);
+        surfaceMaterial.SetFloat("_TemperatureWaterDrop", MapData.instance.textureSettings.temperatureWaterDrop);
+        surfaceMaterial.SetFloat("_TemperatureLatitudeMultiplier", MapData.instance.textureSettings.temperatureLatitudeMultiplier);
+        surfaceMaterial.SetFloat("_TemperatureLatitudeDrop", MapData.instance.textureSettings.temperatureLatitudeDrop);
+        surfaceMaterial.SetFloat("_HumidityExponent", MapData.instance.textureSettings.humidityExponent);
+        surfaceMaterial.SetFloat("_HumidityMultiplier", MapData.instance.textureSettings.humidityMultiplier);
 
         int landColorSteps = landColorStages.Length < land1Color.Length ? landColorStages.Length : land1Color.Length;
         if (landColorSteps > 8) landColorSteps = 8;
@@ -241,10 +250,10 @@ public class TextureSettings
             surfaceMaterial.SetColor("_OceanColor" + i, color);
         }
 
-        surfaceMaterial.SetFloat("_IceTemperatureThreshold1", iceTemperatureThreshold1 > iceTemperatureThreshold2 ? iceTemperatureThreshold1 : iceTemperatureThreshold2);
-        surfaceMaterial.SetFloat("_IceTemperatureThreshold2", iceTemperatureThreshold1 < iceTemperatureThreshold2 ? iceTemperatureThreshold1 : iceTemperatureThreshold2);
-        surfaceMaterial.SetFloat("_DesertThreshold1", desertThreshold1 < desertThreshold2 ? desertThreshold1 : desertThreshold2);
-        surfaceMaterial.SetFloat("_DesertThreshold2", desertThreshold1 > desertThreshold2 ? desertThreshold1 : desertThreshold2);
+        surfaceMaterial.SetFloat("_IceTemperatureThreshold1", iceTemperatureThreshold);
+        surfaceMaterial.SetFloat("_IceTemperatureThreshold2", iceTemperatureThreshold - iceTransition);
+        surfaceMaterial.SetFloat("_DesertThreshold1", desertThreshold);
+        surfaceMaterial.SetFloat("_DesertThreshold2", desertThreshold + humidityTransition);
         //surfaceMaterial.SetFloat("_HighHumidityLightnessPercentage", );
         surfaceMaterial.SetColor("_IceColor", iceColor);
         surfaceMaterial.SetColor("_DesertColor", desertColor);

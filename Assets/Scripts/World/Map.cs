@@ -77,6 +77,12 @@ public partial class Map : MonoBehaviour
             plotRiversSettings = MapData.instance.plotRiversSettings;
             inciseFlowSettings = MapData.instance.inciseFlowSettings;
         }
+        else
+        {
+            TextureManager.instance.Settings = new TextureSettings();
+            MapData.instance.textureSettings = new TextureSettings();
+            GenerateSeeds();
+        }
         GranuralizedGeoSphere.instance.Init(50);
         MapData.instance.LowestHeight = TextureManager.instance.Settings.minHeight;
         MapData.instance.HighestHeight = TextureManager.instance.Settings.maxHeight;
@@ -91,7 +97,6 @@ public partial class Map : MonoBehaviour
         centerScreenWorldPosition = new Vector2(0.5f, 0.5f);
         UpdateMenuFields();
         UpdateRecentWorldsPanel();
-        GenerateSeeds();
         UpdateSurfaceMaterialProperties(false);
         if (!LoadTerrainTransformations())
         {
@@ -460,14 +465,14 @@ public partial class Map : MonoBehaviour
             MapData.instance.textureSettings.surfaceNoiseSettings2.domainWarping = (float)random.NextDouble() + 0.5f; //Domain Warping: 0.5 - 1.5
             MapData.instance.textureSettings.surfaceNoiseSettings2.layerStrength = 1 - MapData.instance.textureSettings.surfaceNoiseSettings.layerStrength;
 
-            MapData.instance.TemperatureExponent = 2.718281f;
-            MapData.instance.TemperatureRatio = (float)random.NextDouble() * 20 + 10.0f;
-            MapData.instance.TemperatureElevationRatio = (float)random.NextDouble() * 2 + 5.0f;
-            MapData.instance.TemperatureWaterDrop = 1.0f;
-            MapData.instance.TemperatureLatitudeMultiplier = (float)random.NextDouble() * 20 + 20.0f;
-            MapData.instance.TemperatureLatitudeDrop = 0;
-            MapData.instance.HumidityExponent = 2.718281f;
-            MapData.instance.HumidityMultiplier = 10;
+            MapData.instance.textureSettings.temperatureExponent = 2.718281f;
+            MapData.instance.textureSettings.temperatureRatio = (float)random.NextDouble() * 20 + 10.0f;
+            MapData.instance.textureSettings.temperatureElevationRatio = (float)random.NextDouble() * 2 + 5.0f;
+            MapData.instance.textureSettings.temperatureWaterDrop = 1.0f;
+            MapData.instance.textureSettings.temperatureLatitudeMultiplier = (float)random.NextDouble() * 20 + 20.0f;
+            MapData.instance.textureSettings.temperatureLatitudeDrop = 0;
+            MapData.instance.textureSettings.humidityExponent = 2.718281f;
+            MapData.instance.textureSettings.humidityMultiplier = 10;
         }
 
         EventSystem eventSystem = cameraController.eventSystemObject.GetComponent<EventSystem>();
@@ -502,9 +507,12 @@ public partial class Map : MonoBehaviour
     public void ReGenerateClimateSeeds()
     {
         System.Random random = new System.Random();
-        TextureManager.instance.Settings.TemperatureNoiseSeed = (float)(random.NextDouble() * 1000000);
-        TextureManager.instance.Settings.HumidityNoiseSeed = (float)(random.NextDouble() * 1000000);
+        TextureManager.instance.Settings.temperatureNoiseSettings.seed = (float)(random.NextDouble() * 1000000);
+        TextureManager.instance.Settings.humidityNoiseSettings.seed = (float)(random.NextDouble() * 1000000);
+        MapData.instance.textureSettings.temperatureNoiseSettings.seed = TextureManager.instance.Settings.temperatureNoiseSettings.seed;
+        MapData.instance.textureSettings.humidityNoiseSettings.seed = TextureManager.instance.Settings.humidityNoiseSettings.seed;
         GenerateEquirectangularNoiseTexture();
+        MapData.instance.Save();
     }
 
     public void SaveData()
@@ -614,8 +622,14 @@ public partial class Map : MonoBehaviour
         //TextureManager.instance.Settings.surfaceNoiseSettings.noiseOffset = new Vector3((float)masterRandom.NextDouble(), (float)masterRandom.NextDouble(), (float)masterRandom.NextDouble());
         TextureManager.instance.Settings.surfaceNoiseSettings2.seed = (float)(masterRandom.NextDouble() * 1000000);
         //TextureManager.instance.Settings.surfaceNoiseSettings2.noiseOffset = new Vector3((float)masterRandom.NextDouble(), (float)masterRandom.NextDouble(), (float)masterRandom.NextDouble());
-        TextureManager.instance.Settings.TemperatureNoiseSeed = (float)(masterRandom.NextDouble() * 1000000);
-        TextureManager.instance.Settings.HumidityNoiseSeed = (float)(masterRandom.NextDouble() * 1000000);
+        TextureManager.instance.Settings.temperatureNoiseSettings.seed = (float)(masterRandom.NextDouble() * 1000000);
+        TextureManager.instance.Settings.humidityNoiseSettings.seed = (float)(masterRandom.NextDouble() * 1000000);
+
+        MapData.instance.textureSettings.surfaceNoiseSettings.seed = TextureManager.instance.Settings.surfaceNoiseSettings.seed;
+        MapData.instance.textureSettings.surfaceNoiseSettings2.seed = TextureManager.instance.Settings.surfaceNoiseSettings2.seed;
+        MapData.instance.textureSettings.temperatureNoiseSettings.seed = TextureManager.instance.Settings.temperatureNoiseSettings.seed;
+        MapData.instance.textureSettings.humidityNoiseSettings.seed = TextureManager.instance.Settings.humidityNoiseSettings.seed;
+
         namesSeed = (int)(masterRandom.NextDouble() * 1000000);
     }
 

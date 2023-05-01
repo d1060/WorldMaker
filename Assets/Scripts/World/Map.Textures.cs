@@ -697,8 +697,8 @@ public partial class Map : MonoBehaviour
         equirectangularNoiseComputeShader.SetFloat("_MinimumHeight", MapData.instance.LowestHeight);
         equirectangularNoiseComputeShader.SetFloat("_MaximumHeight", MapData.instance.HighestHeight);
 
-        equirectangularNoiseComputeShader.SetFloat("_Seed1", TextureManager.instance.Settings.TemperatureNoiseSeed);
-        equirectangularNoiseComputeShader.SetFloat("_Seed2", TextureManager.instance.Settings.HumidityNoiseSeed);
+        equirectangularNoiseComputeShader.SetFloat("_Seed1", TextureManager.instance.Settings.temperatureNoiseSettings.seed);
+        equirectangularNoiseComputeShader.SetFloat("_Seed2", TextureManager.instance.Settings.humidityNoiseSettings.seed);
         equirectangularNoiseComputeShader.SetFloat("_Seed3", TextureManager.instance.Settings.surfaceNoiseSettings.seed);
         equirectangularNoiseComputeShader.SetFloat("_Seed4", TextureManager.instance.Settings.surfaceNoiseSettings2.seed);
 

@@ -18,15 +18,7 @@ public class MapData
     public InciseFlowSettings inciseFlowSettings;
     public bool IsSaved = false;
     public float LowestHeight = 0.15f;
-    public float HighestHeight = 0.5f;
-    public float TemperatureExponent = 2.718281f;
-    public float TemperatureRatio = 16;
-    public float TemperatureElevationRatio = 6;
-    public float TemperatureWaterDrop = 2;
-    public float TemperatureLatitudeMultiplier = 30;
-    public float TemperatureLatitudeDrop = 0;
-    public float HumidityExponent = 2.718281f;
-    public float HumidityMultiplier = 11;
+    public float HighestHeight = 0.75f;
 
     #region Singleton
     static MapData myInstance = null;
@@ -85,14 +77,6 @@ public class MapData
                 inciseFlowSettings = md.inciseFlowSettings;
                 LowestHeight = md.LowestHeight;
                 HighestHeight = md.HighestHeight;
-                TemperatureExponent = md.TemperatureExponent;
-                TemperatureRatio = md.TemperatureRatio;
-                TemperatureElevationRatio = md.TemperatureElevationRatio;
-                TemperatureWaterDrop = md.TemperatureWaterDrop;
-                TemperatureLatitudeMultiplier = md.TemperatureLatitudeMultiplier;
-                TemperatureLatitudeDrop = md.TemperatureLatitudeDrop;
-                HumidityExponent = md.HumidityExponent;
-                HumidityMultiplier = md.HumidityMultiplier;
                 return true;
             }
         }
