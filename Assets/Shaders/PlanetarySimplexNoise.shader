@@ -39,10 +39,7 @@ Shader "Noise/PlanetarySurface2"
         _RidgedNoise2("Ridged Noise 2", Int) = 0
         _DomainWarping2("Domain Warping2", Range(0, 4)) = 0
 
-        //_Color ("Color", Color) = (1,1,1,1)
         _HeightMap("Heightmap", 2D) = "white" {}
-        //_HeightmapWidth("Heightmap Width", Float) = 2048
-        //_HeightmapHeight("Heightmap Height", Float) = 1024
         _IsHeightmapSet("Is Heightmap Set", Int) = 0
         _IsEroded("Is Eroded Heightmap", Int) = 0
         _MainMap("Main Map", 2D) = "white" {}
@@ -298,7 +295,6 @@ Shader "Noise/PlanetarySurface2"
                 else
                 {
 					float4 c = _HeightMap.Sample(my_linear_repeat_sampler, uv);
-                    //float4 c = tex2D(_HeightMap, textureUv);
                     height = (c.r + c.g + c.b) / 3;
                 }
 
@@ -426,11 +422,9 @@ Shader "Noise/PlanetarySurface2"
                         if (_IsHeightmapSet > 0 || _IsEroded > 0)
                         {
 							float4 prevLongitudeColor = _HeightMap.Sample(my_linear_repeat_sampler, prevLongitude);
-                            //float4 prevLongitudeColor = tex2D(_HeightMap, prevLongitude);
                             prevLongitudeHeight = (prevLongitudeColor.r + prevLongitudeColor.g + prevLongitudeColor.b) / 3;
 
 							float4 prevLatitudeColor = _HeightMap.Sample(my_linear_repeat_sampler, prevLatitude);
-                            //float4 prevLatitudeColor = tex2D(_HeightMap, prevLatitude);
                             prevLatitudeHeight = (prevLatitudeColor.r + prevLatitudeColor.g + prevLatitudeColor.b) / 3;
                         }
                         else

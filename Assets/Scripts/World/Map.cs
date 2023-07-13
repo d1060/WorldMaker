@@ -14,6 +14,7 @@ public partial class Map : MonoBehaviour
 {
     public float mapWidth = 400;
     public float mapHeight = 200;
+    public bool saveTemporaryTextures = false;
     public InciseFlowSettings inciseFlowSettings;
     public TMP_InputField worldNameText;
     public GameObject debugText;
@@ -26,6 +27,7 @@ public partial class Map : MonoBehaviour
     Vector2 centerScreenWorldPosition = new Vector2(0,0);
     public Geosphere geoSphere;
     public Material planetSurfaceMaterial;
+    public Material planetSurfaceZoomMaterial;
     public TMPro.TMP_FontAsset pathLabelFont;
     public TMPro.TextMeshProUGUI totalPathLabel;
     int namesSeed = -1;
@@ -34,11 +36,13 @@ public partial class Map : MonoBehaviour
     public float[,] heights = null;
     public GameObject waypointMarkerPrefab;
     public GameObject terrainBrush;
+    public GameObject zoomBrush;
     Vector3 mouseMapHit = Vector3.zero;
     bool firstUpdate = true;
     public Material pathMaterial;
     public float smoothTime = 0.1f;
     private Vector3 velocity = Vector3.zero;
+    bool isEroded = false;
 
     //MapSector mainMap;
     GameObject waypointMarker;
@@ -54,6 +58,13 @@ public partial class Map : MonoBehaviour
     #region Mono
     void Awake()
     {
+        if (Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures")))
+        {
+            DirectoryInfo di = new DirectoryInfo(Path.Combine(Application.persistentDataPath, "Textures"));
+            foreach (FileInfo file in di.GetFiles())
+                file.Delete();
+            Directory.Delete(Path.Combine(Application.persistentDataPath, "Textures"));
+        }
         SetupPanelVariables();
         totalPathLabel.enabled = false;
         Log.Reset();
@@ -87,8 +98,14 @@ public partial class Map : MonoBehaviour
         MapData.instance.LowestHeight = TextureManager.instance.Settings.minHeight;
         MapData.instance.HighestHeight = TextureManager.instance.Settings.maxHeight;
 
+        isEroded = false;
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
         planetSurfaceMaterial.SetInt("_IsEroded", 0);
+
+        ZoomBrush zoomBrushSctipt = zoomBrush.GetComponent<ZoomBrush>();
+        zoomBrushSctipt.map = this;
+        zoomBrushSctipt.SetRadius(AppData.instance.ZoomBrushSize);
+        zoomBrushSctipt.ApplyResolution(AppData.instance.ZoomWidth, AppData.instance.ZoomHeight);
     }
 
     // Start is called before the first frame update
@@ -102,8 +119,10 @@ public partial class Map : MonoBehaviour
         {
             GenerateHeightMap();
             HeightMap2Texture();
-            GenerateEquirectangularNoiseTexture();
-            UpdateSurfaceMaterialHeightMap(true);
+            //GenerateEquirectangularNoiseTexture();
+            isEroded = true;
+            UpdateSurfaceMaterialHeightMap();
+            UpdateZoomCamMaterialProperties();
         }
 
         cameraController = cam.GetComponent<CameraController>();
@@ -128,6 +147,7 @@ public partial class Map : MonoBehaviour
         }
 
         bool isCTRLPressed = Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl);
+        float mouseWheel = Input.GetAxis("Mouse ScrollWheel");
 
         if (isCTRLPressed && Input.GetKeyDown(KeyCode.S))
         {
@@ -162,6 +182,11 @@ public partial class Map : MonoBehaviour
         if (isCTRLPressed && Input.GetKeyDown(KeyCode.U))
         {
             UndoErosion();
+        }
+
+        if (isCTRLPressed && Input.GetKeyDown(KeyCode.Z))
+        {
+            DoZoomBrush(!doZoomBrush);
         }
 
         if (isCTRLPressed && Input.GetKeyDown(KeyCode.T))
@@ -201,12 +226,18 @@ public partial class Map : MonoBehaviour
             }
         }
 
+        if (isCTRLPressed && mouseWheel != 0 && doZoomBrush)
+        {
+            SetZoomBrushSize(AppData.instance.ZoomBrushSize + mouseWheel);
+        }
+
         UpdateDebugText();
     }
 
     void OnApplicationQuit()
     {
         SaveCurrentTerrainTransformations();
+        isEroded = false;
 
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
         planetSurfaceMaterial.SetInt("_IsEroded", 0);
@@ -232,6 +263,16 @@ public partial class Map : MonoBehaviour
 
     public void DoTerrainBrush(bool doTerrainBrush)
     {
+        if (doTerrainBrush && doZoomBrush)
+        {
+            ButtonToggle buttonToggle = zoomButtonTransform.GetComponent<ButtonToggle>();
+            if (buttonToggle)
+            {
+                buttonToggle.Disable();
+            }
+            DoZoomBrush(false);
+        }
+
         if (doTerrainBrush && this.doRuler)
         {
             WaypointToggleButton?.Disable();
@@ -244,6 +285,32 @@ public partial class Map : MonoBehaviour
             ShowTerrainBrush();
         else
             HideTerrainBrush();
+    }
+
+    public void DoZoomBrush(bool doZoom)
+    {
+        if (doZoomBrush != doZoom)
+        {
+            if (doZoom)
+            {
+                zoomResolutionTransform.gameObject.SetActive(true);
+                UpdateUIElementActive(zoomButtonTransform, "Zoom Size Slider", true);
+                UpdateZoomCamMaterialProperties();
+                zoomBrush.SetActive(true);
+                zoomMapGameObject.SetActive(true);
+            }
+            else
+            {
+                zoomResolutionTransform.gameObject.SetActive(false);
+                UpdateUIElementActive(zoomButtonTransform, "Zoom Size Slider", false);
+                zoomBrush.SetActive(false);
+                zoomMapGameObject.SetActive(false);
+
+                ButtonToggle zomBrushToggleButton = zoomButtonTransform.GetComponent<ButtonToggle>();
+                zomBrushToggleButton.Disable();
+            }
+        }
+        doZoomBrush = doZoom;
     }
 
     void ShowWaypointMarker()
@@ -345,6 +412,8 @@ public partial class Map : MonoBehaviour
             if (lightComponent != null)
                 lightComponent.gameObject.SetActive(true);
             geoSphere.gameObject.SetActive(false);
+
+            zoomButtonTransform.gameObject.SetActive(true);
         }
         else
         {
@@ -367,6 +436,10 @@ public partial class Map : MonoBehaviour
             Component lightComponent = cam.GetChildWithName("Directional Light");
             if (lightComponent != null)
                 lightComponent.gameObject.SetActive(false);
+
+            if (DoingZoomBrush)
+                DoZoomBrush(false);
+            zoomButtonTransform.gameObject.SetActive(false);
         }
         worldNameText.interactable = true;
     }
@@ -469,10 +542,15 @@ public partial class Map : MonoBehaviour
             MapData.instance.textureSettings.temperatureRatio = (float)random.NextDouble() * 20 + 10.0f;
             MapData.instance.textureSettings.temperatureElevationRatio = (float)random.NextDouble() * 2 + 5.0f;
             MapData.instance.textureSettings.temperatureWaterDrop = 1.0f;
-            MapData.instance.textureSettings.temperatureLatitudeMultiplier = (float)random.NextDouble() * 20 + 20.0f;
+            MapData.instance.textureSettings.temperatureLatitudeMultiplier = (float)random.NextDouble() * 10 + 10.0f;
             MapData.instance.textureSettings.temperatureLatitudeDrop = 0;
             MapData.instance.textureSettings.humidityExponent = 2.718281f;
             MapData.instance.textureSettings.humidityMultiplier = 10;
+
+            MapData.instance.textureSettings.normalScale = 0.5f;
+            MapData.instance.textureSettings.normalInfluence = 0;
+            MapData.instance.textureSettings.underwaterNormalScale = 0.3f;
+            MapData.instance.textureSettings.underwaterNormalInfluence = 0;
         }
 
         EventSystem eventSystem = cameraController.eventSystemObject.GetComponent<EventSystem>();
@@ -482,6 +560,7 @@ public partial class Map : MonoBehaviour
         {
             ResetEroded();
 
+            isEroded = false;
             planetSurfaceMaterial.SetInt("_IsEroded", 0);
             planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
 
@@ -972,91 +1051,13 @@ public partial class Map : MonoBehaviour
                 updateMaterial = true;
         }
 
-        //if (File.Exists(Path.Combine(tempDataFolder, "erodedHeightMap.raw")))
-        //{
-        //    //float lowest = 0;
-        //    //float highest = 0;
-        //    TextureManager.instance.ErodedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
-        //    if (TextureManager.instance.ErodedHeightMap.Length > 0 && TextureManager.instance.ErodedHeightMap.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
-        //    {
-        //        TextureManager.instance.ErodedHeightMap = null;
-        //        File.Delete(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
-        //    }
-
-        //    if (TextureManager.instance.ErodedHeightMap != null && TextureManager.instance.ErodedHeightMap.Length > 0)
-        //        updateMaterial = true;
-        //}
-
-        //if (File.Exists(Path.Combine(tempDataFolder, "mergedHeightMap.raw")))
-        //{
-        //    //float lowest = 0;
-        //    //float highest = 0;
-        //    TextureManager.instance.MergedHeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
-        //    if (TextureManager.instance.MergedHeightMap.Length > 0 && TextureManager.instance.MergedHeightMap.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
-        //    {
-        //        TextureManager.instance.MergedHeightMap = null;
-        //        File.Delete(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
-        //    }
-
-        //    if (TextureManager.instance.MergedHeightMap != null && TextureManager.instance.MergedHeightMap.Length > 0)
-        //        updateMaterial = true;
-        //}
-
-        //if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
-        //{
-        //    //float lowest = 0;
-        //    //float highest = 0;
-        //    TextureManager.instance.InciseFlowMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "inciseFlow.raw"));
-        //    if (TextureManager.instance.InciseFlowMap.Length > 0 && TextureManager.instance.InciseFlowMap.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
-        //    {
-        //        TextureManager.instance.InciseFlowMap = null;
-        //        File.Delete(Path.Combine(tempDataFolder, "inciseFlow.raw"));
-        //    }
-
-        //    if (TextureManager.instance.InciseFlowMap != null && TextureManager.instance.InciseFlowMap.Length > 0)
-        //        updateMaterial = true;
-        //}
-
-        //if (File.Exists(Path.Combine(tempDataFolder, "flow.png")))
-        //{
-        //    TextureManager.instance.FlowTexture = LoadAnyImageFile(Path.Combine(tempDataFolder, "flow.png"));
-        //    if (TextureManager.instance.FlowTexture.width != TextureManager.instance.Settings.textureWidth || TextureManager.instance.FlowTexture.height != TextureManager.instance.Settings.textureWidth)
-        //    {
-        //        TextureManager.instance.FlowTexture = null;
-        //        File.Delete(Path.Combine(tempDataFolder, "flow.png"));
-        //    }
-
-        //    if (TextureManager.instance.FlowTexture != null)
-        //        updateFlow = true;
-        //}
-        //if (File.Exists(Path.Combine(tempDataFolder, "flowRandom.png")))
-        //{
-        //    TextureManager.instance.FlowTextureRandom = LoadAnyImageFile(Path.Combine(tempDataFolder, "flowRandom.png"));
-        //    if (TextureManager.instance.FlowTextureRandom.width != TextureManager.instance.Settings.textureWidth || TextureManager.instance.FlowTextureRandom.height != TextureManager.instance.Settings.textureWidth)
-        //    {
-        //        TextureManager.instance.FlowTextureRandom = null;
-        //        File.Delete(Path.Combine(tempDataFolder, "flowRandom.png"));
-        //    }
-
-        //    if (TextureManager.instance.FlowTextureRandom != null)
-        //        updateFlow = true;
-        //}
-
         if (updateMaterial)
         {
             HeightMap2Texture();
-            GenerateEquirectangularNoiseTexture();
-            UpdateSurfaceMaterialHeightMap(true);
+            isEroded = true;
+            UpdateSurfaceMaterialHeightMap();
         }
 
-        //if (updateFlow)
-        //{
-        //    if (TextureManager.instance.FlowTexture != null)
-        //        planetSurfaceMaterial.SetTexture("_FlowTex", TextureManager.instance.FlowTexture);
-        //    else
-        //        planetSurfaceMaterial.SetTexture("_FlowTex", TextureManager.instance.FlowTextureRandom);
-        //    planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
-        //}
         return updateMaterial;
     }
 

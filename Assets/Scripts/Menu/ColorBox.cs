@@ -19,6 +19,8 @@ public class ColorBox : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     [SerializeField]
     public ColorBoxCloseEvent onColorPickerClosed;
     GameObject gameObjectColorPicker;
+    public float pickerScale = 1.2f;
+    public Vector3 positionOffset = new Vector3(0, 0, 0);
 
     public Color Color
     {
@@ -80,12 +82,14 @@ public class ColorBox : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         {
             Vector3 newPosition = new Vector3(gameObjectColorPicker.transform.localPosition.x, gameObjectColorPicker.transform.localPosition.y, gameObjectColorPicker.transform.localPosition.z);
             newPosition.x = (parentRectTransform.sizeDelta.x / rectTransform.localScale.x) - (rectTransform.anchoredPosition.x / rectTransform.localScale.x) + (rectTransform.localScale.x / rectTransform.localScale.x);
+            newPosition += positionOffset;
+
             gameObjectColorPicker.transform.localPosition = newPosition;
 
             gameObjectColorPicker.transform.localScale = new Vector3(
-                1.2f * transform.localScale.x * parentRectTransform.localScale.x,
-                1.2f * transform.localScale.y * parentRectTransform.localScale.y,
-                1.2f * transform.localScale.x * parentRectTransform.localScale.z
+                pickerScale * transform.localScale.x * parentRectTransform.localScale.x,
+                pickerScale * transform.localScale.y * parentRectTransform.localScale.y,
+                pickerScale * transform.localScale.x * parentRectTransform.localScale.z
                 );
         }
         else

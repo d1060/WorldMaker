@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public class TerrainBrush : MonoBehaviour
 {
@@ -11,6 +13,10 @@ public class TerrainBrush : MonoBehaviour
     public float strength = 1;
     public float thickness = 1; // Thickness at distance 190
     public Map map;
+    public GameObject eventSystemObject;
+    public Canvas canvas;
+    public GameObject brushLeft;
+    public GameObject brushRight;
 
     int prevDivisions = 10;
     float prevRadius = 100;
@@ -24,12 +30,16 @@ public class TerrainBrush : MonoBehaviour
     Vector2 currentCoordinates = new Vector2(0.5f, 0.5f);
     bool isLeftMouseButtonDown = false;
     bool isRightMouseButtonDown = false;
+    EventSystem eventSystem;
+    GraphicRaycaster graphicRaycaster;
 
     // Start is called before the first frame update
     void Start()
     {
         startingThickness = thickness;
         BuildMesh();
+        graphicRaycaster = canvas.GetComponent<GraphicRaycaster>();
+        eventSystem = eventSystemObject.GetComponent<EventSystem>();
     }
 
     // Update is called once per frame
@@ -66,9 +76,17 @@ public class TerrainBrush : MonoBehaviour
 
         Camera activeCamera = null;
         if (!map.ShowGlobe)
+        {
             activeCamera = map.cam;
+            if (brushLeft != null && !brushLeft.activeSelf) brushLeft.SetActive(true);
+            if (brushRight != null && !brushRight.activeSelf) brushRight.SetActive(true);
+        }
         else
+        {
             activeCamera = map.geoSphere.transform.GetComponentInChildren<Camera>();
+            if (brushLeft != null && brushLeft.activeSelf) brushLeft.SetActive(false);
+            if (brushRight != null && brushRight.activeSelf) brushRight.SetActive(false);
+        }
 
         Ray mouseRay = activeCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit[] hits = Physics.RaycastAll(mouseRay);
@@ -78,18 +96,26 @@ public class TerrainBrush : MonoBehaviour
             cameraController = map.cam.GetComponent<CameraController>();
         }
 
-        if (isLeftMouseButtonDown)
-        {
-            //if (!movedWhileRightMouseButtonWasDown)
-            //{
-                RaiseTerrain();
-            //}
+        PointerEventData pointerEventData = new PointerEventData(eventSystem);
+        pointerEventData.position = Input.mousePosition;
+        List<RaycastResult> graphicRaycastResults = new List<RaycastResult>();
+        graphicRaycaster.Raycast(pointerEventData, graphicRaycastResults);
 
-            //movedWhileRightMouseButtonWasDown = false;
-        }
-        else if (isRightMouseButtonDown)
+        if (graphicRaycastResults.Count == 0)
         {
-            LowerTerrain();
+            if (isLeftMouseButtonDown)
+            {
+                //if (!movedWhileRightMouseButtonWasDown)
+                //{
+                RaiseTerrain();
+                //}
+
+                //movedWhileRightMouseButtonWasDown = false;
+            }
+            else if (isRightMouseButtonDown)
+            {
+                LowerTerrain();
+            }
         }
 
         Vector3 hitPoint = Vector3.zero;
@@ -177,6 +203,13 @@ public class TerrainBrush : MonoBehaviour
     }
 
     void BuildMesh()
+    {
+        BuildCircle(gameObject);
+        if (brushLeft != null) BuildCircle(brushLeft);
+        if (brushRight != null) BuildCircle(brushRight);
+    }
+
+    void BuildCircle(GameObject gameObject)
     {
         float anglePerStep = 2 * Mathf.PI / numberOfDivisions;
         float innerRadius = radius - thickness;

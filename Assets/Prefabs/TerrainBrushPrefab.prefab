@@ -101,3 +101,7 @@ MonoBehaviour:
   strength: 0.001
   thickness: 1
   map: {fileID: 0}
+  eventSystemObject: {fileID: 0}
+  canvas: {fileID: 0}
+  brushLeft: {fileID: 0}
+  brushRight: {fileID: 0}

@@ -9,6 +9,22 @@ float maxHeight;
 float erosionNoiseMerge;
 int flowErosionSet;
 
+float seed1;
+float seed2;
+float seed3;
+float seed4;
+
+int octaves;
+float lacunarity;
+float persistence;
+float multiplier;
+float xOffset;
+float yOffset;
+float zOffset;
+int ridgedNoise;
+float domainWarping;
+float heightExponent;
+
 StructuredBuffer<float> heightMap12;
 StructuredBuffer<float> heightMap34;
 StructuredBuffer<float> heightMap56;
@@ -18,7 +34,9 @@ StructuredBuffer<float> flowErosionMap34;
 StructuredBuffer<float> flowErosionMap56;
 
 RWTexture2D<float4> result;
+RWTexture2D<float4> noise;
 
+#include "Assets/Shaders/Simplex.cginc"
 #include "Assets/Shaders/Cubemap.cginc"
 
 float getFlowErosionValueAtCoordinates(uint3 coordinates, int mapWidth)
@@ -66,7 +84,7 @@ float erodeHeight(uint3 coordinates, int mapWidth, float height)
     return mergedHeight;
 }
 
-[numthreads(32,32,1)]
+[numthreads(16,16,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= 4 * (uint)mapWidth || id.y >= 2 * (uint)mapWidth)
@@ -110,4 +128,21 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     //height = (height - minHeight) / (maxHeight - minHeight);
 
     result[id.xy] = float4(height, height, height, 1);
+
+
+    float3 offset = float3(xOffset, yOffset, zOffset);
+
+    float height1 = sphereNoise(textureUV, offset, seed1, multiplier, octaves, lacunarity, persistence, ridgedNoise, domainWarping, minHeight, maxHeight);
+    height1 = pow(abs(height1), heightExponent);
+
+    float height2 = sphereNoise(textureUV, offset, seed2, multiplier, octaves, lacunarity, persistence, ridgedNoise, domainWarping, minHeight, maxHeight);
+    height2 = pow(abs(height2), heightExponent);
+
+    float height3 = sphereNoise(textureUV, offset, seed3, multiplier, octaves, lacunarity, persistence, ridgedNoise, domainWarping, minHeight, maxHeight);
+    height3 = pow(abs(height3), heightExponent);
+
+    float height4 = sphereNoise(textureUV, offset, seed4, multiplier, octaves, lacunarity, persistence, ridgedNoise, domainWarping, minHeight, maxHeight);
+    height4 = pow(abs(height4), heightExponent);
+
+    noise[id.xy] = float4(height1, height2, height3, height4);
 }

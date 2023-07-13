@@ -23,6 +23,9 @@ public class AppData
     public float OffsetPixels = 4;
     public float BrushSize = 10;
     public float BrushStrength = 0.5f;
+    public int ZoomWidth = 2048;
+    public int ZoomHeight = 1024;
+    public float ZoomBrushSize = 30;
     public string LastSavedImageFolder = "";
     public List<string> RecentWorlds = new List<string>();
     int MaxRecentWorlds = 8;
@@ -82,6 +85,9 @@ public class AppData
                 OffsetPixels = ad.OffsetPixels;
                 BrushSize = ad.BrushSize;
                 BrushStrength = ad.BrushStrength;
+                ZoomWidth = ad.ZoomWidth;
+                ZoomHeight = ad.ZoomHeight;
+                ZoomBrushSize = ad.ZoomBrushSize;
                 RemoveRepeatedRecentWorlds();
                 return true;
             }

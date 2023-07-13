@@ -64,6 +64,8 @@ public class GradientSliderHandleColorBox : MonoBehaviour, IPointerDownHandler, 
         gameObjectColorPicker.name = "Color Picker";
         //gameObjectColorPicker.transform.rotation = Quaternion.identity;
         gameObjectColorPicker.transform.localPosition = new Vector3(80, 0, 0);
+        gameObjectColorPicker.transform.localScale = new Vector3( 2.0f, 2.0f, 1.0f );
+
         ColorPickerControl colorPickerControl = gameObjectColorPicker.GetComponent<ColorPickerControl>();
         colorPickerControl.CurrentColor = color;
         colorPickerControl.onValueChanged.AddListener(ColorPickerColorChanged);

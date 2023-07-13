@@ -39,10 +39,7 @@ Shader "Noise/PlanetarySurface"
         _RidgedNoise2("Ridged Noise 2", Int) = 0
         _DomainWarping2("Domain Warping2", Range(0, 4)) = 0
 
-        //_Color ("Color", Color) = (1,1,1,1)
         _HeightMap("Heightmap", 2D) = "white" {}
-        //_HeightmapWidth("Heightmap Width", Float) = 2048
-        //_HeightmapHeight("Heightmap Height", Float) = 1024
         _IsHeightmapSet("Is Heightmap Set", Int) = 0
         _IsEroded("Is Eroded Heightmap", Int) = 0
         _MainMap("Main Map", 2D) = "white" {}
@@ -124,8 +121,6 @@ Shader "Noise/PlanetarySurface"
 
         sampler2D _HeightMap;
 
-        //float _HeightmapWidth;
-        //float _HeightmapHeight;
         int _IsHeightmapSet;
         int _IsEroded;
         sampler2D_float _MainMap;

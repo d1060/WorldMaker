@@ -57,8 +57,10 @@ Shader "Noise/PlanetarySurfaceTexture"
         _HighHumidityLightnessPercentage("Humidity Lightness", Range(0,1)) = 0.2
         _IceColor("Ice Color", Color) = (0.95, 0.95, 0.95)
         _DesertColor("Desert Color", Color) = (0.75, 0.88, 0.55)
-        _NormalScale("Normal Scale Multiplier", Range(0, 50)) = 50
-        _UnderwaterNormalScale("Underwater Normal Scale", Range(0, 50)) = 20
+        _NormalScale("Normal Scale Multiplier", Range(0, 100)) = 50
+        _NormalInfluence("Normal Influence", Range(0, 1)) = 0
+        _UnderwaterNormalScale("Underwater Normal Scale", Range(0, 100)) = 20
+        _UnderwaterNormalInfluence("Underwater Normal Influence", Range(0, 1)) = 0
         _IceLandNormalScale("Ice Normal Scale on Land", Range(0, 100)) = 75
         _IceWaterNormalScale("Ice Normal Scale on Water", Range(0, 100)) = 50
         _GrayscaleGammaCorrection("Grayscale Gamma", Range(0, 5)) = 2.2
@@ -99,8 +101,6 @@ Shader "Noise/PlanetarySurfaceTexture"
 
         sampler2D _HeightMap;
 
-        //float _HeightmapWidth;
-        //float _HeightmapHeight;
         sampler2D_float _MainMap;
         int _IsMainmapSet;
         sampler2D_float _LandMask;
@@ -157,7 +157,9 @@ Shader "Noise/PlanetarySurfaceTexture"
         fixed4 _IceColor;
         fixed4 _DesertColor;
         float _NormalScale;
+        float _NormalInfluence;
         float _UnderwaterNormalScale;
+        float _UnderwaterNormalInfluence;
         float _IceLandNormalScale;
         float _IceWaterNormalScale;
         float _GrayscaleGammaCorrection;
@@ -254,6 +256,8 @@ Shader "Noise/PlanetarySurfaceTexture"
 
             float4 c = tex2D(_HeightMap, uv);
             height = (c.r + c.g + c.b) / 3;
+            float elevationRatio = ((height - _WaterLevel) / (1 - _WaterLevel));
+            float depthRatio = 1 - (height / _WaterLevel);
 
             float temperature = 0;
             float humidity = 0;
@@ -283,7 +287,6 @@ Shader "Noise/PlanetarySurfaceTexture"
                 if (isAboveWater)
                 {
                     // From -35 to 10
-                    float elevationRatio = ((height - _WaterLevel) / (1 - _WaterLevel));
                     float temperatureDrop = elevationRatio * _TemperatureElevationRatio; //World has 5km height, temperature falls 7 degrees for each km.
                     temperature -= temperatureDrop;
                 }
@@ -397,7 +400,7 @@ Shader "Noise/PlanetarySurfaceTexture"
                     float prevLatitudeHeight = (prevLatitudeColor.r + prevLatitudeColor.g + prevLatitudeColor.b) / 3;
 
                     float verticalDeltaHeight = prevLatitudeHeight - height;
-                    float horizontalDeltaHeight = prevLongitudeHeight - height;
+                    float horizontalDeltaHeight = height - prevLongitudeHeight;
 
                     if (_DrawType == 4) // Drawing a Normal mask.
                     {
@@ -461,6 +464,7 @@ Shader "Noise/PlanetarySurfaceTexture"
 
                         float3 normal;
                         float normalScaleToUse = _NormalScale;
+                        float normalInfluence = 1;
                         float metallicityToUse = _LandMetallic;
                         float glossinessToUse = _LandGlossiness;
                         if (!isAboveWater)
@@ -476,21 +480,26 @@ Shader "Noise/PlanetarySurfaceTexture"
 
                                 normalScaleToUse = (_IceWaterNormalScale - _UnderwaterNormalScale) * temperatureRatio + _UnderwaterNormalScale;
                             }
+                            normalInfluence = depthRatio * _UnderwaterNormalInfluence + (1 - _UnderwaterNormalInfluence);
                         }
-                        else if (temperature < _IceTemperatureThreshold1)
+                        else
                         {
-                            float temperatureRatio = (_IceTemperatureThreshold1 - temperature) / (_IceTemperatureThreshold1 - _IceTemperatureThreshold2);
-                            if (temperatureRatio > 1) temperatureRatio = 1;
+                            if (temperature < _IceTemperatureThreshold1)
+                            {
+                                float temperatureRatio = (_IceTemperatureThreshold1 - temperature) / (_IceTemperatureThreshold1 - _IceTemperatureThreshold2);
+                                if (temperatureRatio > 1) temperatureRatio = 1;
 
-                            normalScaleToUse = (_IceLandNormalScale - _NormalScale) * temperatureRatio + _NormalScale;
+                                normalScaleToUse = (_IceLandNormalScale - _NormalScale) * temperatureRatio + _NormalScale;
+                            }
+                            normalInfluence = elevationRatio * _NormalInfluence + (1 - _NormalInfluence);
                         }
 
-                        float z = sqrt(1 - pow(horizontalDeltaHeight * normalScaleToUse, 2) - pow(verticalDeltaHeight * normalScaleToUse, 2));
+                        float z = sqrt(1 - pow(horizontalDeltaHeight * normalScaleToUse * normalInfluence, 2) - pow(verticalDeltaHeight * normalScaleToUse * normalInfluence, 2));
                         o.Metallic = metallicityToUse;
                         o.Smoothness = glossinessToUse;
                         normal = float3(
-                            horizontalDeltaHeight * normalScaleToUse,
-                            verticalDeltaHeight * normalScaleToUse,
+                            horizontalDeltaHeight * normalScaleToUse * normalInfluence,
+                            verticalDeltaHeight * normalScaleToUse * normalInfluence,
                             z);
 
                         if (_DrawType == 8)

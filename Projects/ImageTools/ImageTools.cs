@@ -159,6 +159,100 @@ public partial class ImageTools
         }
     }
 
+    public static void SaveTextureCubemapFaceUIntArray(uint[] uintArray, int width, string fileName, float divisor = 1)
+    {
+        try
+        {
+            short[] shortArray = new short[width * width * 3];
+
+            for (int y = 0; y < width; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    int index = (x + (width - y - 1) * width);
+                    int colorIndex = index * 3;
+                    float value = 0;
+                    if (index >= 0 && index < uintArray.Length)
+                        value = uintArray[index] / divisor;
+
+                    if (value < 0) value = 0;
+                    if (value > 1) value = 1;
+
+                    SetByteArrayColor(ref shortArray, colorIndex, value);
+                }
+            }
+
+            Bitmap b = new Bitmap(width, width, PixelFormat.Format48bppRgb);
+            BitmapData bmData = b.LockBits(new Rectangle(0, 0, width, width),
+                    ImageLockMode.ReadWrite,
+                    b.PixelFormat);
+
+            // Get the address of the first line.
+            IntPtr ptr = bmData.Scan0;
+
+            // Declare an array to hold the bytes of the bitmap.
+            int length = bmData.Stride * b.Height / 2;
+
+            // Copy the RGB values back to the bitmap
+            Marshal.Copy(shortArray, 0, ptr, length);
+
+            b.UnlockBits(bmData);
+
+            b.Save(fileName, ImageFormat.Png);
+        }
+        catch (Exception e)
+        {
+            Log.Write(DateTime.Now.ToString() + " Error saving image " + fileName + ".\n" + e.Message + ".\n" + e.StackTrace);
+        }
+    }
+
+    public static void SaveTextureUIntArray(uint[] uintArray, int width, int height, string fileName, float divisor = 1)
+    {
+        try
+        {
+            short[] shortArray = new short[width * width * 3];
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    int index = (x + (height - y - 1) * width);
+                    int colorIndex = index * 3;
+                    float value = 0;
+                    if (index >= 0 && index < uintArray.Length)
+                        value = uintArray[index] / divisor;
+
+                    if (value < 0) value = 0;
+                    if (value > 1) value = 1;
+
+                    SetByteArrayColor(ref shortArray, colorIndex, value);
+                }
+            }
+
+            Bitmap b = new Bitmap(width, height, PixelFormat.Format48bppRgb);
+            BitmapData bmData = b.LockBits(new Rectangle(0, 0, width, height),
+                    ImageLockMode.ReadWrite,
+                    b.PixelFormat);
+
+            // Get the address of the first line.
+            IntPtr ptr = bmData.Scan0;
+
+            // Declare an array to hold the bytes of the bitmap.
+            int length = bmData.Stride * b.Height / 2;
+
+            // Copy the RGB values back to the bitmap
+            Marshal.Copy(shortArray, 0, ptr, length);
+
+            b.UnlockBits(bmData);
+
+            b.Save(fileName, ImageFormat.Png);
+        }
+        catch (Exception e)
+        {
+            Log.Write(DateTime.Now.ToString() + " Error saving image " + fileName + ".\n" + e.Message + ".\n" + e.StackTrace);
+        }
+    }
+
     static void SetByteArrayColor(ref short[] byteArray, int index, float floatVal)
     {
         short byteValue = (short)(floatVal * UInt16.MaxValue);

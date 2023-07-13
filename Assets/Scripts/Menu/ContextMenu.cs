@@ -86,6 +86,14 @@ public class ContextMenu : MonoBehaviour
         }
     }
 
+    public bool IsOpen
+    {
+        get
+        {
+            return open;
+        }
+    }
+
     public void Open(Vector3 position)
     {
         //Debug.Log("Open Context Menu.");

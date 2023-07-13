@@ -43,15 +43,35 @@ public partial class Map : MonoBehaviour
 
                 GenerateHeightMap();
 
-                if (AppData.instance.SaveMainMap)
+                RenderTexture heightmapZoomRT = null;
+                if (doZoomBrush)
                 {
-                    SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-MainMap" + fileNameExtension), SphereShaderDrawType.LandWithNoNormals);
+                    heightmapZoomRT = RenderTexture.GetTemporary(AppData.instance.ZoomWidth, AppData.instance.ZoomHeight, 16, RenderTextureFormat.ARGBHalf);
+                    heightmapZoomRT.wrapMode = TextureWrapMode.Repeat;
+                    heightmapZoomRT.name = "Heightmap Render Texture";
+                    heightmapZoomRT.enableRandomWrite = true;
+                    heightmapZoomRT.Create();
+
+                    HeightMap2ZoomTexture(heightmapZoomRT);
+
+                    heightmapZoomRT.SaveToFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Heightmap" + fileNameExtension));
+
+                    planetSurfaceZoomMaterial.SetTexture("_ZoomHeightMap", heightmapZoomRT);
+                    planetSurfaceZoomMaterial.SetInt("_IsZoomHeightMapSet", 1);
                 }
 
                 if (AppData.instance.SaveHeightMap)
                 {
-                    HeightMap2Texture();
-                    heightmapRT.SaveToFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Heightmap" + fileNameExtension));
+                    if (!doZoomBrush)
+                    {
+                        HeightMap2Texture();
+                        heightmapRT.SaveToFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Heightmap" + fileNameExtension));
+                    }
+                }
+
+                if (AppData.instance.SaveMainMap)
+                {
+                    SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-MainMap" + fileNameExtension), SphereShaderDrawType.LandWithNoNormals);
                 }
 
                 if (AppData.instance.SaveLandMask)
@@ -75,6 +95,12 @@ public partial class Map : MonoBehaviour
                 }
 
                 AppData.instance.Save();
+
+                if (doZoomBrush)
+                {
+                    planetSurfaceZoomMaterial.SetInt("_IsZoomHeightMapSet", 0);
+                    RenderTexture.ReleaseTemporary(heightmapZoomRT);
+                }
             }
         }
         else
@@ -87,10 +113,23 @@ public partial class Map : MonoBehaviour
         if (File.Exists(fileName))
             File.Delete(fileName);
 
-        float prevDrawMode = planetSurfaceMaterial.GetFloat("_DrawType");
-        planetSurfaceMaterial.SetFloat("_DrawType", (int)drawMode);
+        Material material = planetSurfaceMaterial;
+        if (doZoomBrush)
+            material = planetSurfaceZoomMaterial;
 
-        if (exportRT != null && (exportRT.width != TextureManager.instance.Settings.textureWidth * 4 || exportRT.height != TextureManager.instance.Settings.textureWidth * 2))
+        float prevDrawMode = material.GetFloat("_DrawType");
+        material.SetFloat("_DrawType", (int)drawMode);
+
+        float exportWidth = TextureManager.instance.Settings.textureWidth * 4;
+        float exportHeight = TextureManager.instance.Settings.textureWidth * 2;
+
+        if (doZoomBrush)
+        {
+            exportWidth = AppData.instance.ZoomWidth;
+            exportHeight = AppData.instance.ZoomHeight;
+        }
+
+        if (exportRT != null && (exportRT.width != exportWidth || exportRT.height != exportHeight))
         {
             Destroy(exportRT);
             exportRT = null;
@@ -98,7 +137,7 @@ public partial class Map : MonoBehaviour
 
         if (exportRT == null)
         {
-            exportRT = new RenderTexture(TextureManager.instance.Settings.textureWidth * 4, TextureManager.instance.Settings.textureWidth * 2, 32, RenderTextureFormat.ARGBHalf);
+            exportRT = new RenderTexture((int)exportWidth, (int)exportHeight, 32, RenderTextureFormat.ARGBHalf);
             exportRT.wrapMode = TextureWrapMode.Repeat;
             exportRT.name = "Export Render Texture";
             exportRT.enableRandomWrite = true;
@@ -107,16 +146,16 @@ public partial class Map : MonoBehaviour
 
         Texture2D source;
         if (drawMode != SphereShaderDrawType.HeightMap)
-            source = new Texture2D(TextureManager.instance.Settings.textureWidth * 4, TextureManager.instance.Settings.textureWidth * 2, TextureFormat.RGBA32, false);
+            source = new Texture2D((int)exportWidth, (int)exportHeight, TextureFormat.RGBA32, false);
         else
-            source = new Texture2D(TextureManager.instance.Settings.textureWidth * 4, TextureManager.instance.Settings.textureWidth * 2, TextureFormat.RGB48, false);
+            source = new Texture2D((int)exportWidth, (int)exportHeight, TextureFormat.RGB48, false);
 
         RenderTexture prevActive = RenderTexture.active;
         RenderTexture.active = exportRT;
-        Graphics.Blit(source, exportRT, planetSurfaceMaterial, 2);
+        Graphics.Blit(source, exportRT, material, 2);
         exportRT.Save(fileName);
         RenderTexture.active = prevActive;
-        planetSurfaceMaterial.SetFloat("_DrawType", prevDrawMode);
+        material.SetFloat("_DrawType", prevDrawMode);
 
         UnityEngine.Object.Destroy(source);
     }
@@ -445,6 +484,14 @@ public partial class Map : MonoBehaviour
             planetSurfaceMaterial.SetInt("_IsMainmapSet", 0);
             planetSurfaceMaterial.SetInt("_IsLandmaskSet", 0);
         }
+
+        UpdateZoomCamMaterialProperties();
+    }
+
+    public void UpdateZoomCamMaterialProperties()
+    {
+        ZoomBrush zoomBrushSctipt = zoomBrush.GetComponent<ZoomBrush>();
+        zoomBrushSctipt.UpdateZoomMaterial(heightmapRT, noiseRT, mapSettings, isEroded);
     }
 
     public void ResetEroded()
@@ -465,15 +512,16 @@ public partial class Map : MonoBehaviour
         connectivityMap5 = null;
         connectivityMap6 = null;
 
+        isEroded = false;
         planetSurfaceMaterial.SetInt("_IsEroded", 0);
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
 
         GenerateHeightMap();
         HeightMap2Texture();
-        GenerateEquirectangularNoiseTexture();
+        //GenerateEquirectangularNoiseTexture();
     }
 
-    public void UpdateSurfaceMaterialHeightMap(bool isEroded = false)
+    public void UpdateSurfaceMaterialHeightMap()
     {
         if (planetSurfaceMaterial == null)
             return;
@@ -535,14 +583,27 @@ public partial class Map : MonoBehaviour
 
         if (heightmapRT != null)
         {
+            if (saveTemporaryTextures)
+            {
+                if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
+                heightmapRT.SaveToFile(Path.Combine(Application.persistentDataPath, "Textures", "heightmap.png"));
+            }
             heightmapRT.wrapMode = TextureWrapMode.Repeat;
             planetSurfaceMaterial.SetTexture("_HeightMap", heightmapRT);
         }
 
         if (isEroded && heightmapRT != null)
+        {
+            isEroded = true;
             planetSurfaceMaterial.SetInt("_IsEroded", 1);
+        }
         else
+        {
+            isEroded = false;
             planetSurfaceMaterial.SetInt("_IsEroded", 0);
+        }
+
+        UpdateZoomCamMaterialProperties();
     }
 
     void UpdateSurfaceMaterialMainMap()
@@ -597,6 +658,7 @@ public partial class Map : MonoBehaviour
     public ComputeShader erosionShader;
     public ComputeShader erosionUpdateShader;
     public ComputeShader heightmap2TextureShader;
+    public ComputeShader heightmap2ZoomTextureShader;
     public ComputeShader texture2HeightmapShader;
     public ComputeShader equirectangularNoiseComputeShader;
 
@@ -670,12 +732,16 @@ public partial class Map : MonoBehaviour
             mapBuffer5.GetData(TextureManager.instance.HeightMap5);
             mapBuffer6.GetData(TextureManager.instance.HeightMap6);
 
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "heightMap1.png"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "heightMap2.png"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "heightMap3.png"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "heightMap4.png"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "heightMap5.png"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "heightMap6.png"));
+            if (saveTemporaryTextures)
+            {
+                if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
+                ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "heightMap1.png"));
+                ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "heightMap2.png"));
+                ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "heightMap3.png"));
+                ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "heightMap4.png"));
+                ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "heightMap5.png"));
+                ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "heightMap6.png"));
+            }
 
             mapBuffer1.Release();
             mapBuffer2.Release();
@@ -692,7 +758,7 @@ public partial class Map : MonoBehaviour
         if (equirectangularNoiseComputeShader == null)
             return;
 
-        equirectangularNoiseComputeShader.SetInt("_MapWidth", TextureManager.instance.Settings.textureWidth * 2);
+        equirectangularNoiseComputeShader.SetInt("_MapWidth", TextureManager.instance.Settings.textureWidth);
 
         equirectangularNoiseComputeShader.SetFloat("_MinimumHeight", MapData.instance.LowestHeight);
         equirectangularNoiseComputeShader.SetFloat("_MaximumHeight", MapData.instance.HighestHeight);
@@ -730,12 +796,114 @@ public partial class Map : MonoBehaviour
 
         equirectangularNoiseComputeShader.SetTexture(0, "Result", noiseRT);
 
-        equirectangularNoiseComputeShader.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 4 / 32f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 2 / 32f), 1);
+        equirectangularNoiseComputeShader.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 4 / 16f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 2 / 16f), 1);
 
         planetSurfaceMaterial.SetTexture("_NoiseMap", noiseRT);
         planetSurfaceMaterial.SetInt("_IsNoiseMapSet", 1);
 
         //noiseRT.SaveToFile(Path.Combine(Application.persistentDataPath, "NoiseTexture.png"));
+    }
+
+    void HeightMap2ZoomTexture(RenderTexture rt)
+    {
+        ComputeBuffer heightMapBuffer12 = new ComputeBuffer(TextureManager.instance.HeightMap1.Length * 2, sizeof(float));
+        heightMapBuffer12.SetData(TextureManager.instance.HeightMap1, 0, 0, TextureManager.instance.HeightMap1.Length);
+        heightMapBuffer12.SetData(TextureManager.instance.HeightMap2, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap1.Length);
+
+        ComputeBuffer heightMapBuffer34 = new ComputeBuffer(TextureManager.instance.HeightMap3.Length * 2, sizeof(float));
+        heightMapBuffer34.SetData(TextureManager.instance.HeightMap3, 0, 0, TextureManager.instance.HeightMap1.Length);
+        heightMapBuffer34.SetData(TextureManager.instance.HeightMap4, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap1.Length);
+
+        ComputeBuffer heightMapBuffer56 = new ComputeBuffer(TextureManager.instance.HeightMap5.Length * 2, sizeof(float));
+        heightMapBuffer56.SetData(TextureManager.instance.HeightMap5, 0, 0, TextureManager.instance.HeightMap1.Length);
+        heightMapBuffer56.SetData(TextureManager.instance.HeightMap6, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap1.Length);
+
+        ComputeBuffer flowErosionMapBuffer12;
+        ComputeBuffer flowErosionMapBuffer34;
+        ComputeBuffer flowErosionMapBuffer56;
+        if (TextureManager.instance.FlowErosionMapLength > 0)
+        {
+            flowErosionMapBuffer12 = new ComputeBuffer(TextureManager.instance.FlowErosionMapLength * 2, sizeof(float));
+            flowErosionMapBuffer12.SetData(TextureManager.instance.FlowErosionMap1, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
+            flowErosionMapBuffer12.SetData(TextureManager.instance.FlowErosionMap2, 0, TextureManager.instance.FlowErosionMap1.Length, TextureManager.instance.FlowErosionMap1.Length);
+
+            flowErosionMapBuffer34 = new ComputeBuffer(TextureManager.instance.FlowErosionMapLength * 2, sizeof(float));
+            flowErosionMapBuffer34.SetData(TextureManager.instance.FlowErosionMap3, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
+            flowErosionMapBuffer34.SetData(TextureManager.instance.FlowErosionMap4, 0, TextureManager.instance.FlowErosionMap1.Length, TextureManager.instance.FlowErosionMap1.Length);
+
+            flowErosionMapBuffer56 = new ComputeBuffer(TextureManager.instance.FlowErosionMapLength * 2, sizeof(float));
+            flowErosionMapBuffer56.SetData(TextureManager.instance.FlowErosionMap5, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
+            flowErosionMapBuffer56.SetData(TextureManager.instance.FlowErosionMap6, 0, TextureManager.instance.FlowErosionMap1.Length, TextureManager.instance.FlowErosionMap1.Length);
+        }
+        else
+        {
+            flowErosionMapBuffer12 = new ComputeBuffer(1, sizeof(float));
+            flowErosionMapBuffer12.SetData(new float[] { 0 }, 0, 0, 1);
+
+            flowErosionMapBuffer34 = new ComputeBuffer(1, sizeof(float));
+            flowErosionMapBuffer34.SetData(new float[] { 0 }, 0, 0, 1);
+
+            flowErosionMapBuffer56 = new ComputeBuffer(1, sizeof(float));
+            flowErosionMapBuffer56.SetData(new float[] { 0 }, 0, 0, 1);
+        }
+
+        ZoomBrush zoomBrushScript = zoomBrush.GetComponent<ZoomBrush>();
+
+        heightmap2ZoomTextureShader.SetBuffer(0, "heightMap12", heightMapBuffer12);
+        heightmap2ZoomTextureShader.SetBuffer(0, "heightMap34", heightMapBuffer34);
+        heightmap2ZoomTextureShader.SetBuffer(0, "heightMap56", heightMapBuffer56);
+        heightmap2ZoomTextureShader.SetBuffer(0, "flowErosionMap12", flowErosionMapBuffer12);
+        heightmap2ZoomTextureShader.SetBuffer(0, "flowErosionMap34", flowErosionMapBuffer34);
+        heightmap2ZoomTextureShader.SetBuffer(0, "flowErosionMap56", flowErosionMapBuffer56);
+
+        heightmap2ZoomTextureShader.SetTexture(0, "result", rt);
+        heightmap2ZoomTextureShader.SetInt("mapWidth", rt.width);
+        heightmap2ZoomTextureShader.SetInt("mapHeight", rt.height);
+        heightmap2ZoomTextureShader.SetInt("worldTextureWidth", TextureManager.instance.Settings.textureWidth);
+        heightmap2ZoomTextureShader.SetFloat("boundaryU", zoomBrushScript.BoundaryUV.x);
+        heightmap2ZoomTextureShader.SetFloat("boundaryV", zoomBrushScript.BoundaryUV.y);
+        heightmap2ZoomTextureShader.SetFloat("centerU", zoomBrushScript.CenterUV.x);
+        heightmap2ZoomTextureShader.SetFloat("centerV", zoomBrushScript.CenterUV.y);
+
+        heightmap2ZoomTextureShader.SetFloat("erosionNoiseMerge", TextureManager.instance.Settings.erosionNoiseMerge);
+
+        heightmap2ZoomTextureShader.SetFloat("_MinimumHeight", MapData.instance.LowestHeight);
+        heightmap2ZoomTextureShader.SetFloat("_MaximumHeight", MapData.instance.HighestHeight);
+
+        heightmap2ZoomTextureShader.SetFloat("_Seed", TextureManager.instance.Settings.surfaceNoiseSettings.seed);
+        heightmap2ZoomTextureShader.SetFloat("_xOffset", TextureManager.instance.Settings.surfaceNoiseSettings.noiseOffset.x);
+        heightmap2ZoomTextureShader.SetFloat("_yOffset", TextureManager.instance.Settings.surfaceNoiseSettings.noiseOffset.y);
+        heightmap2ZoomTextureShader.SetFloat("_zOffset", TextureManager.instance.Settings.surfaceNoiseSettings.noiseOffset.z);
+        heightmap2ZoomTextureShader.SetInt("_Octaves", TextureManager.instance.Settings.surfaceNoiseSettings.octaves);
+        heightmap2ZoomTextureShader.SetFloat("_Lacunarity", TextureManager.instance.Settings.surfaceNoiseSettings.lacunarity);
+        heightmap2ZoomTextureShader.SetFloat("_Persistence", TextureManager.instance.Settings.surfaceNoiseSettings.persistence);
+        heightmap2ZoomTextureShader.SetFloat("_Multiplier", TextureManager.instance.Settings.surfaceNoiseSettings.multiplier);
+        heightmap2ZoomTextureShader.SetInt("_RidgedNoise", TextureManager.instance.Settings.surfaceNoiseSettings.ridged ? 1 : 0);
+        heightmap2ZoomTextureShader.SetFloat("_HeightExponent", TextureManager.instance.Settings.surfaceNoiseSettings.heightExponent);
+        heightmap2ZoomTextureShader.SetFloat("_LayerStrength", TextureManager.instance.Settings.surfaceNoiseSettings.layerStrength);
+        heightmap2ZoomTextureShader.SetFloat("_DomainWarping", TextureManager.instance.Settings.surfaceNoiseSettings.domainWarping);
+
+        heightmap2ZoomTextureShader.SetFloat("_Seed2", TextureManager.instance.Settings.surfaceNoiseSettings2.seed);
+        heightmap2ZoomTextureShader.SetFloat("_xOffset2", TextureManager.instance.Settings.surfaceNoiseSettings2.noiseOffset.x);
+        heightmap2ZoomTextureShader.SetFloat("_yOffset2", TextureManager.instance.Settings.surfaceNoiseSettings2.noiseOffset.y);
+        heightmap2ZoomTextureShader.SetFloat("_zOffset2", TextureManager.instance.Settings.surfaceNoiseSettings2.noiseOffset.z);
+        heightmap2ZoomTextureShader.SetFloat("_Multiplier2", TextureManager.instance.Settings.surfaceNoiseSettings2.multiplier);
+        heightmap2ZoomTextureShader.SetInt("_Octaves2", TextureManager.instance.Settings.surfaceNoiseSettings2.octaves);
+        heightmap2ZoomTextureShader.SetFloat("_Lacunarity2", TextureManager.instance.Settings.surfaceNoiseSettings2.lacunarity);
+        heightmap2ZoomTextureShader.SetFloat("_Persistence2", TextureManager.instance.Settings.surfaceNoiseSettings2.persistence);
+        heightmap2ZoomTextureShader.SetInt("_RidgedNoise2", TextureManager.instance.Settings.surfaceNoiseSettings2.ridged ? 1 : 0);
+        heightmap2ZoomTextureShader.SetFloat("_HeightExponent2", TextureManager.instance.Settings.surfaceNoiseSettings2.heightExponent);
+        heightmap2ZoomTextureShader.SetFloat("_LayerStrength2", TextureManager.instance.Settings.surfaceNoiseSettings2.layerStrength);
+        heightmap2ZoomTextureShader.SetFloat("_DomainWarping2", TextureManager.instance.Settings.surfaceNoiseSettings2.domainWarping);
+
+        heightmap2ZoomTextureShader.Dispatch(0, Mathf.CeilToInt(rt.width / 16f), Mathf.CeilToInt(rt.height / 16f), 1);
+
+        heightMapBuffer12.Release();
+        heightMapBuffer34.Release();
+        heightMapBuffer56.Release();
+        flowErosionMapBuffer12.Release();
+        flowErosionMapBuffer34.Release();
+        flowErosionMapBuffer56.Release();
     }
 
     RenderTexture heightmapRT;
@@ -812,29 +980,44 @@ public partial class Map : MonoBehaviour
             heightmap2TextureShader.SetTexture(0, "result", heightmapRT);
             heightmap2TextureShader.SetInt("mapWidth", TextureManager.instance.Settings.textureWidth);
             heightmap2TextureShader.SetInt("flowErosionSet", TextureManager.instance.FlowErosionMapLength == 0 ? 0 : 1);
-            heightmap2TextureShader.SetFloat("minHeight", TextureManager.instance.Settings.minHeight);
-            heightmap2TextureShader.SetFloat("maxHeight", TextureManager.instance.Settings.maxHeight);
-            //heightmap2TextureShader.SetFloat("waterLevel", TextureManager.instance.Settings.waterLevel);
-            //heightmap2TextureShader.SetFloat("normalScale", 50);
+            heightmap2TextureShader.SetFloat("minHeight", MapData.instance.LowestHeight);
+            heightmap2TextureShader.SetFloat("maxHeight", MapData.instance.HighestHeight);
             heightmap2TextureShader.SetFloat("erosionNoiseMerge", TextureManager.instance.Settings.erosionNoiseMerge);
 
-            heightmap2TextureShader.Dispatch(0, Mathf.CeilToInt(heightmapRT.width / 32f), Mathf.CeilToInt(heightmapRT.height / 32f), 1);
+            heightmap2TextureShader.SetFloat("seed1", TextureManager.instance.Settings.temperatureNoiseSettings.seed);
+            heightmap2TextureShader.SetFloat("seed2", TextureManager.instance.Settings.humidityNoiseSettings.seed);
+            heightmap2TextureShader.SetFloat("seed3", TextureManager.instance.Settings.surfaceNoiseSettings.seed);
+            heightmap2TextureShader.SetFloat("seed4", TextureManager.instance.Settings.surfaceNoiseSettings2.seed);
 
-            //if (heightmap == null || heightmap.width != TextureManager.instance.Settings.textureWidth || heightmap.height != TextureManager.instance.Settings.textureWidth)
-            //Texture2D heightmap = new Texture2D(2 * TextureManager.instance.Settings.textureWidth, TextureManager.instance.Settings.textureWidth, TextureFormat.RGBA64, false, true);
-            //RenderTexture prevActive = RenderTexture.active;
-            //RenderTexture.active = heightmapRT;
-            //heightmap.ReadPixels(new Rect(0, 0, heightmapRT.width, heightmapRT.height), 0, 0);
-            //heightmap.Apply();
-            //heightmap.SaveAsPNG(Path.Combine(Application.persistentDataPath, "HeightmapTexture.png"));
-            //Destroy(heightmap);
-            //RenderTexture.active = prevActive;
+            heightmap2TextureShader.SetInt("octaves", TextureManager.instance.Settings.temperatureNoiseSettings.octaves);
+            heightmap2TextureShader.SetFloat("lacunarity", TextureManager.instance.Settings.temperatureNoiseSettings.lacunarity);
+            heightmap2TextureShader.SetFloat("persistence", TextureManager.instance.Settings.temperatureNoiseSettings.persistence);
+            heightmap2TextureShader.SetFloat("multiplier", TextureManager.instance.Settings.temperatureNoiseSettings.multiplier);
+            heightmap2TextureShader.SetFloat("xOffset", TextureManager.instance.Settings.temperatureNoiseSettings.noiseOffset.x);
+            heightmap2TextureShader.SetFloat("yOffset", TextureManager.instance.Settings.temperatureNoiseSettings.noiseOffset.y);
+            heightmap2TextureShader.SetFloat("zOffset", TextureManager.instance.Settings.temperatureNoiseSettings.noiseOffset.z);
+            heightmap2TextureShader.SetInt("ridgedNoise", TextureManager.instance.Settings.temperatureNoiseSettings.ridged ? 1 : 0);
+            heightmap2TextureShader.SetFloat("domainWarping", TextureManager.instance.Settings.temperatureNoiseSettings.domainWarping);
+            heightmap2TextureShader.SetFloat("heightExponent", TextureManager.instance.Settings.temperatureNoiseSettings.heightExponent);
 
-            //ImageTools.SaveTextureCubemapFloatArray(TextureManager.instance.OriginalHeightMap, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Test-Heightmap-Original.png"));
-            //ImageTools.SaveTextureCubemapFloatArray(TextureManager.instance.ErodedHeightMap, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Test-Heightmap-Eroded.png"));
-            //ImageTools.SaveTextureCubemapFloatArray(TextureManager.instance.InciseFlowMap, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Test-Heightmap-Incise.png"));
-            //ImageTools.SaveTextureCubemapFloatArray(TextureManager.instance.MergedHeightMap, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Test-Heightmap-Merged.png"));
-            //heightmapRT.SaveToFile(Path.Combine(Application.persistentDataPath, "Heightmap2Texture.png"));
+            if (noiseRT != null && (noiseRT.width != TextureManager.instance.Settings.textureWidth * 4 || noiseRT.height != TextureManager.instance.Settings.textureWidth * 2))
+            {
+                Destroy(noiseRT);
+                noiseRT = null;
+            }
+
+            if (noiseRT == null)
+            {
+                noiseRT = new RenderTexture(TextureManager.instance.Settings.textureWidth * 4, TextureManager.instance.Settings.textureWidth * 2, 16, RenderTextureFormat.ARGBHalf);
+                noiseRT.wrapMode = TextureWrapMode.Repeat;
+                noiseRT.name = "Heightmap Render Texture";
+                noiseRT.enableRandomWrite = true;
+                noiseRT.Create();
+            }
+
+            heightmap2TextureShader.SetTexture(0, "noise", noiseRT);
+
+            heightmap2TextureShader.Dispatch(0, Mathf.CeilToInt(heightmapRT.width / 16f), Mathf.CeilToInt(heightmapRT.height / 16f), 1);
 
             heightMapBuffer12.Release();
             heightMapBuffer34.Release();
@@ -843,13 +1026,16 @@ public partial class Map : MonoBehaviour
             flowErosionMapBuffer34.Release();
             flowErosionMapBuffer56.Release();
 
+            if (saveTemporaryTextures)
+            {
+                if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
+                heightmapRT.SaveToFile(Path.Combine(Application.persistentDataPath, "Textures", "heightmap.png"));
+            }
             planetSurfaceMaterial.SetTexture("_HeightMap", heightmapRT);
-            //planetSurfaceMaterial.SetFloat("_HeightmapWidth", heightmapRT.width);
-            //planetSurfaceMaterial.SetFloat("_HeightmapHeight", heightmapRT.height);
-            planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
+            planetSurfaceMaterial.SetTexture("_NoiseMap", noiseRT);
 
-            //Destroy(heightmapRT);
-            //heightmapRT = null;
+            planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
+            planetSurfaceMaterial.SetInt("_IsNoiseMapSet", 1);
         }
     }
 
@@ -931,7 +1117,8 @@ public partial class Map : MonoBehaviour
         HydraulicErosion.instance.Erode();
         HeightMap2Texture();
         //heightmap.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "heightmap-2.png"));
-        UpdateSurfaceMaterialHeightMap(true);
+        isEroded = true;
+        UpdateSurfaceMaterialHeightMap();
         HideErodingTerrainPanel();
         yield return null;
     }
@@ -1086,16 +1273,12 @@ public partial class Map : MonoBehaviour
 
                 float height = TextureManager.instance.HeightMapValueAtCoordinates(cubemapInt.x, cubemapInt.y, cubemapInt.z);
                 height += heightToAlter;
-                //if (height < 0) height = 0;
-                //if (height > 1) height = 1;
                 TextureManager.instance.SetHeightAtCoordinates(cubemapInt.x, cubemapInt.y, cubemapInt.z, height);
             }
         }
 
         HeightMap2Texture();
-        //planetSurfaceMaterial.SetTexture("_HeightMap", heightmap);
-        //planetSurfaceMaterial.SetFloat("_HeightmapWidth", heightmapRT.width);
-        //planetSurfaceMaterial.SetFloat("_HeightmapHeight", heightmapRT.height);
+        isEroded = true;
         planetSurfaceMaterial.SetInt("_IsEroded", 1);
     }
 }

@@ -25,13 +25,13 @@ RWTexture2D<float4> Result;
 
 #include "Assets/Shaders/Simplex.cginc"
 
-[numthreads(32,32,1)]
+[numthreads(16,16,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= 2 * (uint)_MapWidth || id.y >= (uint)_MapWidth)
+    if (id.x >= 4 * (uint)_MapWidth || id.y >= 2 * (uint)_MapWidth)
         return;
 
-    float2 uv = float2((float)id.x / (_MapWidth * 2), (float)id.y / _MapWidth);
+    float2 uv = float2((float)id.x / (_MapWidth * 4), (float)id.y / (_MapWidth * 2));
 
 	float3 offset = float3(_xOffset, _yOffset, _zOffset);
 

@@ -73,6 +73,14 @@ public class TextureSettings
     public float highHumidityLightnessPercentage = 0.2f;
     [Range(0, 1)]
     public float erosionNoiseMerge = 0.5f;
+    [Range(0, 1)]
+    public float normalScale = 0.5f;
+    [Range(0, 1)]
+    public float normalInfluence = 0;
+    [Range(0, 1)]
+    public float underwaterNormalScale = 0.1f;
+    [Range(0, 1)]
+    public float underwaterNormalInfluence = 0;
 
     int selectedLayer = 1;
     public float[] TextureSteps { get { return textureSteps; } set { textureSteps = value; } }
@@ -258,5 +266,9 @@ public class TextureSettings
         surfaceMaterial.SetColor("_IceColor", iceColor);
         surfaceMaterial.SetColor("_DesertColor", desertColor);
         //surfaceMaterial.SetFloat("_NormalScale", 50);
+        surfaceMaterial.SetFloat("_NormalScale", TextureManager.instance.Settings.normalScale * 100);
+        surfaceMaterial.SetFloat("_NormalInfluence", TextureManager.instance.Settings.normalInfluence);
+        surfaceMaterial.SetFloat("_UnderwaterNormalScale", TextureManager.instance.Settings.underwaterNormalScale * 100);
+        surfaceMaterial.SetFloat("_UnderwaterNormalInfluence", TextureManager.instance.Settings.underwaterNormalInfluence);
     }
 }

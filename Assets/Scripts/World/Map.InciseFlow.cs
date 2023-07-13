@@ -61,12 +61,13 @@ public partial class Map : MonoBehaviour
         //PlotRivers.instance.Run(ref TextureManager.instance.ErodedHeightMap, ref flowTexture);
         //flowTexture.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "flowMap.png"));
         //HeightMap2Texture();
-        //planetSurfaceMaterial.SetTexture("_HeightMap", heightmap);
-        //planetSurfaceMaterial.SetFloat("_HeightmapWidth", heightmapRT.width);
-        //planetSurfaceMaterial.SetFloat("_HeightmapHeight", heightmapRT.height);
+        if (saveTemporaryTextures)
+        {
+            if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
+            TextureManager.instance.FlowTexture.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "flowMap.png"));
+        }
         planetSurfaceMaterial.SetTexture("_FlowTex", TextureManager.instance.FlowTexture);
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
-        //planetSurfaceMaterial.SetInt("_IsEroded", 1);
 
         //connectivityMap = null;
         //distanceToWaterMap = null;
@@ -83,13 +84,17 @@ public partial class Map : MonoBehaviour
 
         InciseFlowErosion();
 
-        //float maxErosion = TextureManager.instance.FlowErosionMapMaxValue;
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "flowErosionMap1.png"));
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "flowErosionMap2.png"));
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "flowErosionMap3.png"));
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "flowErosionMap4.png"));
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "flowErosionMap5.png"));
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "flowErosionMap6.png"));
+        if (saveTemporaryTextures)
+        {
+            if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
+            //float maxErosion = TextureManager.instance.FlowErosionMapMaxValue;
+            ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "flowErosionMap1.png"));
+            ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "flowErosionMap2.png"));
+            ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "flowErosionMap3.png"));
+            ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "flowErosionMap4.png"));
+            ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "flowErosionMap5.png"));
+            ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "flowErosionMap6.png"));
+        }
 
         if (inciseFlowSettings.postBlur > 0)
         {
@@ -110,20 +115,22 @@ public partial class Map : MonoBehaviour
         //float maxErosion = TextureManager.instance.FlowErosionMap.MaxAndIndex(ref maxErosionIndex);
 
         HeightMap2Texture();
-        UpdateSurfaceMaterialHeightMap(true);
+        isEroded = true;
+        UpdateSurfaceMaterialHeightMap();
+        UpdateZoomCamMaterialProperties();
     }
 
     void InciseFlowErosion()
     {
-        ComputeBuffer flowMapBuffer12 = new ComputeBuffer(TextureManager.instance.InciseFlowMap1.Length * 2, sizeof(float));
+        ComputeBuffer flowMapBuffer12 = new ComputeBuffer(TextureManager.instance.InciseFlowMap1.Length * 2, sizeof(uint));
         flowMapBuffer12.SetData(TextureManager.instance.InciseFlowMap1, 0, 0, TextureManager.instance.InciseFlowMap1.Length);
         flowMapBuffer12.SetData(TextureManager.instance.InciseFlowMap2, 0, TextureManager.instance.InciseFlowMap1.Length, TextureManager.instance.InciseFlowMap1.Length);
 
-        ComputeBuffer flowMapBuffer34 = new ComputeBuffer(TextureManager.instance.InciseFlowMap3.Length * 2, sizeof(float));
+        ComputeBuffer flowMapBuffer34 = new ComputeBuffer(TextureManager.instance.InciseFlowMap3.Length * 2, sizeof(uint));
         flowMapBuffer34.SetData(TextureManager.instance.InciseFlowMap3, 0, 0, TextureManager.instance.InciseFlowMap1.Length);
         flowMapBuffer34.SetData(TextureManager.instance.InciseFlowMap4, 0, TextureManager.instance.InciseFlowMap1.Length, TextureManager.instance.InciseFlowMap1.Length);
 
-        ComputeBuffer flowMapBuffer56 = new ComputeBuffer(TextureManager.instance.InciseFlowMap5.Length * 2, sizeof(float));
+        ComputeBuffer flowMapBuffer56 = new ComputeBuffer(TextureManager.instance.InciseFlowMap5.Length * 2, sizeof(uint));
         flowMapBuffer56.SetData(TextureManager.instance.InciseFlowMap5, 0, 0, TextureManager.instance.InciseFlowMap1.Length);
         flowMapBuffer56.SetData(TextureManager.instance.InciseFlowMap6, 0, TextureManager.instance.InciseFlowMap1.Length, TextureManager.instance.InciseFlowMap1.Length);
 
@@ -144,15 +151,15 @@ public partial class Map : MonoBehaviour
 
         ComputeBuffer heightMapBuffer12 = new ComputeBuffer(TextureManager.instance.HeightMap1.Length * 2, sizeof(float));
         heightMapBuffer12.SetData(TextureManager.instance.HeightMap1, 0, 0, TextureManager.instance.HeightMap1.Length);
-        heightMapBuffer12.SetData(TextureManager.instance.HeightMap2, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap1.Length);
+        heightMapBuffer12.SetData(TextureManager.instance.HeightMap2, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap2.Length);
 
         ComputeBuffer heightMapBuffer34 = new ComputeBuffer(TextureManager.instance.HeightMap3.Length * 2, sizeof(float));
-        heightMapBuffer34.SetData(TextureManager.instance.HeightMap3, 0, 0, TextureManager.instance.HeightMap1.Length);
-        heightMapBuffer34.SetData(TextureManager.instance.HeightMap4, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap1.Length);
+        heightMapBuffer34.SetData(TextureManager.instance.HeightMap3, 0, 0, TextureManager.instance.HeightMap3.Length);
+        heightMapBuffer34.SetData(TextureManager.instance.HeightMap4, 0, TextureManager.instance.HeightMap3.Length, TextureManager.instance.HeightMap4.Length);
 
         ComputeBuffer heightMapBuffer56 = new ComputeBuffer(TextureManager.instance.HeightMap5.Length * 2, sizeof(float));
-        heightMapBuffer56.SetData(TextureManager.instance.HeightMap5, 0, 0, TextureManager.instance.HeightMap1.Length);
-        heightMapBuffer56.SetData(TextureManager.instance.HeightMap6, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap1.Length);
+        heightMapBuffer56.SetData(TextureManager.instance.HeightMap5, 0, 0, TextureManager.instance.HeightMap5.Length);
+        heightMapBuffer56.SetData(TextureManager.instance.HeightMap6, 0, TextureManager.instance.HeightMap5.Length, TextureManager.instance.HeightMap6.Length);
 
         inciseFlowErosion.SetInt("mapWidth", TextureManager.instance.Settings.textureWidth);
         inciseFlowErosion.SetFloat("exponent", inciseFlowSettings.exponent);
@@ -162,6 +169,8 @@ public partial class Map : MonoBehaviour
         inciseFlowErosion.SetFloat("curveFactor", inciseFlowSettings.chiselStrength);
         inciseFlowErosion.SetFloat("heightInfluence", inciseFlowSettings.heightInfluence);
         inciseFlowErosion.SetFloat("waterLevel", TextureManager.instance.Settings.waterLevel);
+        inciseFlowErosion.SetFloat("minimumHeight", MapData.instance.LowestHeight);
+        inciseFlowErosion.SetFloat("maximumHeight", MapData.instance.HighestHeight);
         inciseFlowErosion.SetFloat("blur", inciseFlowSettings.preBlur);
         inciseFlowErosion.SetFloat("flowMapMaxValue", flowMapMaxValue);
         inciseFlowErosion.SetBuffer(0, "heightMap12", heightMapBuffer12);
@@ -229,37 +238,59 @@ public partial class Map : MonoBehaviour
         {
             float flowMaxValue = TextureManager.instance.InciseFlowMapMaxValue;
 
-            ComputeBuffer flowMapBuffer12 = new ComputeBuffer(TextureManager.instance.InciseFlowMap1.Length * 2, sizeof(float));
+            ComputeBuffer flowMapBuffer12 = new ComputeBuffer(TextureManager.instance.InciseFlowMap1.Length * 2, sizeof(uint));
             flowMapBuffer12.SetData(TextureManager.instance.InciseFlowMap1, 0, 0, TextureManager.instance.InciseFlowMap1.Length);
             flowMapBuffer12.SetData(TextureManager.instance.InciseFlowMap2, 0, TextureManager.instance.InciseFlowMap2.Length, TextureManager.instance.InciseFlowMap2.Length);
 
-            ComputeBuffer flowMapBuffer34 = new ComputeBuffer(TextureManager.instance.InciseFlowMap3.Length * 2, sizeof(float));
+            ComputeBuffer flowMapBuffer34 = new ComputeBuffer(TextureManager.instance.InciseFlowMap3.Length * 2, sizeof(uint));
             flowMapBuffer34.SetData(TextureManager.instance.InciseFlowMap3, 0, 0, TextureManager.instance.InciseFlowMap3.Length);
             flowMapBuffer34.SetData(TextureManager.instance.InciseFlowMap4, 0, TextureManager.instance.InciseFlowMap4.Length, TextureManager.instance.InciseFlowMap4.Length);
 
-            ComputeBuffer flowMapBuffer56 = new ComputeBuffer(TextureManager.instance.InciseFlowMap5.Length * 2, sizeof(float));
+            ComputeBuffer flowMapBuffer56 = new ComputeBuffer(TextureManager.instance.InciseFlowMap5.Length * 2, sizeof(uint));
             flowMapBuffer56.SetData(TextureManager.instance.InciseFlowMap5, 0, 0, TextureManager.instance.InciseFlowMap5.Length);
             flowMapBuffer56.SetData(TextureManager.instance.InciseFlowMap6, 0, TextureManager.instance.InciseFlowMap6.Length, TextureManager.instance.InciseFlowMap6.Length);
 
+            ComputeBuffer intermediateFlowMapBuffer = new ComputeBuffer(plotRiversRT.width * plotRiversRT.height, sizeof(uint));
+
             //RenderTexture prevActive = RenderTexture.active;
             //RenderTexture.active = rTexture;
-            inciseFlowPlotRivers.SetTexture(0, "result", plotRiversRT);
             inciseFlowPlotRivers.SetInt("mapWidth", TextureManager.instance.Settings.textureWidth);
-            inciseFlowPlotRivers.SetBuffer(0, "inciseFlowMap12", flowMapBuffer12);
-            inciseFlowPlotRivers.SetBuffer(0, "inciseFlowMap34", flowMapBuffer34);
-            inciseFlowPlotRivers.SetBuffer(0, "inciseFlowMap56", flowMapBuffer56);
             inciseFlowPlotRivers.SetFloat("lowerLimit", inciseFlowSettings.LowerRiverAmount);
             inciseFlowPlotRivers.SetFloat("higherLimit", inciseFlowSettings.UpperRiverAmount);
             inciseFlowPlotRivers.SetFloat("maxValue", flowMaxValue);
+            inciseFlowPlotRivers.SetFloat("riverExponent", inciseFlowSettings.riverExponent);
             inciseFlowPlotRivers.SetFloats("riverColor", new float[] { inciseFlowSettings.riverColor.r, inciseFlowSettings.riverColor.g, inciseFlowSettings.riverColor.b });
 
-            inciseFlowPlotRivers.Dispatch(0, Mathf.CeilToInt(plotRiversRT.width / 32f), Mathf.CeilToInt(plotRiversRT.height / 32f), 1);
+            inciseFlowPlotRivers.SetBuffer(0, "inciseFlowMap12", flowMapBuffer12);
+            inciseFlowPlotRivers.SetBuffer(0, "inciseFlowMap34", flowMapBuffer34);
+            inciseFlowPlotRivers.SetBuffer(0, "inciseFlowMap56", flowMapBuffer56);
+            inciseFlowPlotRivers.SetBuffer(0, "intermediateFlowMap", intermediateFlowMapBuffer);
+
+            inciseFlowPlotRivers.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 32f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 32f), 6);
+
+            if (saveTemporaryTextures)
+            {
+                if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
+                uint[] intermediateFlowMap = new uint[plotRiversRT.width * plotRiversRT.height];
+                intermediateFlowMapBuffer.GetData(intermediateFlowMap);
+                uint maxValue = intermediateFlowMap.Max();
+                ImageTools.SaveTextureUIntArray(intermediateFlowMap, plotRiversRT.width, plotRiversRT.height, Path.Combine(Application.persistentDataPath, "Textures", "intermediateFlowMap.png"), maxValue);
+                TextureManager.instance.FlowTexture.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "flowMap.png"));
+            }
+
+            inciseFlowPlotRivers.SetBuffer(1, "inciseFlowMap12", flowMapBuffer12);
+            inciseFlowPlotRivers.SetBuffer(1, "inciseFlowMap34", flowMapBuffer34);
+            inciseFlowPlotRivers.SetBuffer(1, "inciseFlowMap56", flowMapBuffer56);
+            inciseFlowPlotRivers.SetBuffer(1, "intermediateFlowMap", intermediateFlowMapBuffer);
+            inciseFlowPlotRivers.SetTexture(1, "result", plotRiversRT);
+            inciseFlowPlotRivers.Dispatch(1, Mathf.CeilToInt(plotRiversRT.width / 32f), Mathf.CeilToInt(plotRiversRT.height / 32f), 1);
 
             //RenderTexture.active = prevActive;
             //plotRiversRT.SaveToFile(Path.Combine(Application.persistentDataPath, "flowTexture1.png"));
             flowMapBuffer12.Release();
             flowMapBuffer34.Release();
             flowMapBuffer56.Release();
+            intermediateFlowMapBuffer.Release();
         }
 
         if (inciseFlowSettings.plotRiversRandomly)
@@ -279,7 +310,11 @@ public partial class Map : MonoBehaviour
         TextureManager.instance.FlowTexture.Apply();
 
         //RenderTexture.ReleaseTemporary(plotRiversRT);
-
+        if (saveTemporaryTextures)
+        {
+            if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
+            TextureManager.instance.FlowTexture.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "flowMap.png"));
+        }
         planetSurfaceMaterial.SetTexture("_FlowTex", TextureManager.instance.FlowTexture);
         planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
 
@@ -444,15 +479,15 @@ public partial class Map : MonoBehaviour
         if (TextureManager.instance.InciseFlowMap1 == null || TextureManager.instance.InciseFlowMap1.Length != TextureManager.instance.HeightMap1.Length * 6)
             TextureManager.instance.InstantiateInciseFlowMap();
 
-        ComputeBuffer flowMapBuffer12 = new ComputeBuffer(TextureManager.instance.InciseFlowMap1.Length * 2, sizeof(float));
+        ComputeBuffer flowMapBuffer12 = new ComputeBuffer(TextureManager.instance.InciseFlowMap1.Length * 2, sizeof(uint));
         flowMapBuffer12.SetData(TextureManager.instance.InciseFlowMap1, 0, 0, TextureManager.instance.InciseFlowMap1.Length);
         flowMapBuffer12.SetData(TextureManager.instance.InciseFlowMap2, 0, TextureManager.instance.InciseFlowMap2.Length, TextureManager.instance.InciseFlowMap2.Length);
 
-        ComputeBuffer flowMapBuffer34 = new ComputeBuffer(TextureManager.instance.InciseFlowMap3.Length * 2, sizeof(float));
+        ComputeBuffer flowMapBuffer34 = new ComputeBuffer(TextureManager.instance.InciseFlowMap3.Length * 2, sizeof(uint));
         flowMapBuffer34.SetData(TextureManager.instance.InciseFlowMap3, 0, 0, TextureManager.instance.InciseFlowMap3.Length);
         flowMapBuffer34.SetData(TextureManager.instance.InciseFlowMap4, 0, TextureManager.instance.InciseFlowMap4.Length, TextureManager.instance.InciseFlowMap4.Length);
 
-        ComputeBuffer flowMapBuffer56 = new ComputeBuffer(TextureManager.instance.InciseFlowMap5.Length * 2, sizeof(float));
+        ComputeBuffer flowMapBuffer56 = new ComputeBuffer(TextureManager.instance.InciseFlowMap5.Length * 2, sizeof(uint));
         flowMapBuffer56.SetData(TextureManager.instance.InciseFlowMap5, 0, 0, TextureManager.instance.InciseFlowMap5.Length);
         flowMapBuffer56.SetData(TextureManager.instance.InciseFlowMap6, 0, TextureManager.instance.InciseFlowMap6.Length, TextureManager.instance.InciseFlowMap6.Length);
 
@@ -472,9 +507,9 @@ public partial class Map : MonoBehaviour
         heightmapConnectivityShader.SetBuffer(0, "heightMap34", heightMapBuffer34);
         heightmapConnectivityShader.SetBuffer(0, "heightMap56", heightMapBuffer56);
 
-        heightmapConnectivityShader.SetBuffer(0, "flowMap12", flowMapBuffer12);
-        heightmapConnectivityShader.SetBuffer(0, "flowMap34", flowMapBuffer34);
-        heightmapConnectivityShader.SetBuffer(0, "flowMap56", flowMapBuffer56);
+        //heightmapConnectivityShader.SetBuffer(0, "flowMap12", flowMapBuffer12);
+        //heightmapConnectivityShader.SetBuffer(0, "flowMap34", flowMapBuffer34);
+        //heightmapConnectivityShader.SetBuffer(0, "flowMap56", flowMapBuffer56);
 
         heightmapConnectivityShader.SetBuffer(0, "distanceMap12", distanceToWaterBuffer12);
         heightmapConnectivityShader.SetBuffer(0, "distanceMap34", distanceToWaterBuffer34);
@@ -505,25 +540,33 @@ public partial class Map : MonoBehaviour
         connectivityMapBuffer56.GetData(connectivityMap5, 0, 0, connectivityMap5.Length);
         connectivityMapBuffer56.GetData(connectivityMap6, 0, connectivityMap6.Length, connectivityMap6.Length);
 
-        //connectivityMap1.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "connectivityMap1.png"));
-        //connectivityMap2.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "connectivityMap2.png"));
-        //connectivityMap3.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "connectivityMap3.png"));
-        //connectivityMap4.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "connectivityMap4.png"));
-        //connectivityMap5.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "connectivityMap5.png"));
-        //connectivityMap6.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "connectivityMap6.png"));
+        if (saveTemporaryTextures)
+        {
+            if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
+            connectivityMap1.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityMap1.png"));
+            connectivityMap2.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityMap2.png"));
+            connectivityMap3.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityMap3.png"));
+            connectivityMap4.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityMap4.png"));
+            connectivityMap5.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityMap5.png"));
+            connectivityMap6.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityMap6.png"));
+        }
 
         //float maxHeight = 0;
         //float minHeight = 0;
         //TextureManager.instance.HeightMapMinMaxHeights(ref minHeight, ref maxHeight);
 
-        //float flowMaxValue = TextureManager.instance.InciseFlowMapMaxValue;
-        //if (flowMaxValue == 0) flowMaxValue = 1;
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.InciseFlowMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "inciseFlowMap1.png"), flowMaxValue);
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.InciseFlowMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "inciseFlowMap2.png"), flowMaxValue);
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.InciseFlowMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "inciseFlowMap3.png"), flowMaxValue);
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.InciseFlowMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "inciseFlowMap4.png"), flowMaxValue);
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.InciseFlowMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "inciseFlowMap5.png"), flowMaxValue);
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.InciseFlowMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "inciseFlowMap6.png"), flowMaxValue);
+        if (saveTemporaryTextures)
+        {
+            if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
+            float flowMaxValue = TextureManager.instance.InciseFlowMapMaxValue;
+            if (flowMaxValue == 0) flowMaxValue = 1;
+            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap1.png"), flowMaxValue);
+            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap2.png"), flowMaxValue);
+            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap3.png"), flowMaxValue);
+            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap4.png"), flowMaxValue);
+            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap5.png"), flowMaxValue);
+            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap6.png"), flowMaxValue);
+        }
 
         //Flow Map
         heightmapFlowMapShader.SetInt("mapWidth", TextureManager.instance.Settings.textureWidth);
@@ -549,12 +592,17 @@ public partial class Map : MonoBehaviour
         flowMapBuffer56.GetData(TextureManager.instance.InciseFlowMap6, 0, TextureManager.instance.InciseFlowMap6.Length, TextureManager.instance.InciseFlowMap6.Length);
 
         flowMapMaxValue = TextureManager.instance.InciseFlowMapMaxValue;
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.InciseFlowMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "inciseFlowMap1.png"), flowMapMaxValue);
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.InciseFlowMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "inciseFlowMap2.png"), flowMapMaxValue);
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.InciseFlowMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "inciseFlowMap3.png"), flowMapMaxValue);
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.InciseFlowMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "inciseFlowMap4.png"), flowMapMaxValue);
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.InciseFlowMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "inciseFlowMap5.png"), flowMapMaxValue);
-        //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.InciseFlowMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "inciseFlowMap6.png"), flowMapMaxValue);
+
+        if (saveTemporaryTextures)
+        {
+            if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
+            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap1.png"), flowMapMaxValue);
+            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap2.png"), flowMapMaxValue);
+            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap3.png"), flowMapMaxValue);
+            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap4.png"), flowMapMaxValue);
+            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap5.png"), flowMapMaxValue);
+            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap6.png"), flowMapMaxValue);
+        }
 
         heightMapBuffer12.Release();
         heightMapBuffer34.Release();

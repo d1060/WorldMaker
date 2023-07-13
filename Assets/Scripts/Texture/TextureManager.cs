@@ -312,19 +312,19 @@ public class TextureManager
     //    humidityMap = new float[settings.textureWidth * settings.textureWidth * 6];
     //}
 
-    float[] inciseFlowMap1;
-    float[] inciseFlowMap2;
-    float[] inciseFlowMap3;
-    float[] inciseFlowMap4;
-    float[] inciseFlowMap5;
-    float[] inciseFlowMap6;
-    public float[] InciseFlowMap1 { get { return inciseFlowMap1; } set { inciseFlowMap1 = value; } }
-    public float[] InciseFlowMap2 { get { return inciseFlowMap2; } set { inciseFlowMap2 = value; } }
-    public float[] InciseFlowMap3 { get { return inciseFlowMap3; } set { inciseFlowMap3 = value; } }
-    public float[] InciseFlowMap4 { get { return inciseFlowMap4; } set { inciseFlowMap4 = value; } }
-    public float[] InciseFlowMap5 { get { return inciseFlowMap5; } set { inciseFlowMap5 = value; } }
-    public float[] InciseFlowMap6 { get { return inciseFlowMap6; } set { inciseFlowMap6 = value; } }
-    public float[] InciseFlowMap 
+    uint[] inciseFlowMap1;
+    uint[] inciseFlowMap2;
+    uint[] inciseFlowMap3;
+    uint[] inciseFlowMap4;
+    uint[] inciseFlowMap5;
+    uint[] inciseFlowMap6;
+    public uint[] InciseFlowMap1 { get { return inciseFlowMap1; } set { inciseFlowMap1 = value; } }
+    public uint[] InciseFlowMap2 { get { return inciseFlowMap2; } set { inciseFlowMap2 = value; } }
+    public uint[] InciseFlowMap3 { get { return inciseFlowMap3; } set { inciseFlowMap3 = value; } }
+    public uint[] InciseFlowMap4 { get { return inciseFlowMap4; } set { inciseFlowMap4 = value; } }
+    public uint[] InciseFlowMap5 { get { return inciseFlowMap5; } set { inciseFlowMap5 = value; } }
+    public uint[] InciseFlowMap6 { get { return inciseFlowMap6; } set { inciseFlowMap6 = value; } }
+    public uint[] InciseFlowMap 
     {
         set 
         {
@@ -337,16 +337,16 @@ public class TextureManager
         }
     }
 
-    public float InciseFlowMapMaxValue
+    public uint InciseFlowMapMaxValue
     {
         get
         {
-            float max1 = inciseFlowMap1.Max();
-            float max2 = inciseFlowMap2.Max();
-            float max3 = inciseFlowMap3.Max();
-            float max4 = inciseFlowMap4.Max();
-            float max5 = inciseFlowMap5.Max();
-            float max6 = inciseFlowMap6.Max();
+            uint max1 = inciseFlowMap1.Max();
+            uint max2 = inciseFlowMap2.Max();
+            uint max3 = inciseFlowMap3.Max();
+            uint max4 = inciseFlowMap4.Max();
+            uint max5 = inciseFlowMap5.Max();
+            uint max6 = inciseFlowMap6.Max();
 
             if (max1 >= max2 && max1 >= max3 && max1 >= max4 && max1 >= max5 && max1 >= max6)
                 return max1;
@@ -364,12 +364,12 @@ public class TextureManager
 
     public void InstantiateInciseFlowMap()
     {
-        inciseFlowMap1 = new float[settings.textureWidth * settings.textureWidth];
-        inciseFlowMap2 = new float[settings.textureWidth * settings.textureWidth];
-        inciseFlowMap3 = new float[settings.textureWidth * settings.textureWidth];
-        inciseFlowMap4 = new float[settings.textureWidth * settings.textureWidth];
-        inciseFlowMap5 = new float[settings.textureWidth * settings.textureWidth];
-        inciseFlowMap6 = new float[settings.textureWidth * settings.textureWidth];
+        inciseFlowMap1 = new uint[settings.textureWidth * settings.textureWidth];
+        inciseFlowMap2 = new uint[settings.textureWidth * settings.textureWidth];
+        inciseFlowMap3 = new uint[settings.textureWidth * settings.textureWidth];
+        inciseFlowMap4 = new uint[settings.textureWidth * settings.textureWidth];
+        inciseFlowMap5 = new uint[settings.textureWidth * settings.textureWidth];
+        inciseFlowMap6 = new uint[settings.textureWidth * settings.textureWidth];
     }
 
     float[] flowErosionMap1;

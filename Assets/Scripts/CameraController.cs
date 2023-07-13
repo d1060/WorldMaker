@@ -32,6 +32,7 @@ public class CameraController : MonoBehaviour
     Camera cam = null;
     //int zoomLevel = 1;
     public GameObject contextMenu;
+    public GameObject zoomContextMenu;
     Canvas canvas;
     TMP_InputField mainTextureTextBox;
     TMP_InputField heightmapTextBox;
@@ -79,12 +80,13 @@ public class CameraController : MonoBehaviour
         //Debug.Log("FPS: " + 1.0f / Time.deltaTime);
         float xAxisMovement = Input.GetAxis("Mouse X");
         float yAxisMovement = Input.GetAxis("Mouse Y");
+        float mouseWheel = Input.GetAxis("Mouse ScrollWheel");
+
         if (Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightAlt) || Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift))
         {
             xAxisMovement = 0;
             yAxisMovement = 0;
         }
-        float mouseWheel = Input.GetAxis("Mouse ScrollWheel");
         bool isKeyPress = false;
 
         // Navigation Keys
@@ -180,6 +182,11 @@ public class CameraController : MonoBehaviour
                 performZoom = false;
         }
 
+        if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && mouseWheel != 0)
+        {
+            performZoom = false;
+        }
+
         if (!performZoom)
             mouseWheel = 0;
 
@@ -193,7 +200,7 @@ public class CameraController : MonoBehaviour
             bool isClickingContextMenu = false;
             foreach (RaycastResult raycastResult in graphicRaycastResults)
             {
-                if (raycastResult.gameObject == contextMenu)
+                if (raycastResult.gameObject == contextMenu || raycastResult.gameObject == zoomContextMenu)
                     isClickingContextMenu = true;
             }
             if (!isClickingContextMenu)
@@ -692,7 +699,7 @@ public class CameraController : MonoBehaviour
     {
         if (!map.DoingTerrainBrush)
         {
-            ContextMenu contextMenuScript = contextMenu.GetComponent<ContextMenu>();
+            ContextMenu contextMenuScript = map.DoingZoomBrush ? zoomContextMenu.GetComponent<ContextMenu>() : contextMenu.GetComponent<ContextMenu>();
             if (contextMenuScript != null)
             {
                 RectTransform canvasRect = canvas.transform as RectTransform;
@@ -705,10 +712,23 @@ public class CameraController : MonoBehaviour
 
     public void CloseContextMenu()
     {
-        ContextMenu contextMenuScript = contextMenu.GetComponent<ContextMenu>();
+        ContextMenu contextMenuScript = map.DoingZoomBrush ? zoomContextMenu.GetComponent<ContextMenu>() : contextMenu.GetComponent<ContextMenu>();
         if (contextMenuScript != null)
         {
             contextMenuScript.Close();
+        }
+    }
+
+    public bool IsContextMenuOpen
+    {
+        get
+        {
+            ContextMenu contextMenuScript = map.DoingZoomBrush ? zoomContextMenu.GetComponent<ContextMenu>() : contextMenu.GetComponent<ContextMenu>();
+            if (contextMenuScript != null)
+            {
+                return contextMenuScript.IsOpen;
+            }
+            return false;
         }
     }
 }

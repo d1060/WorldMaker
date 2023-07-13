@@ -17,7 +17,7 @@ public class Geosphere : MonoBehaviour
     int prevDivisions = 5;
     float prevRadius = 200.0f;
     Vector3 targetCameraPosition = Vector3.zero;
-    Camera camera = null;
+    Camera geoSphereCamera = null;
     public float minNavigationSpeed = 0.04f;
     public float smoothTime = 0.1f;
     private Vector3 velocity = Vector3.zero;
@@ -28,9 +28,9 @@ public class Geosphere : MonoBehaviour
         prevDivisions = divisions;
         BuildSectors();
         BuildGameObject();
-        camera = transform.GetComponentInChildren<Camera>();
-        if (camera != null)
-            targetCameraPosition = camera.transform.localPosition;
+        geoSphereCamera = transform.GetComponentInChildren<Camera>();
+        if (geoSphereCamera != null)
+            targetCameraPosition = geoSphereCamera.transform.localPosition;
     }
 
     // Update is called once per frame
@@ -40,43 +40,43 @@ public class Geosphere : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (camera != null)
+        if (geoSphereCamera != null)
         {
-            if (targetCameraPosition != camera.transform.localPosition)
+            if (targetCameraPosition != geoSphereCamera.transform.localPosition)
             {
-                camera.transform.localPosition = Vector3.SmoothDamp(camera.transform.localPosition, targetCameraPosition, ref velocity, smoothTime);
-                camera.transform.LookAt(transform);
+                geoSphereCamera.transform.localPosition = Vector3.SmoothDamp(geoSphereCamera.transform.localPosition, targetCameraPosition, ref velocity, smoothTime);
+                geoSphereCamera.transform.LookAt(transform);
 
-                if (camera.transform.localPosition.x < - Radius - CameraController.MaxCameraDistance)
+                if (geoSphereCamera.transform.localPosition.x < - Radius - CameraController.MaxCameraDistance)
                 {
-                    camera.transform.localPosition = new Vector3(- Radius - CameraController.MaxCameraDistance, camera.transform.localPosition.y, camera.transform.localPosition.z);
+                    geoSphereCamera.transform.localPosition = new Vector3(- Radius - CameraController.MaxCameraDistance, geoSphereCamera.transform.localPosition.y, geoSphereCamera.transform.localPosition.z);
                     targetCameraPosition = new Vector3(- Radius - CameraController.MaxCameraDistance, targetCameraPosition.y, targetCameraPosition.z);
                 }
-                else if (camera.transform.localPosition.x > Radius + CameraController.MaxCameraDistance)
+                else if (geoSphereCamera.transform.localPosition.x > Radius + CameraController.MaxCameraDistance)
                 {
-                    camera.transform.localPosition = new Vector3(Radius + CameraController.MaxCameraDistance, camera.transform.localPosition.y, camera.transform.localPosition.z);
+                    geoSphereCamera.transform.localPosition = new Vector3(Radius + CameraController.MaxCameraDistance, geoSphereCamera.transform.localPosition.y, geoSphereCamera.transform.localPosition.z);
                     targetCameraPosition = new Vector3(Radius + CameraController.MaxCameraDistance, targetCameraPosition.y, targetCameraPosition.z);
                 }
 
-                if (camera.transform.localPosition.y < - Radius - CameraController.MaxCameraDistance)
+                if (geoSphereCamera.transform.localPosition.y < - Radius - CameraController.MaxCameraDistance)
                 {
-                    camera.transform.localPosition = new Vector3(transform.position.x, - Radius - CameraController.MaxCameraDistance, camera.transform.localPosition.z);
+                    geoSphereCamera.transform.localPosition = new Vector3(transform.position.x, - Radius - CameraController.MaxCameraDistance, geoSphereCamera.transform.localPosition.z);
                     targetCameraPosition = new Vector3(transform.position.x, - Radius - CameraController.MaxCameraDistance, targetCameraPosition.z);
                 }
-                else if (camera.transform.localPosition.y > Radius + CameraController.MaxCameraDistance)
+                else if (geoSphereCamera.transform.localPosition.y > Radius + CameraController.MaxCameraDistance)
                 {
-                    camera.transform.localPosition = new Vector3(transform.position.x, Radius + CameraController.MaxCameraDistance, camera.transform.localPosition.z);
+                    geoSphereCamera.transform.localPosition = new Vector3(transform.position.x, Radius + CameraController.MaxCameraDistance, geoSphereCamera.transform.localPosition.z);
                     targetCameraPosition = new Vector3(transform.position.x, Radius + CameraController.MaxCameraDistance, targetCameraPosition.z);
                 }
 
-                if (camera.transform.localPosition.z < - Radius - CameraController.MaxCameraDistance)
+                if (geoSphereCamera.transform.localPosition.z < - Radius - CameraController.MaxCameraDistance)
                 {
-                    camera.transform.localPosition = new Vector3(transform.position.x, camera.transform.localPosition.y, - Radius - CameraController.MaxCameraDistance);
+                    geoSphereCamera.transform.localPosition = new Vector3(transform.position.x, geoSphereCamera.transform.localPosition.y, - Radius - CameraController.MaxCameraDistance);
                     targetCameraPosition = new Vector3(transform.position.x, targetCameraPosition.y, - Radius - CameraController.MaxCameraDistance);
                 }
-                else if (camera.transform.localPosition.z > + Radius + CameraController.MaxCameraDistance)
+                else if (geoSphereCamera.transform.localPosition.z > + Radius + CameraController.MaxCameraDistance)
                 {
-                    camera.transform.localPosition = new Vector3(transform.position.x, camera.transform.localPosition.y, Radius + CameraController.MaxCameraDistance);
+                    geoSphereCamera.transform.localPosition = new Vector3(transform.position.x, geoSphereCamera.transform.localPosition.y, Radius + CameraController.MaxCameraDistance);
                     targetCameraPosition = new Vector3(transform.position.x, targetCameraPosition.y, Radius + CameraController.MaxCameraDistance);
                 }
             }
@@ -97,16 +97,16 @@ public class Geosphere : MonoBehaviour
 
     public void ResetCameraTargetPosition()
     {
-        if (camera != null)
-            targetCameraPosition = camera.transform.localPosition;
+        if (geoSphereCamera != null)
+            targetCameraPosition = geoSphereCamera.transform.localPosition;
     }
 
     public void MapHit()
     {
-        if (camera == null)
+        if (geoSphereCamera == null)
             return;
 
-        Ray ray = camera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = geoSphereCamera.ScreenPointToRay(Input.mousePosition);
         ray = CameraController.GetRayBeyondCanvas(ray);
         RaycastHit mapHit;
         bool isMapHit = Physics.Raycast(ray, out mapHit);
@@ -119,10 +119,10 @@ public class Geosphere : MonoBehaviour
 
     public Vector3 MapHit(Vector3 mousePosition)
     {
-        if (camera == null)
+        if (geoSphereCamera == null)
             return new Vector3();
 
-        Ray ray = camera.ScreenPointToRay(mousePosition);
+        Ray ray = geoSphereCamera.ScreenPointToRay(mousePosition);
         //ray = CameraController.GetRayBeyondCanvas(ray);
 
         RaycastHit[] hits = Physics.RaycastAll(ray);
@@ -221,7 +221,7 @@ public class Geosphere : MonoBehaviour
         //newCameraPosition.Normalize();
         newCameraPosition *= currentDistance;
         targetCameraPosition = newCameraPosition;
-        //HideHiddenFaces(camera);
+        //HideHiddenFaces(geoSphereCamera);
     }
 
     public void ZoomCameraTo(double distance)
@@ -231,8 +231,8 @@ public class Geosphere : MonoBehaviour
         positionVector.Normalize();
         positionVector *= (float)newDistance;
         targetCameraPosition = positionVector;
-        //SetLOD(camera);
-        //HideHiddenFaces(camera);
+        //SetLOD(geoSphereCamera);
+        //HideHiddenFaces(geoSphereCamera);
     }
 
     public void Zoom(float zoomAmount, CameraController cameraController)

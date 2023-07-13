@@ -202,6 +202,11 @@ float2 cubemapXYZtoUV(uint x, uint y, uint z, uint radius)
 	return cartesianToPolarRatio(cartesian);
 }
 
+float2 cubemapToUV(uint3 cubemap, uint radius)
+{
+	return cubemapXYZtoUV(cubemap.x, cubemap.y, cubemap.z, radius);
+}
+
 //uint3 toCubemapCoordinates(uint x, uint y, uint mapWidth)
 //{
 //	int face = x / mapWidth;

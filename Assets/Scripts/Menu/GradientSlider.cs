@@ -118,7 +118,7 @@ public class GradientSlider : MonoBehaviour, IPointerDownHandler, IPointerUpHand
                         gradientSliderHandleColorBox.handleTransform = childChildTransform;
                         gradientSliderHandle.handleTransform = childChildTransform;
                         //colorBox.transform.localPosition = new Vector3(colorBox.transform.localPosition.x, childChildTransform.localPosition.y * transform.localScale.y + 7, colorBox.transform.localPosition.z);
-                        colorBox.transform.position = new Vector3(colorBox.transform.position.x - 0.14f, childChildTransform.position.y, colorBox.transform.position.z);
+                        colorBox.transform.position = new Vector3(colorBox.transform.position.x - 0.1f, childChildTransform.position.y, colorBox.transform.position.z);
                         handleImage.color = color;
                     }
                 }

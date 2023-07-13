@@ -9,9 +9,9 @@ StructuredBuffer<int> connectivityMap12;
 StructuredBuffer<int> connectivityMap34;
 StructuredBuffer<int> connectivityMap56;
 
-RWStructuredBuffer<float> flowMap12; // The Flow Map contains a number indicating how much water is flowing into each pixel.
-RWStructuredBuffer<float> flowMap34;
-RWStructuredBuffer<float> flowMap56;
+RWStructuredBuffer<uint> flowMap12; // The Flow Map contains a number indicating how much water is flowing into each pixel.
+RWStructuredBuffer<uint> flowMap34;
+RWStructuredBuffer<uint> flowMap56;
 
 #include "Assets/Shaders/Cubemap.cginc"
 
@@ -72,12 +72,12 @@ void addFlowAt(int3 thisCoordinates, float value)
     if (thisCoordinates.z == 1 || thisCoordinates.z == 3 || thisCoordinates.z == 5)
         flowMapIndex += mapWidth * mapWidth;
 
-    if (thisCoordinates.z <= 0) flowMap12[flowMapIndex] += value;
-    else if (thisCoordinates.z <= 1) flowMap12[flowMapIndex] += value;
-    else if (thisCoordinates.z <= 2) flowMap34[flowMapIndex] += value;
-    else if (thisCoordinates.z <= 3) flowMap34[flowMapIndex] += value;
-    else if (thisCoordinates.z <= 4) flowMap56[flowMapIndex] += value;
-    else flowMap56[flowMapIndex] += value;
+    if (thisCoordinates.z <= 0) InterlockedAdd(flowMap12[flowMapIndex], value);
+    else if (thisCoordinates.z <= 1) InterlockedAdd(flowMap12[flowMapIndex], value);
+    else if (thisCoordinates.z <= 2) InterlockedAdd(flowMap34[flowMapIndex], value);
+    else if (thisCoordinates.z <= 3) InterlockedAdd(flowMap34[flowMapIndex], value);
+    else if (thisCoordinates.z <= 4) InterlockedAdd(flowMap56[flowMapIndex], value);
+    else InterlockedAdd(flowMap56[flowMapIndex], value);
 }
 
 [numthreads(8,8,1)]
@@ -88,15 +88,15 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     int3 cubemap = int3(id.x, id.y, id.z);
 
-    int3 cubemapLeft = getLeftIntCoordinates(cubemap, mapWidth);
-    int3 cubemapRight = getRightIntCoordinates(cubemap, mapWidth);
-    int3 cubemapTop = getTopIntCoordinates(cubemap, mapWidth);
-    int3 cubemapBottom = getBottomIntCoordinates(cubemap, mapWidth);
+    //int3 cubemapLeft = getLeftIntCoordinates(cubemap, mapWidth);
+    //int3 cubemapRight = getRightIntCoordinates(cubemap, mapWidth);
+    //int3 cubemapTop = getTopIntCoordinates(cubemap, mapWidth);
+    //int3 cubemapBottom = getBottomIntCoordinates(cubemap, mapWidth);
 
-    int3 cubemapTopLeft = getTopLeftIntCoordinates(cubemap, mapWidth);
-    int3 cubemapBottomRight = getBottomRightIntCoordinates(cubemap, mapWidth);
-    int3 cubemapTopRight = getTopRightIntCoordinates(cubemap, mapWidth);
-    int3 cubemapBottomLeft = getBottomLeftIntCoordinates(cubemap, mapWidth);
+    //int3 cubemapTopLeft = getTopLeftIntCoordinates(cubemap, mapWidth);
+    //int3 cubemapBottomRight = getBottomRightIntCoordinates(cubemap, mapWidth);
+    //int3 cubemapTopRight = getTopRightIntCoordinates(cubemap, mapWidth);
+    //int3 cubemapBottomLeft = getBottomLeftIntCoordinates(cubemap, mapWidth);
 
     uint index = id.x + id.z * mapWidth + id.y * mapWidth * 6;
 

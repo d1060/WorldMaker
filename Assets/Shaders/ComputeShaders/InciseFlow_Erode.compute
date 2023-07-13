@@ -9,14 +9,16 @@ float minAmount = 0;
 float curveFactor = 1;
 float heightInfluence = 1;
 float waterLevel = 0.6;
+float minimumHeight;
+float maximumHeight;
 float blur = 0;
 float flowMapMaxValue = 1000000;
 StructuredBuffer<float> heightMap12;
 StructuredBuffer<float> heightMap34;
 StructuredBuffer<float> heightMap56;
-StructuredBuffer<float> flowMap12;
-StructuredBuffer<float> flowMap34;
-StructuredBuffer<float> flowMap56;
+StructuredBuffer<uint> flowMap12;
+StructuredBuffer<uint> flowMap34;
+StructuredBuffer<uint> flowMap56;
 
 RWStructuredBuffer<float> inciseFlowErosionMap12;
 RWStructuredBuffer<float> inciseFlowErosionMap34;
@@ -71,7 +73,7 @@ float getMapValueAtCoordinates(uint3 coordinates)
     else return heightMap56[index];
 }
 
-float getFlowMapValueAtCoordinates(uint3 coordinates)
+uint getFlowMapValueAtCoordinates(uint3 coordinates)
 {
     uint index = coordinates.x + coordinates.y * mapWidth;
 
@@ -88,7 +90,7 @@ float getFlowMapValueAtCoordinates(uint3 coordinates)
 
 float getErodeValueFromFlowCoordinates(uint3 coordinates)
 {
-    float flowValue = getFlowMapValueAtCoordinates(coordinates);
+    uint flowValue = getFlowMapValueAtCoordinates(coordinates);
 
     //if (flowValue < 1) flowValue = 1;
     //float erodeValue = (log(flowValue) / log(logBase)) * heightFactor;
@@ -123,8 +125,8 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     uint3 cubemap = uint3(id.x, id.y, id.z);
 
     float height = getMapValueAtCoordinates(id);
-    if (height <= waterLevel)
-        return;
+    //if (height <= waterLevel)
+    //    return;
 
     //if (exponent <= 1) exponent = 1.1;
 
