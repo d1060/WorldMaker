@@ -94,6 +94,11 @@ public partial class Map : MonoBehaviour
                     SaveImageFile(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Temperature" + fileNameExtension), SphereShaderDrawType.Temperature);
                 }
 
+                if (AppData.instance.SaveRivers && TextureManager.instance.FlowTexture != null && (inciseFlowSettings.plotRiversRandomly || inciseFlowSettings.plotRivers))
+                {
+                    TextureManager.instance.FlowTexture.SaveAsPNG(Path.Combine(fileNamePath, fileNameWithoutExtension + "-Rivers" + fileNameExtension));
+                }
+
                 AppData.instance.Save();
 
                 if (doZoomBrush)

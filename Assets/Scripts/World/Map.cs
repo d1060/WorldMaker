@@ -298,6 +298,9 @@ public partial class Map : MonoBehaviour
                 UpdateZoomCamMaterialProperties();
                 zoomBrush.SetActive(true);
                 zoomMapGameObject.SetActive(true);
+
+                ZoomBrush zomBrushScript = zoomBrush.GetComponent<ZoomBrush>();
+                zomBrushScript.SetLateralBrushesActive(!showGlobe);
             }
             else
             {
@@ -308,6 +311,9 @@ public partial class Map : MonoBehaviour
 
                 ButtonToggle zomBrushToggleButton = zoomButtonTransform.GetComponent<ButtonToggle>();
                 zomBrushToggleButton.Disable();
+
+                ZoomBrush zomBrushScript = zoomBrush.GetComponent<ZoomBrush>();
+                zomBrushScript.SetLateralBrushesActive(!showGlobe);
             }
         }
         doZoomBrush = doZoom;
@@ -413,7 +419,11 @@ public partial class Map : MonoBehaviour
                 lightComponent.gameObject.SetActive(true);
             geoSphere.gameObject.SetActive(false);
 
-            zoomButtonTransform.gameObject.SetActive(true);
+            if (DoingZoomBrush)
+            {
+                ZoomBrush zomBrushScript = zoomBrush.GetComponent<ZoomBrush>();
+                zomBrushScript.SetLateralBrushesActive(true);
+            }
         }
         else
         {
@@ -438,8 +448,10 @@ public partial class Map : MonoBehaviour
                 lightComponent.gameObject.SetActive(false);
 
             if (DoingZoomBrush)
-                DoZoomBrush(false);
-            zoomButtonTransform.gameObject.SetActive(false);
+            {
+                ZoomBrush zomBrushScript = zoomBrush.GetComponent<ZoomBrush>();
+                zomBrushScript.SetLateralBrushesActive(false);
+            }
         }
         worldNameText.interactable = true;
     }

@@ -22,6 +22,7 @@ public class ZoomBrush : MonoBehaviour
     Vector3 previousMapPoint = Vector3.zero;
     Vector2 centerUV = Vector2.zero;
     Vector2 boundaryUV = Vector2.zero;
+    Vector3 prevMousePosition = Vector3.zero;
 
     List<Vector3[]> paths = new List<Vector3[]>();
     Camera cam;
@@ -46,7 +47,22 @@ public class ZoomBrush : MonoBehaviour
 
         if (map.ShowGlobe)
         {
-            //geosphere?.MapHit();
+            Vector3 prevGlobePoint = map.geoSphere.MapHit(prevMousePosition);
+            Vector3 globePoint = map.geoSphere.MapHit(Input.mousePosition);
+            if (globePoint != Vector3.zero && prevGlobePoint != Vector3.zero)
+            {
+                if (!cameraController.IsContextMenuOpen)
+                {
+                    float latitude = 0;
+                    float longitude = 0;
+                    map.geoSphere.GetPointLatitudeLongitude(globePoint, ref latitude, ref longitude);
+                    centerUV = new Vector2(longitude, latitude);
+
+                    Vector3 spherePoint = globePoint;
+                    spherePoint.Normalize();
+                    BuildMesh(longitude, latitude, spherePoint, true);
+                }
+            }
         }
         else if (mapHit.collider != null)
         {
@@ -60,28 +76,17 @@ public class ZoomBrush : MonoBehaviour
                     float v = ((hitPoint.y) / map.mapHeight) + 0.5f;
                     centerUV = new Vector2(u, v);
 
-                    BuildMesh(u, v, hitPoint);
+                    BuildMesh(u, v, hitPoint, false);
                 }
             }
             previousMapPoint = hitPoint;
         }
+        prevMousePosition = Input.mousePosition;
     }
 
-    public Vector2 CenterUV
-    {
-        get
-        {
-            return centerUV;
-        }
-    }
+    public Vector2 CenterUV { get { return centerUV; } }
 
-    public Vector2 BoundaryUV
-    {
-        get
-        {
-            return boundaryUV;
-        }
-    }
+    public Vector2 BoundaryUV { get { return boundaryUV; } }
 
     public static Ray GetRayBeyondCanvas(Ray ray)
     {
@@ -221,8 +226,30 @@ public class ZoomBrush : MonoBehaviour
             float u = ((previousMapPoint.x) / map.mapWidth) + 0.5f;
             float v = ((previousMapPoint.y) / map.mapHeight) + 0.5f;
             centerUV = new Vector2(u, v);
-            BuildMesh(u, v, previousMapPoint);
+            BuildMesh(u, v, previousMapPoint, map.ShowGlobe);
         }
+    }
+
+    public void CalculateZoomMaterialPosition()
+    {
+        float u = ((previousMapPoint.x) / map.mapWidth) + 0.5f;
+        float v = ((previousMapPoint.y) / map.mapHeight) + 0.5f;
+
+        float uBoundary;
+        float vBoundary;
+
+        if (width > height)
+        {
+            uBoundary = radius / map.mapWidth;
+            vBoundary = radius * (height / width) / map.mapHeight;
+        }
+        else
+        {
+            uBoundary = radius * (width / height) / map.mapWidth;
+            vBoundary = radius / map.mapHeight;
+        }
+
+        UpdateZoomMaterialPosition(u, v, uBoundary, vBoundary);
     }
 
     public void UpdateZoomMaterialPosition(float u, float v, float uBoundary, float vBoundary)
@@ -240,14 +267,14 @@ public class ZoomBrush : MonoBehaviour
         zoomCamMaterial.SetFloat("_BoundaryV", vBoundary);
     }
 
-    void BuildMesh(float u, float v, Vector3 mapPoint)
+    void BuildMesh(float u, float v, Vector3 mapPoint, bool isGlobe)
     {
         paths.Clear();
 
         Vector2 uv = new Vector2(0.5f, v);
 
-        Vector3[] leftLine = new Vector3[subdivisions * 2];
-        Vector3[] rightLine = new Vector3[subdivisions * 2];
+        Vector3[] leftLine = new Vector3[subdivisions * 2 + 1];
+        Vector3[] rightLine = new Vector3[subdivisions * 2 + 1];
 
         Vector3 position = uv.PolarRatioToCartesian(1);
 
@@ -277,41 +304,81 @@ public class ZoomBrush : MonoBehaviour
             float Ustep = ((float)i / subdivisions) * uBoundary;
             float Uangle = Ustep * 360;
 
-            Vector3 upperRight = ShiftPointInSphereBy(position, -Uangle, Vshift, v + vBoundary, mapPoint);
-            Vector3 upperLeft = ShiftPointInSphereBy(position, Uangle, Vshift, v + vBoundary, mapPoint);
-            Vector3 lowerRight = ShiftPointInSphereBy(position, -Uangle, -Vshift, v - vBoundary, mapPoint);
-            Vector3 lowerLeft = ShiftPointInSphereBy(position, Uangle, -Vshift, v - vBoundary, mapPoint);
+            if (isGlobe)
+            {
+                Vector3 upperRight = ShiftPointInSphereBy(mapPoint, -Uangle, Vshift, v + vBoundary);
+                Vector3 upperLeft = ShiftPointInSphereBy(mapPoint, Uangle, Vshift, v + vBoundary);
+                Vector3 lowerRight = ShiftPointInSphereBy(mapPoint, -Uangle, -Vshift, v - vBoundary);
+                Vector3 lowerLeft = ShiftPointInSphereBy(mapPoint, Uangle, -Vshift, v - vBoundary);
 
-            if (upperLeft.x >= map.mapWidth / 2) upperLeft.x = -upperLeft.x;
-            if (lowerLeft.x >= map.mapWidth / 2) lowerLeft.x = -lowerLeft.x;
+                upperRight *= map.geoSphere.Radius * 1.01f;
+                upperRight += map.geoSphere.transform.position;
+                upperLeft *= map.geoSphere.Radius * 1.01f;
+                upperLeft += map.geoSphere.transform.position;
+                lowerRight *= map.geoSphere.Radius * 1.01f;
+                lowerRight += map.geoSphere.transform.position;
+                lowerLeft *= map.geoSphere.Radius * 1.01f;
+                lowerLeft += map.geoSphere.transform.position;
 
-            upperLeft.x += mapPoint.x;
-            upperRight.x += mapPoint.x;
-            lowerLeft.x += mapPoint.x;
-            lowerRight.x += mapPoint.x;
+                leftLine[i] = upperLeft;
+                rightLine[i] = upperRight;
+                leftLine[2 * subdivisions - i] = lowerLeft;
+                rightLine[2 * subdivisions - i] = lowerRight;
+            }
+            else
+            {
+                Vector3 upperRight = ShiftPointInFlatMapBy(position, -Uangle, Vshift, v + vBoundary, mapPoint);
+                Vector3 upperLeft = ShiftPointInFlatMapBy(position, Uangle, Vshift, v + vBoundary, mapPoint);
+                Vector3 lowerRight = ShiftPointInFlatMapBy(position, -Uangle, -Vshift, v - vBoundary, mapPoint);
+                Vector3 lowerLeft = ShiftPointInFlatMapBy(position, Uangle, -Vshift, v - vBoundary, mapPoint);
 
-            leftLine[i] = upperLeft;
-            rightLine[i] = upperRight;
-            leftLine[2 * subdivisions - i - 1] = lowerLeft;
-            rightLine[2 * subdivisions - i - 1] = lowerRight;
+                if (upperLeft.x >= map.mapWidth / 2) upperLeft.x = -upperLeft.x;
+                if (lowerLeft.x >= map.mapWidth / 2) lowerLeft.x = -lowerLeft.x;
+
+                upperLeft.x += mapPoint.x;
+                upperRight.x += mapPoint.x;
+                lowerLeft.x += mapPoint.x;
+                lowerRight.x += mapPoint.x;
+
+                leftLine[i] = upperLeft;
+                rightLine[i] = upperRight;
+                leftLine[2 * subdivisions - i] = lowerLeft;
+                rightLine[2 * subdivisions - i] = lowerRight;
+            }
         }
 
         // Left and Right lines
-        for (int i = 0; i < subdivisions; i++)
+        for (int i = 0; i < subdivisions + 1; i++)
         {
             float Vstep = ((float)(subdivisions / 2 - i) / subdivisions) * vBoundary;
             float Vangle = Vstep * 180;
 
-            Vector3 right = ShiftPointInSphereBy(position, -Ushift, Vangle, v + Vstep, mapPoint);
-            Vector3 left = ShiftPointInSphereBy(position, Ushift, Vangle, v + Vstep, mapPoint);
+            if (isGlobe)
+            {
+                Vector3 left = ShiftPointInSphereBy(mapPoint, Ushift, Vangle, v + Vstep);
+                Vector3 right = ShiftPointInSphereBy(mapPoint, -Ushift, Vangle, v + Vstep);
 
-            if (left.x >= map.mapWidth / 2) left.x = -left.x;
+                left *= map.geoSphere.Radius * 1.01f;
+                left += map.geoSphere.transform.position;
+                right *= map.geoSphere.Radius * 1.01f;
+                right += map.geoSphere.transform.position;
 
-            left.x += mapPoint.x;
-            right.x += mapPoint.x;
+                leftLine[i + subdivisions / 2] = left;
+                rightLine[i + subdivisions / 2] = right;
+            }
+            else
+            {
+                Vector3 right = ShiftPointInFlatMapBy(position, -Ushift, Vangle, v + Vstep, mapPoint);
+                Vector3 left = ShiftPointInFlatMapBy(position, Ushift, Vangle, v + Vstep, mapPoint);
 
-            leftLine[i + subdivisions / 2] = left;
-            rightLine[i + subdivisions / 2] = right;
+                if (left.x >= map.mapWidth / 2) left.x = -left.x;
+
+                left.x += mapPoint.x;
+                right.x += mapPoint.x;
+
+                leftLine[i + subdivisions / 2] = left;
+                rightLine[i + subdivisions / 2] = right;
+            }
         }
 
         SetLineRendererPositions(leftLineObject, leftLine, 0);
@@ -343,7 +410,7 @@ public class ZoomBrush : MonoBehaviour
         }
     }
 
-    Vector3 ShiftPointInSphereBy(Vector3 point, float uAngle, float vAngle, float v, Vector3 mapPoint)
+    Vector3 ShiftPointInSphereBy(Vector3 point, float uAngle, float vAngle, float v)
     {
         Vector3 rightVector = Vector3.Cross(Vector3.up, point);
         Vector3 upVector = Vector3.Cross(point, rightVector);
@@ -353,6 +420,13 @@ public class ZoomBrush : MonoBehaviour
         rightVector = Vector3.Cross(rotationX, upVector);
 
         Vector3 rotated = Quaternion.AngleAxis(vAngle, rightVector) * rotationX;
+
+        return rotated;
+    }
+
+    Vector3 ShiftPointInFlatMapBy(Vector3 point, float uAngle, float vAngle, float v, Vector3 mapPoint)
+    {
+        Vector3 rotated = ShiftPointInSphereBy(point, uAngle, vAngle, v);
 
         //Quaternion rotation = Quaternion.Euler(vAngle, 0, uAngle);
         //Vector3 finalSpherePosition = rotation * point;
@@ -364,5 +438,13 @@ public class ZoomBrush : MonoBehaviour
         Vector3 mapPosition = new Vector3((finalUVPosition.x - 0.5f) * map.mapWidth, (finalUVPosition.y - 0.5f) * map.mapHeight, -0.01f);
 
         return mapPosition;
+    }
+
+    public void SetLateralBrushesActive(bool bActive)
+    {
+        leftLeftLineObject.SetActive(bActive);
+        leftRightLineObject.SetActive(bActive);
+        rightLeftLineObject.SetActive(bActive);
+        rightRightLineObject.SetActive(bActive);
     }
 }

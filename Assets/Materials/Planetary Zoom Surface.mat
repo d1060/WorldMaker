@@ -83,11 +83,11 @@ Material:
     m_Ints: []
     m_Floats:
     - _BakedNormalIntensity: 1
-    - _BoundaryU: 0.0725
-    - _BoundaryV: 0.145
+    - _BoundaryU: 0.0575
+    - _BoundaryV: 0.115
     - _BumpScale: 1
-    - _CenterU: 1.1722438
-    - _CenterV: 0.9977553
+    - _CenterU: 0.09188756
+    - _CenterV: 0.70400155
     - _ColorStep1: 0.01
     - _ColorStep2: 0.1
     - _ColorStep3: 0.3

@@ -274,7 +274,7 @@ public partial class Map : MonoBehaviour
                 uint[] intermediateFlowMap = new uint[plotRiversRT.width * plotRiversRT.height];
                 intermediateFlowMapBuffer.GetData(intermediateFlowMap);
                 uint maxValue = intermediateFlowMap.Max();
-                ImageTools.SaveTextureUIntArray(intermediateFlowMap, plotRiversRT.width, plotRiversRT.height, Path.Combine(Application.persistentDataPath, "Textures", "intermediateFlowMap.png"), maxValue);
+                ImageTools.SaveTextureUIntArray(intermediateFlowMap, plotRiversRT.width, plotRiversRT.height, Path.Combine(Application.persistentDataPath, "Textures", "flowMapIntermediate.png"), maxValue);
                 TextureManager.instance.FlowTexture.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "flowMap.png"));
             }
 

@@ -82,35 +82,35 @@ void FinalTexture (uint3 id : SV_DispatchThreadID)
     if (id.x >= mapWidth * 4 || id.y >= mapWidth * 2)
         return;
 
-    float2 uv = float2((float)id.x / mapWidth * 4, (float)id.y / mapWidth * 2);
-    float3 cubemap = cartesianToCubemap(uvToCartesian(uv));
-    cubemap.x *= mapWidth;
-    cubemap.y *= mapWidth;
+    //float2 uv = float2((float)id.x / mapWidth * 4, (float)id.y / mapWidth * 2);
+    //float3 cubemap = cartesianToCubemap(uvToCartesian(uv));
+    //cubemap.x *= mapWidth;
+    //cubemap.y *= mapWidth;
 
-    float rateX = cubemap.x - (uint)cubemap.x;
-    float rateY = cubemap.y - (uint)cubemap.y;
+    //float rateX = cubemap.x - (uint)cubemap.x;
+    //float rateY = cubemap.y - (uint)cubemap.y;
 
-    uint3 cubemapDL = uint3(cubemap.x, cubemap.y, cubemap.z);
-    uint3 cubemapUL = getNewCoordinates(cubemapDL, 0, 1, mapWidth);
-    uint3 cubemapDR = getNewCoordinates(cubemapDL, 1, 0, mapWidth);
-    uint3 cubemapUR = getNewCoordinates(cubemapDL, 1, 1, mapWidth);
+    //uint3 cubemapDL = uint3(cubemap.x, cubemap.y, cubemap.z);
+    //uint3 cubemapUL = getNewCoordinates(cubemapDL, 0, 1, mapWidth);
+    //uint3 cubemapDR = getNewCoordinates(cubemapDL, 1, 0, mapWidth);
+    //uint3 cubemapUR = getNewCoordinates(cubemapDL, 1, 1, mapWidth);
 
-    uint flowDL = getInciseFlowMapValueAtCoordinates(cubemapDL);
-    uint flowUL = getInciseFlowMapValueAtCoordinates(cubemapUL);
-    uint flowDR = getInciseFlowMapValueAtCoordinates(cubemapDR);
-    uint flowUR = getInciseFlowMapValueAtCoordinates(cubemapUR);
+    //uint flowDL = getInciseFlowMapValueAtCoordinates(cubemapDL);
+    //uint flowUL = getInciseFlowMapValueAtCoordinates(cubemapUL);
+    //uint flowDR = getInciseFlowMapValueAtCoordinates(cubemapDR);
+    //uint flowUR = getInciseFlowMapValueAtCoordinates(cubemapUR);
 
-    float upperFlow = flowUR * rateX + flowUL * (1 - rateX);
-    float lowerFlow = flowDR * rateX + flowDL * (1 - rateX);
+    //float upperFlow = flowUR * rateX + flowUL * (1 - rateX);
+    //float lowerFlow = flowDR * rateX + flowDL * (1 - rateX);
 
-    float inverseFlow = upperFlow * rateY + lowerFlow * (1 - rateY);
-    inverseFlow /= maxValue;
+    //float inverseFlow = upperFlow * rateY + lowerFlow * (1 - rateY);
+    //inverseFlow /= maxValue;
 
 
     uint intermedtateIndex = id.x + id.y * mapWidth * 4;
     float flow = intermediateFlowMap[intermedtateIndex] / maxValue;
 
-    if (inverseFlow > flow) flow = inverseFlow;
+    //if (inverseFlow > flow) flow = inverseFlow;
 
     flow = pow(abs(flow), riverExponent);
 

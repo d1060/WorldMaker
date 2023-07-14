@@ -595,6 +595,7 @@ public partial class Map : MonoBehaviour
             AppData.instance.Save();
             ZoomBrush zoomBrushSctipt = zoomBrush.GetComponent<ZoomBrush>();
             zoomBrushSctipt.ApplyResolution(AppData.instance.ZoomWidth, AppData.instance.ZoomHeight);
+            zoomBrushSctipt.CalculateZoomMaterialPosition();
         }
     }
 
@@ -622,6 +623,7 @@ public partial class Map : MonoBehaviour
             AppData.instance.Save();
             ZoomBrush zoomBrushSctipt = zoomBrush.GetComponent<ZoomBrush>();
             zoomBrushSctipt.ApplyResolution(AppData.instance.ZoomWidth, AppData.instance.ZoomHeight);
+            zoomBrushSctipt.CalculateZoomMaterialPosition();
         }
     }
 
