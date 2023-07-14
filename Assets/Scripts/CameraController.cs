@@ -281,6 +281,13 @@ public class CameraController : MonoBehaviour
                 CloseContextMenu();
             }
         }
+        else if (graphicRaycastResults.Count > 0)
+        {
+            if (mouseWheel != 0)
+            {
+                SliderMouseWheel(graphicRaycastResults[0], mouseWheel);
+            }
+        }
 
         lastXAxisMovement = xAxisMovement;
         lastYAxisMovement = yAxisMovement;
@@ -365,6 +372,39 @@ public class CameraController : MonoBehaviour
             }
             return landMaskTextBox;
         }
+    }
+
+    void SliderMouseWheel(RaycastResult raycastResult, float value)
+    {
+        if (raycastResult.gameObject.transform.parent == null)
+            return;
+
+        Transform parentTransform = raycastResult.gameObject.transform.parent;
+        Slider slider = parentTransform.GetComponent<Slider>();
+
+        if (slider == null)
+        {
+            if (parentTransform.parent == null)
+                return;
+
+            Transform grandParentTransform = parentTransform.parent;
+
+            slider = grandParentTransform.GetComponent<Slider>();
+            if (slider == null)
+            {
+                if (grandParentTransform.parent == null)
+                    return;
+
+                slider = grandParentTransform.parent.GetComponent<Slider>();
+                if (slider == null)
+                    return;
+            }
+        }
+
+        float sliderValue = slider.value;
+        float step = value * (slider.maxValue - slider.minValue) / 100;
+        sliderValue += step;
+        slider.value = sliderValue;
     }
 
     bool IsClickGoingToHitAWaypointMarker()

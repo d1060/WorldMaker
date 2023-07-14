@@ -46,34 +46,52 @@ void IntermediateBuffer (uint3 id : SV_DispatchThreadID)
     if (flow == 0)
         return;
 
-    float2 uv = cubemapToUV(cubemap, mapWidth);
-    float2 uvWorld = float2(uv.x * mapWidth * 4, uv.y * mapWidth * 2);
+    uint3 cubemapUR = getTopRightIntCoordinates(cubemap, mapWidth);
 
-    uint2 uvDL = uint2((uint)uvWorld.x, (uint)uvWorld.y);
-    uint2 uvDR = uint2((uint)ceil(uvWorld.x), (uint)uvWorld.y);
-    uint2 uvUL = uint2((uint)uvWorld.x, (uint)ceil(uvWorld.y));
-    uint2 uvUR = uint2((uint)ceil(uvWorld.x), (uint)ceil(uvWorld.y));
+    float2 uv = cubemapToUV(cubemap, mapWidth);
+    float2 uvUR = cubemapToUV(cubemapUR, mapWidth);
+
+    float2 uvWorld = float2(uv.x * mapWidth * 4, uv.y * mapWidth * 2);
+    float2 uvWorldUR = float2(uvUR.x * mapWidth * 4, uvUR.y * mapWidth * 2);
+
+    //uint2 uvDL = uint2((uint)uvWorld.x, (uint)uvWorld.y);
+    //uint2 uvDR = uint2((uint)ceil(uvWorld.x), (uint)uvWorld.y);
+    //uint2 uvUL = uint2((uint)uvWorld.x, (uint)ceil(uvWorld.y));
+    //uint2 uvUR = uint2((uint)ceil(uvWorld.x), (uint)ceil(uvWorld.y));
 
     float rateX = uvWorld.x - (uint)uvWorld.x;
     float rateY = uvWorld.y - (uint)uvWorld.y;
 
-    float upperFlow = flow * rateY;
-    float lowerFlow = flow * (1 - rateY);
+    for (int x = uvWorld.x; x <= uvWorldUR.x; x++)
+    {
+        for (int y = uvWorld.y; y <= uvWorldUR.y; y++)
+        {
+            uint index = x + y * mapWidth * 4;
+            InterlockedAdd(intermediateFlowMap[index], flow);
+            if (y == uvWorldUR.y)
+                break;
+        }
+        if (x == uvWorldUR.x)
+            break;
+    }
 
-    float upperRightFlow = upperFlow * rateX;
-    float upperLeftFlow = upperFlow * (1 - rateX);
-    float lowerRightFlow = lowerFlow * rateX;
-    float lowerLeftFlow = lowerFlow * (1 - rateX);
+    //float upperFlow = flow * rateY;
+    //float lowerFlow = flow * (1 - rateY);
 
-    uint upperRightIndex = uvUR.x + uvUR.y * mapWidth * 4;
-    uint upperLeftIndex = uvUL.x + uvUL.y * mapWidth * 4;
-    uint lowerRightIndex = uvDR.x + uvDR.y * mapWidth * 4;
-    uint lowerLeftIndex = uvDL.x + uvDL.y * mapWidth * 4;
+    //float upperRightFlow = upperFlow * rateX;
+    //float upperLeftFlow = upperFlow * (1 - rateX);
+    //float lowerRightFlow = lowerFlow * rateX;
+    //float lowerLeftFlow = lowerFlow * (1 - rateX);
 
-    InterlockedAdd(intermediateFlowMap[upperRightIndex], upperRightFlow);
-    InterlockedAdd(intermediateFlowMap[upperLeftIndex], upperLeftFlow);
-    InterlockedAdd(intermediateFlowMap[lowerRightIndex], lowerRightFlow);
-    InterlockedAdd(intermediateFlowMap[lowerLeftIndex], lowerLeftFlow);
+    //uint upperRightIndex = uvUR.x + uvUR.y * mapWidth * 4;
+    //uint upperLeftIndex = uvUL.x + uvUL.y * mapWidth * 4;
+    //uint lowerRightIndex = uvDR.x + uvDR.y * mapWidth * 4;
+    //uint lowerLeftIndex = uvDL.x + uvDL.y * mapWidth * 4;
+
+    //InterlockedAdd(intermediateFlowMap[upperRightIndex], upperRightFlow);
+    //InterlockedAdd(intermediateFlowMap[upperLeftIndex], upperLeftFlow);
+    //InterlockedAdd(intermediateFlowMap[lowerRightIndex], lowerRightFlow);
+    //InterlockedAdd(intermediateFlowMap[lowerLeftIndex], lowerLeftFlow);
 }
 
 [numthreads(32,32,1)]

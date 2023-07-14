@@ -563,10 +563,10 @@ public partial class Map : MonoBehaviour
 
             if (TextureManager.instance.Settings.textureWidth != width / 2)
             {
+                TextureManager.instance.Settings.textureWidth = width / 2;
                 ResetEroded();
             }
 
-            TextureManager.instance.Settings.textureWidth = width / 2;
             UpdateUITextMeshPro(setupPanelTransform, "Texture Width Text", (width * 2).ToString() + (TextureManager.instance.Settings.textureWidth * 4 < 10000 ? " " : "") + " x");
             MapData.instance.Save();
         }
@@ -985,7 +985,7 @@ public partial class Map : MonoBehaviour
 
     public void NewWaterLevel(float value)
     {
-        TextureManager.instance.Settings.waterLevel = value;
+        TextureManager.instance.Settings.waterLevel = value / 100.0f;
         if (!firstUpdate)
         {
             //GenerateHeightMap();
@@ -1002,13 +1002,13 @@ public partial class Map : MonoBehaviour
             //GenerateHeightMap();
             UpdateSurfaceMaterialProperties(false);
             MapData.instance.Save();
-            UpdateUISlider(setupPanelTransform, "Water Level Slider", TextureManager.instance.Settings.waterLevel);
+            UpdateUISlider(setupPanelTransform, "Water Level Slider", TextureManager.instance.Settings.waterLevel * 100);
         }
     }
 
     public void NewLowerHeightLimit(float value)
     {
-        float value1 = GetUISlider(setupPanelTransform, "Height Limits Slider 1");
+        float value1 = GetUISlider(setupPanelTransform, "Height Limits Slider 1") / 100.0f;
         TextureManager.instance.Settings.minHeight = value1;
 
         if (!firstUpdate)
@@ -1024,7 +1024,7 @@ public partial class Map : MonoBehaviour
 
     public void NewUpperHeightLimit(float value)
     {
-        float value2 = GetUISlider(setupPanelTransform, "Height Limits Slider 2");
+        float value2 = GetUISlider(setupPanelTransform, "Height Limits Slider 2") / 100.0f;
         TextureManager.instance.Settings.maxHeight = value2;
 
         if (!firstUpdate)
@@ -1760,7 +1760,7 @@ public partial class Map : MonoBehaviour
             UpdateUIInputField(setupPanelTransform, "MainTexture Text Box", System.IO.Path.GetFileName(mapSettings.MainTexturePath));
             // Setup the Landmask Field
             UpdateUIInputField(setupPanelTransform, "LandMask Text Box", System.IO.Path.GetFileName(mapSettings.LandMaskPath));
-            UpdateUISlider(setupPanelTransform, "Water Level Slider", TextureManager.instance.Settings.waterLevel);
+            UpdateUISlider(setupPanelTransform, "Water Level Slider", TextureManager.instance.Settings.waterLevel * 100);
             SetHeightLimits();
             UpdateUIToggle(setupPanelTransform, "Toggle Keep Seed", AppData.instance.KeepSeedOnRegenerate);
             UpdateUIToggle(setupPanelTransform, "Toggle Auto Regenerate", AppData.instance.AutoRegenerate);
@@ -1865,8 +1865,8 @@ public partial class Map : MonoBehaviour
     {
         if (setupPanelTransform != null)
         {
-            UpdateUISlider(setupPanelTransform, "Height Limits Slider 1", MapData.instance.LowestHeight);
-            UpdateUISlider(setupPanelTransform, "Height Limits Slider 2", MapData.instance.HighestHeight);
+            UpdateUISlider(setupPanelTransform, "Height Limits Slider 1", MapData.instance.LowestHeight * 100);
+            UpdateUISlider(setupPanelTransform, "Height Limits Slider 2", MapData.instance.HighestHeight * 100);
         }
     }
 

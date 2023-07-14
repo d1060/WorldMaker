@@ -15,7 +15,7 @@ namespace UnityEngine.UI
         public float stepMultiplier = 0.01f;
 
         // Size of each step.
-        float stepSize { get { return wholeNumbers ? 1 : (maxValue - minValue) * stepMultiplier; } }
+        float stepSize { get { return (wholeNumbers ? 1 : (maxValue - minValue)) * stepMultiplier; } }
 
         enum Axis
         {

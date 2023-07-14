@@ -20,6 +20,9 @@ public class MapSliderField : MonoBehaviour, ISelectHandler, IDeselectHandler, I
     //public float maxValue = 1;
     //public float minValue = 0;
     string textFormat;
+    public float stepMultiplier = 0.01f;
+    public float valueDivisor = 1;
+    public float mouseWheelMultiplier = 1;
 
     // Start is called before the first frame update
     void Start()
@@ -41,7 +44,34 @@ public class MapSliderField : MonoBehaviour, ISelectHandler, IDeselectHandler, I
     // Update is called once per frame
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift))
+            {
 
+            }
+            if (Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl))
+            {
+
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift))
+            {
+
+            }
+            if (Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl))
+            {
+
+            }
+        }
+
+        float mouseWheel = Input.GetAxis("Mouse ScrollWheel");
+        if (mouseWheel != 0)
+        {
+            //slider.value += mouseWheel * mouseWheelMultiplier;
+        }
     }
 
     public void Init(float initialValue)
@@ -59,7 +89,11 @@ public class MapSliderField : MonoBehaviour, ISelectHandler, IDeselectHandler, I
         }
         if (valueText != null)
         {
-            valueText.text = (slider.value * (isPercent ? 100 : 1)).ToString(textFormat);
+            if (isPercent)
+                valueText.text = (100 * (slider.value - slider.minValue) / (slider.maxValue - slider.minValue)).ToString(textFormat);
+            else
+                valueText.text = (slider.value / valueDivisor).ToString(textFormat);
+
             if (isPercent)
                 valueText.text += "%";
         }
@@ -92,7 +126,11 @@ public class MapSliderField : MonoBehaviour, ISelectHandler, IDeselectHandler, I
                 }
             }
 
-            valueText.text = (slider.value * (isPercent ? 100 : 1)).ToString(textFormat);
+            if (isPercent)
+                valueText.text = (100 * (slider.value - slider.minValue) / (slider.maxValue - slider.minValue)).ToString(textFormat);
+            else
+                valueText.text = (slider.value / valueDivisor).ToString(textFormat);
+
             if (isPercent)
                 valueText.text += "%";
         }
