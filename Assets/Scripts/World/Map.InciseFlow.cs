@@ -295,7 +295,6 @@ public partial class Map : MonoBehaviour
 
         if (inciseFlowSettings.plotRiversRandomly)
         {
-            //GenerateHeightMap();
             if (connectivityMap1 == null)
                 EstablishHeightmapConnectivity();
             CalculateLandMask();

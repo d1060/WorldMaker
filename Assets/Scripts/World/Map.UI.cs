@@ -315,7 +315,6 @@ public partial class Map : MonoBehaviour
                 GenerateSeeds();
 
                 UndoErosion();
-                //GenerateHeightMap();
                 UpdateSurfaceMaterialProperties();
             }
             MapData.instance.Save();
@@ -653,7 +652,6 @@ public partial class Map : MonoBehaviour
         {
             //GenerateHeightMap(true);
             UndoErosion();
-            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
             MapData.instance.Save();
         }
@@ -672,7 +670,6 @@ public partial class Map : MonoBehaviour
         {
             //GenerateHeightMap(true);
             UndoErosion();
-            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
             MapData.instance.Save();
         }
@@ -740,7 +737,6 @@ public partial class Map : MonoBehaviour
 
             //GenerateHeightMap(true);
             UndoErosion();
-            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
             MapData.instance.Save();
         }
@@ -794,7 +790,6 @@ public partial class Map : MonoBehaviour
         if (!firstUpdate)
         {
             UndoErosion();
-            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
             MapData.instance.Save();
         }
@@ -807,7 +802,6 @@ public partial class Map : MonoBehaviour
         {
             //GenerateHeightMap(true);
             UndoErosion();
-            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
             MapData.instance.Save();
         }
@@ -819,7 +813,6 @@ public partial class Map : MonoBehaviour
         if (!firstUpdate)
         {
             UndoErosion();
-            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
             MapData.instance.Save();
         }
@@ -832,7 +825,6 @@ public partial class Map : MonoBehaviour
         {
             //GenerateHeightMap(true);
             UndoErosion();
-            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
             MapData.instance.Save();
         }
@@ -845,7 +837,6 @@ public partial class Map : MonoBehaviour
         {
             //GenerateHeightMap(true);
             UndoErosion();
-            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
             MapData.instance.Save();
         }
@@ -857,7 +848,6 @@ public partial class Map : MonoBehaviour
         if (!firstUpdate)
         {
             UndoErosion();
-            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties();
             MapData.instance.Save();
         }
@@ -985,10 +975,9 @@ public partial class Map : MonoBehaviour
 
     public void NewWaterLevel(float value)
     {
-        TextureManager.instance.Settings.waterLevel = value / 100.0f;
+        TextureManager.instance.Settings.waterLevel = value;
         if (!firstUpdate)
         {
-            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties(false);
             MapData.instance.Save();
         }
@@ -996,20 +985,18 @@ public partial class Map : MonoBehaviour
 
     public void NewWaterLevelStr(string value)
     {
-        TextureManager.instance.Settings.waterLevel = value.ToFloat() / 100;
+        TextureManager.instance.Settings.waterLevel = value.ToFloat();
         if (!firstUpdate)
         {
-            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties(false);
             MapData.instance.Save();
-            UpdateUISlider(setupPanelTransform, "Water Level Slider", TextureManager.instance.Settings.waterLevel * 100);
+            UpdateUISlider(setupPanelTransform, "Water Level Slider", TextureManager.instance.Settings.waterLevel);
         }
     }
 
     public void NewLowerHeightLimit(float value)
     {
-        float value1 = GetUISlider(setupPanelTransform, "Height Limits Slider 1") / 100.0f;
-        TextureManager.instance.Settings.minHeight = value1;
+        TextureManager.instance.Settings.minHeight = value;
 
         if (!firstUpdate)
         {
@@ -1024,8 +1011,7 @@ public partial class Map : MonoBehaviour
 
     public void NewUpperHeightLimit(float value)
     {
-        float value2 = GetUISlider(setupPanelTransform, "Height Limits Slider 2") / 100.0f;
-        TextureManager.instance.Settings.maxHeight = value2;
+        TextureManager.instance.Settings.maxHeight = value;
 
         if (!firstUpdate)
         {
@@ -1052,7 +1038,6 @@ public partial class Map : MonoBehaviour
     {
         if (!firstUpdate)
         {
-            //GenerateHeightMap();
             UpdateSurfaceMaterialProperties(false);
         }
     }
@@ -1760,7 +1745,7 @@ public partial class Map : MonoBehaviour
             UpdateUIInputField(setupPanelTransform, "MainTexture Text Box", System.IO.Path.GetFileName(mapSettings.MainTexturePath));
             // Setup the Landmask Field
             UpdateUIInputField(setupPanelTransform, "LandMask Text Box", System.IO.Path.GetFileName(mapSettings.LandMaskPath));
-            UpdateUISlider(setupPanelTransform, "Water Level Slider", TextureManager.instance.Settings.waterLevel * 100);
+            UpdateUISlider(setupPanelTransform, "Water Level Slider", TextureManager.instance.Settings.waterLevel);
             SetHeightLimits();
             UpdateUIToggle(setupPanelTransform, "Toggle Keep Seed", AppData.instance.KeepSeedOnRegenerate);
             UpdateUIToggle(setupPanelTransform, "Toggle Auto Regenerate", AppData.instance.AutoRegenerate);
@@ -1865,8 +1850,8 @@ public partial class Map : MonoBehaviour
     {
         if (setupPanelTransform != null)
         {
-            UpdateUISlider(setupPanelTransform, "Height Limits Slider 1", MapData.instance.LowestHeight * 100);
-            UpdateUISlider(setupPanelTransform, "Height Limits Slider 2", MapData.instance.HighestHeight * 100);
+            UpdateUISlider(setupPanelTransform, "Height Limits Slider 1", MapData.instance.LowestHeight);
+            UpdateUISlider(setupPanelTransform, "Height Limits Slider 2", MapData.instance.HighestHeight);
         }
     }
 

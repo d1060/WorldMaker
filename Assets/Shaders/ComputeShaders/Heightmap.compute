@@ -6,6 +6,7 @@ RWStructuredBuffer<float> heightMap3;
 RWStructuredBuffer<float> heightMap4;
 RWStructuredBuffer<float> heightMap5;
 RWStructuredBuffer<float> heightMap6;
+RWStructuredBuffer<float> minMax;
 
 int _MapWidth;
 float _MinimumHeight;
@@ -38,7 +39,6 @@ float _LayerStrength2;
 float _DomainWarping2;
 
 #include "Assets/Shaders/Simplex.cginc"
-//#include "Assets/Shaders/Perlin.cginc"
 #include "Assets/Shaders/Cubemap.cginc"
 
 [numthreads(8, 8, 6)]
@@ -65,4 +65,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 	else if (id.z == 3) heightMap4[mapIndex] = height;
 	else if (id.z == 4) heightMap5[mapIndex] = height;
 	else if (id.z == 5) heightMap6[mapIndex] = height;
+
+	if (height < minMax[0]) minMax[0] = height;
+	if (height > minMax[1]) minMax[1] = height;
 }

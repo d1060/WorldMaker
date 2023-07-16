@@ -673,28 +673,33 @@ public partial class Map : MonoBehaviour
         {
             TextureManager.instance.InstantiateHeightMap();
 
+            float[] minMax = new float[2] { 999999, -999999 };
+            ComputeBuffer mapBufferMinMax = new ComputeBuffer(2, sizeof(float));
+            mapBufferMinMax.SetData(minMax);
+            heightMapComputeShader.SetBuffer(0, "minMax", mapBufferMinMax);
+
             ComputeBuffer mapBuffer1 = new ComputeBuffer(TextureManager.instance.HeightMap1.Length, sizeof(float));
-            mapBuffer1.SetData(TextureManager.instance.HeightMap1);
+            //mapBuffer1.SetData(TextureManager.instance.HeightMap1);
             heightMapComputeShader.SetBuffer(0, "heightMap1", mapBuffer1);
 
             ComputeBuffer mapBuffer2 = new ComputeBuffer(TextureManager.instance.HeightMap2.Length, sizeof(float));
-            mapBuffer1.SetData(TextureManager.instance.HeightMap2);
+            //mapBuffer1.SetData(TextureManager.instance.HeightMap2);
             heightMapComputeShader.SetBuffer(0, "heightMap2", mapBuffer2);
 
             ComputeBuffer mapBuffer3 = new ComputeBuffer(TextureManager.instance.HeightMap3.Length, sizeof(float));
-            mapBuffer1.SetData(TextureManager.instance.HeightMap3);
+            //mapBuffer1.SetData(TextureManager.instance.HeightMap3);
             heightMapComputeShader.SetBuffer(0, "heightMap3", mapBuffer3);
 
             ComputeBuffer mapBuffer4 = new ComputeBuffer(TextureManager.instance.HeightMap4.Length, sizeof(float));
-            mapBuffer1.SetData(TextureManager.instance.HeightMap4);
+            //mapBuffer1.SetData(TextureManager.instance.HeightMap4);
             heightMapComputeShader.SetBuffer(0, "heightMap4", mapBuffer4);
 
             ComputeBuffer mapBuffer5 = new ComputeBuffer(TextureManager.instance.HeightMap5.Length, sizeof(float));
-            mapBuffer1.SetData(TextureManager.instance.HeightMap5);
+            //mapBuffer1.SetData(TextureManager.instance.HeightMap5);
             heightMapComputeShader.SetBuffer(0, "heightMap5", mapBuffer5);
 
             ComputeBuffer mapBuffer6 = new ComputeBuffer(TextureManager.instance.HeightMap6.Length, sizeof(float));
-            mapBuffer1.SetData(TextureManager.instance.HeightMap6);
+            //mapBuffer1.SetData(TextureManager.instance.HeightMap6);
             heightMapComputeShader.SetBuffer(0, "heightMap6", mapBuffer6);
 
             heightMapComputeShader.SetFloat("_MinimumHeight", MapData.instance.LowestHeight);
@@ -730,6 +735,8 @@ public partial class Map : MonoBehaviour
 
             heightMapComputeShader.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 8f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 8f), 1);
 
+            mapBufferMinMax.GetData(minMax);
+
             mapBuffer1.GetData(TextureManager.instance.HeightMap1);
             mapBuffer2.GetData(TextureManager.instance.HeightMap2);
             mapBuffer3.GetData(TextureManager.instance.HeightMap3);
@@ -748,6 +755,7 @@ public partial class Map : MonoBehaviour
                 ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "heightMap6.png"));
             }
 
+            mapBufferMinMax.Release();
             mapBuffer1.Release();
             mapBuffer2.Release();
             mapBuffer3.Release();
@@ -1112,6 +1120,7 @@ public partial class Map : MonoBehaviour
         ShowErodingTerrainPanel();
         yield return null;
         GenerateHeightMap();
+        HeightMap2Texture();
         //string filename = Path.Combine(Application.persistentDataPath, "Textures", "heightmap.png");
         //Textures.instance.SaveTextureFloatArray(heightMap, TextureManager.instance.Settings.textureWidth, TextureManager.instance.Settings.textureWidth, filename);
         HydraulicErosion.instance.mapWidth = TextureManager.instance.Settings.textureWidth;
@@ -1120,7 +1129,6 @@ public partial class Map : MonoBehaviour
         HydraulicErosion.instance.erosionUpdate = erosionUpdateShader;
         HydraulicErosion.instance.erosionSettings = erosionSettings;
         HydraulicErosion.instance.Erode();
-        HeightMap2Texture();
         //heightmap.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "heightmap-2.png"));
         isEroded = true;
         UpdateSurfaceMaterialHeightMap();
@@ -1146,27 +1154,8 @@ public partial class Map : MonoBehaviour
     public void UndoErosion()
     {
         ResetEroded();
-        //TextureManager.instance.FlowTexture = null;
-        //TextureManager.instance.FlowTextureRandom = null;
-        //TextureManager.instance.InciseFlowMap = null;
-        //TextureManager.instance.FlowMap = null;
-        //isInciseFlowApplied = false;
-
-        //GenerateHeightMap();
-        //planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
-
-        //if (heightmapRT != null)
-        //{
-        //    Destroy(heightmapRT);
-        //    heightmapRT = null;
-        //}
-
-        //if (mapSettings.UseImages)
-        //{
-            //UpdateSurfaceMaterialHeightMap();
-            if (heightmapRT != null)
-                planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
-        //}
+        if (heightmapRT != null)
+            planetSurfaceMaterial.SetInt("_IsHeightmapSet", 1);
     }
     
     public ComputeShader landMaskShader;
@@ -1241,6 +1230,7 @@ public partial class Map : MonoBehaviour
     public void AlterTerrain(Vector2 coordinates, float radius, float elevationDelta)
     {
         GenerateHeightMap();
+        HeightMap2Texture();
 
         float radiusInPixels = radius;
         if (!showGlobe)
@@ -1282,7 +1272,6 @@ public partial class Map : MonoBehaviour
             }
         }
 
-        HeightMap2Texture();
         isEroded = true;
         planetSurfaceMaterial.SetInt("_IsEroded", 1);
     }

@@ -402,7 +402,7 @@ public class CameraController : MonoBehaviour
         }
 
         float sliderValue = slider.value;
-        float step = value * (slider.maxValue - slider.minValue) / 100;
+        float step = value * (slider.maxValue - slider.minValue) / 10;
         sliderValue += step;
         slider.value = sliderValue;
     }

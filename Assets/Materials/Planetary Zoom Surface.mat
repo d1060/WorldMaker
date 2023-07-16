@@ -83,8 +83,8 @@ Material:
     m_Ints: []
     m_Floats:
     - _BakedNormalIntensity: 1
-    - _BoundaryU: 0.25
-    - _BoundaryV: 0.5
+    - _BoundaryU: 0.075
+    - _BoundaryV: 0.075
     - _BumpScale: 1
     - _CenterU: 0.5
     - _CenterV: 0.5
@@ -99,7 +99,7 @@ Material:
     - _ColorSteps: 6
     - _Cutoff: 0.5
     - _DesertThreshold1: 10
-    - _DesertThreshold2: 12.794042
+    - _DesertThreshold2: 20
     - _DetailNormalMapScale: 1
     - _DomainWarping: 0.58610964
     - _DomainWarping2: 1.4146364
@@ -114,10 +114,10 @@ Material:
     - _HeightExponent2: 2
     - _HighHumidityLightnessPercentage: 0.2
     - _HumidityExponent: 2.718281
-    - _HumidityMultiplier: 10
+    - _HumidityMultiplier: 11
     - _IceLandNormalScale: 75
-    - _IceTemperatureThreshold1: 2.6982698
-    - _IceTemperatureThreshold2: 2.596478
+    - _IceTemperatureThreshold1: 2.5
+    - _IceTemperatureThreshold2: 2.3
     - _IceWaterNormalScale: 20
     - _IsFlowTexSet: 1
     - _IsLandmaskSet: 0
@@ -156,16 +156,16 @@ Material:
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _TemperatureElevationRatio: 13.087707
+    - _TemperatureElevationRatio: 10
     - _TemperatureExponent: 2.718281
     - _TemperatureLatitudeDrop: 0
-    - _TemperatureLatitudeMultiplier: 27.72969
-    - _TemperatureRatio: 9.900177
-    - _TemperatureWaterDrop: 1
-    - _TextureWidth: 1024
+    - _TemperatureLatitudeMultiplier: 24
+    - _TemperatureRatio: 11
+    - _TemperatureWaterDrop: 1.25
+    - _TextureWidth: 512
     - _UVSec: 0
     - _UnderwaterNormalInfluence: 0
-    - _UnderwaterNormalScale: 30.000002
+    - _UnderwaterNormalScale: 10
     - _WaterLevel: 0.506848
     - _XOffset: 0.39319837
     - _XOffset2: 0.44215328
@@ -174,7 +174,7 @@ Material:
     - _ZOffset: 0.04737884
     - _ZOffset2: 0.5725585
     - _ZWrite: 1
-    - _ZoomTextureHeight: 2048
+    - _ZoomTextureHeight: 1024
     - _ZoomTextureWidth: 2048
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
