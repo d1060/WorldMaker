@@ -325,14 +325,43 @@ Shader "Noise/PlanetarySurfaceTexture"
                 }
                 else
                 {
-                    if (isAboveWater)
+                    float2 uvDL = float2((int)(uv.x * _TextureWidth * 4) / (float)(_TextureWidth * 4), (int)(uv.y * _TextureWidth * 2) / (float)(_TextureWidth * 2));
+                    float2 uvDR = float2(((int)(uv.x * _TextureWidth * 4) + 1) / (float)(_TextureWidth * 4), (int)(uv.y * _TextureWidth * 2) / (float)(_TextureWidth * 2));
+                    float2 uvUL = float2((int)(uv.x * _TextureWidth * 4) / (float)(_TextureWidth * 4), ((int)(uv.y * _TextureWidth * 2) + 1) / (float)(_TextureWidth * 2));
+                    float2 uvUR = float2(((int)(uv.x * _TextureWidth * 4) + 1) / (float)(_TextureWidth * 4), ((int)(uv.y * _TextureWidth * 2) + 1) / (float)(_TextureWidth * 2));
+
+                    if (uvDR.x > 1)
                     {
-                        o.Albedo = float3(1, 1, 1);
+                        uvDR.x -= 1;
+                        uvUR.x -= 1;
                     }
-                    else
+
+                    if (uvUL.y > 1)
                     {
-                        o.Albedo = float3(0, 0, 0);
+                        uvUL.y = 1;
+                        uvUR.y = 1;
                     }
+
+                    float4 cDL = tex2D(_HeightMap, uvDL);
+                    float heightDL = (cDL.r + cDL.g + cDL.b) / 3;
+
+                    float4 cDR = tex2D(_HeightMap, uvDR);
+                    float heightDR = (cDR.r + cDR.g + cDR.b) / 3;
+
+                    float4 cUL = tex2D(_HeightMap, uvUL);
+                    float heightUL = (cUL.r + cUL.g + cUL.b) / 3;
+
+                    float4 cUR = tex2D(_HeightMap, uvUR);
+                    float heightUR = (cUR.r + cUR.g + cUR.b) / 3;
+
+                    bool isAboveWaterDL = heightDL > _WaterLevel;
+                    bool isAboveWaterDR = heightDR > _WaterLevel;
+                    bool isAboveWaterUL = heightUL > _WaterLevel;
+                    bool isAboveWaterUR = heightUR > _WaterLevel;
+
+                    float greyScale = (isAboveWaterDL ? 0.25 : 0) + (isAboveWaterDR ? 0.25 : 0) + (isAboveWaterUL ? 0.25 : 0) + (isAboveWaterUR ? 0.25 : 0);
+
+                    o.Albedo = float3(greyScale, greyScale, greyScale);
                 }
 
                 o.Metallic = 0;
@@ -347,14 +376,43 @@ Shader "Noise/PlanetarySurfaceTexture"
                 }
                 else
                 {
-                    if (isAboveWater)
+                    float2 uvDL = float2((int)(uv.x * _TextureWidth * 4) / (float)(_TextureWidth * 4), (int)(uv.y * _TextureWidth * 2) / (float)(_TextureWidth * 2));
+                    float2 uvDR = float2(((int)(uv.x * _TextureWidth * 4) + 1) / (float)(_TextureWidth * 4), (int)(uv.y * _TextureWidth * 2) / (float)(_TextureWidth * 2));
+                    float2 uvUL = float2((int)(uv.x * _TextureWidth * 4) / (float)(_TextureWidth * 4), ((int)(uv.y * _TextureWidth * 2) + 1) / (float)(_TextureWidth * 2));
+                    float2 uvUR = float2(((int)(uv.x * _TextureWidth * 4) + 1) / (float)(_TextureWidth * 4), ((int)(uv.y * _TextureWidth * 2) + 1) / (float)(_TextureWidth * 2));
+
+                    if (uvDR.x > 1)
                     {
-                        o.Albedo = float3(0, 0, 0);
+                        uvDR.x -= 1;
+                        uvUR.x -= 1;
                     }
-                    else
+
+                    if (uvUL.y > 1)
                     {
-                        o.Albedo = float3(1, 1, 1);
+                        uvUL.y = 1;
+                        uvUR.y = 1;
                     }
+
+                    float4 cDL = tex2D(_HeightMap, uvDL);
+                    float heightDL = (cDL.r + cDL.g + cDL.b) / 3;
+
+                    float4 cDR = tex2D(_HeightMap, uvDR);
+                    float heightDR = (cDR.r + cDR.g + cDR.b) / 3;
+
+                    float4 cUL = tex2D(_HeightMap, uvUL);
+                    float heightUL = (cUL.r + cUL.g + cUL.b) / 3;
+
+                    float4 cUR = tex2D(_HeightMap, uvUR);
+                    float heightUR = (cUR.r + cUR.g + cUR.b) / 3;
+
+                    bool isAboveWaterDL = heightDL > _WaterLevel;
+                    bool isAboveWaterDR = heightDR > _WaterLevel;
+                    bool isAboveWaterUL = heightUL > _WaterLevel;
+                    bool isAboveWaterUR = heightUR > _WaterLevel;
+
+                    float greyScale = (isAboveWaterDL ? 0.25 : 0) + (isAboveWaterDR ? 0.25 : 0) + (isAboveWaterUL ? 0.25 : 0) + (isAboveWaterUR ? 0.25 : 0);
+
+                    o.Albedo = float3(1 - greyScale, 1 - greyScale, 1 - greyScale);
                 }
 
                 o.Metallic = 0;
@@ -362,8 +420,6 @@ Shader "Noise/PlanetarySurfaceTexture"
             }
             else // DrawType != 1, 2, 7
             {
-
-
                 if (_DrawType == 3) // Drawing a Temperature mask.
                 {
                     o.Metallic = 0;

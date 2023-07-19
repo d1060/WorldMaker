@@ -14,28 +14,26 @@ void checkHeight(int index)
     if (outputs[1] < height) outputs[1] = height;
 }
 
-#include "Assets/Shaders/Cubemap.cginc"
-
 [numthreads(8,8,6)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    int index = toIndex(id, mapWidth);
-    int indexL = toIndex(getLeftCoordinates(id, mapWidth), mapWidth);
-    int indexR = toIndex(getRightCoordinates(id, mapWidth), mapWidth);
-    int indexT = toIndex(getTopCoordinates(id, mapWidth), mapWidth);
-    int indexB = toIndex(getBottomCoordinates(id, mapWidth), mapWidth);
-    int indexBL = toIndex(getBottomLeftCoordinates(id, mapWidth), mapWidth);
-    int indexBR = toIndex(getBottomRightCoordinates(id, mapWidth), mapWidth);
-    int indexTL = toIndex(getTopLeftCoordinates(id, mapWidth), mapWidth);
-    int indexTR = toIndex(getTopRightCoordinates(id, mapWidth), mapWidth);
+    //int index = toIndex(id, mapWidth);
+    //int indexL = toIndex(getLeftCoordinates(id, mapWidth), mapWidth);
+    //int indexR = toIndex(getRightCoordinates(id, mapWidth), mapWidth);
+    //int indexT = toIndex(getTopCoordinates(id, mapWidth), mapWidth);
+    //int indexB = toIndex(getBottomCoordinates(id, mapWidth), mapWidth);
+    //int indexBL = toIndex(getBottomLeftCoordinates(id, mapWidth), mapWidth);
+    //int indexBR = toIndex(getBottomRightCoordinates(id, mapWidth), mapWidth);
+    //int indexTL = toIndex(getTopLeftCoordinates(id, mapWidth), mapWidth);
+    //int indexTR = toIndex(getTopRightCoordinates(id, mapWidth), mapWidth);
 
-    checkHeight(index);
-    checkHeight(indexL);
-    checkHeight(indexR);
-    checkHeight(indexT);
-    checkHeight(indexB);
-    checkHeight(indexBL);
-    checkHeight(indexBR);
-    checkHeight(indexTL);
-    checkHeight(indexTR);
+    //checkHeight(index);
+    //checkHeight(indexL);
+    //checkHeight(indexR);
+    //checkHeight(indexT);
+    //checkHeight(indexB);
+    //checkHeight(indexBL);
+    //checkHeight(indexBR);
+    //checkHeight(indexTL);
+    //checkHeight(indexTR);
 }

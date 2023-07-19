@@ -25,54 +25,17 @@ int ridgedNoise;
 float domainWarping;
 float heightExponent;
 
-StructuredBuffer<float> heightMap12;
-StructuredBuffer<float> heightMap34;
-StructuredBuffer<float> heightMap56;
-
-StructuredBuffer<float> flowErosionMap12;
-StructuredBuffer<float> flowErosionMap34;
-StructuredBuffer<float> flowErosionMap56;
+StructuredBuffer<float> heightMap;
+StructuredBuffer<float> flowErosionMap;
 
 RWTexture2D<float4> result;
 RWTexture2D<float4> noise;
 
 #include "Assets/Shaders/Simplex.cginc"
-#include "Assets/Shaders/Cubemap.cginc"
 
-float getFlowErosionValueAtCoordinates(uint3 coordinates, int mapWidth)
+float erodeHeight(int mapIndex, float height)
 {
-    uint index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) return flowErosionMap12[index];
-    else if (coordinates.z <= 1) return flowErosionMap12[index];
-    else if (coordinates.z <= 2) return flowErosionMap34[index];
-    else if (coordinates.z <= 3) return flowErosionMap34[index];
-    else if (coordinates.z <= 4) return flowErosionMap56[index];
-    else return flowErosionMap56[index];
-}
-
-float getMapValueAtCoordinates(uint3 coordinates, int mapWidth)
-{
-    uint index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) return heightMap12[index];
-    else if (coordinates.z <= 1) return heightMap12[index];
-    else if (coordinates.z <= 2) return heightMap34[index];
-    else if (coordinates.z <= 3) return heightMap34[index];
-    else if (coordinates.z <= 4) return heightMap56[index];
-    else return heightMap56[index];
-}
-
-float erodeHeight(uint3 coordinates, int mapWidth, float height)
-{
-    int index = coordinates.x + coordinates.z * mapWidth + coordinates.y * 6 * mapWidth;
-    float erodedHeight = getFlowErosionValueAtCoordinates(coordinates, mapWidth);
+    float erodedHeight = flowErosionMap[mapIndex];
     if (erodedHeight <= 0)
         return height;
 
@@ -87,61 +50,27 @@ float erodeHeight(uint3 coordinates, int mapWidth, float height)
 [numthreads(16,16,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= 4 * (uint)mapWidth || id.y >= 2 * (uint)mapWidth)
-        return;
+    int mapIndex = id.x + (id.y * mapWidth * 4);
 
-    float2 textureUV = float2((float)id.x / (4.0 * (float)mapWidth), (float)id.y / (2 * (float)mapWidth));
-    float3 cartesian = uvToCartesian(textureUV);
-    float3 cubemap = cartesianToCubemap(cartesian);
-    int cubemapX = saturate(cubemap.x) * mapWidth;
-    int cubemapY = saturate(cubemap.y) * mapWidth;
+    float2 uv = float2((float)id.x / (4.0 * (float)mapWidth), (float)id.y / (2 * (float)mapWidth));
 
-    // Adjustment for boundary pixels.
-    if (cubemap.z != 4 && cubemap.z != 5)
-    {
-        if (id.x == (uint)mapWidth / 2)
-        {
-            cubemap.z = 0;
-            cubemapX = (uint)mapWidth - 1;
-        }
-        else if (id.x == 3 * (uint)mapWidth / 2)
-        {
-            cubemap.z = 1;
-            cubemapX = (uint)mapWidth - 1;
-        }
-        else if (id.x == 5 * (uint)mapWidth / 2)
-        {
-            cubemap.z = 2;
-            cubemapX = (uint)mapWidth - 1;
-        }
-        else if (id.x == 7 * (uint)mapWidth / 2)
-        {
-            cubemap.z = 3;
-            cubemapX = (uint)mapWidth - 1;
-        }
-    }
-
-    uint3 iCubemap = uint3(cubemapX, cubemapY, cubemap.z);
-    float height = getMapValueAtCoordinates(iCubemap, mapWidth);
-    height = erodeHeight(iCubemap, mapWidth, height);
-
-    //height = (height - minHeight) / (maxHeight - minHeight);
+    float height = heightMap[mapIndex];
+    height = erodeHeight(mapIndex, height);
 
     result[id.xy] = float4(height, height, height, 1);
 
-
     float3 offset = float3(xOffset, yOffset, zOffset);
 
-    float height1 = sphereNoise(textureUV, offset, seed1, multiplier, octaves, lacunarity, persistence, ridgedNoise, domainWarping, minHeight, maxHeight);
+    float height1 = sphereNoise(uv, offset, seed1, multiplier, octaves, lacunarity, persistence, ridgedNoise, domainWarping, minHeight, maxHeight);
     height1 = pow(abs(height1), heightExponent);
 
-    float height2 = sphereNoise(textureUV, offset, seed2, multiplier, octaves, lacunarity, persistence, ridgedNoise, domainWarping, minHeight, maxHeight);
+    float height2 = sphereNoise(uv, offset, seed2, multiplier, octaves, lacunarity, persistence, ridgedNoise, domainWarping, minHeight, maxHeight);
     height2 = pow(abs(height2), heightExponent);
 
-    float height3 = sphereNoise(textureUV, offset, seed3, multiplier, octaves, lacunarity, persistence, ridgedNoise, domainWarping, minHeight, maxHeight);
+    float height3 = sphereNoise(uv, offset, seed3, multiplier, octaves, lacunarity, persistence, ridgedNoise, domainWarping, minHeight, maxHeight);
     height3 = pow(abs(height3), heightExponent);
 
-    float height4 = sphereNoise(textureUV, offset, seed4, multiplier, octaves, lacunarity, persistence, ridgedNoise, domainWarping, minHeight, maxHeight);
+    float height4 = sphereNoise(uv, offset, seed4, multiplier, octaves, lacunarity, persistence, ridgedNoise, domainWarping, minHeight, maxHeight);
     height4 = pow(abs(height4), heightExponent);
 
     noise[id.xy] = float4(height1, height2, height3, height4);

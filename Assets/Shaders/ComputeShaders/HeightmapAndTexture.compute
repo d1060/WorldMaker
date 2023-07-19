@@ -1,13 +1,7 @@
 #pragma kernel CSMain
 
-RWStructuredBuffer<float> heightMap12;
-RWStructuredBuffer<float> heightMap34;
-RWStructuredBuffer<float> heightMap56;
-
-StructuredBuffer<float> flowErosionMap12;
-StructuredBuffer<float> flowErosionMap34;
-StructuredBuffer<float> flowErosionMap56;
-
+RWStructuredBuffer<float> heightMap;
+StructuredBuffer<float> flowErosionMap;
 RWTexture2D<float4> result;
 
 int _MapWidth;
@@ -43,61 +37,14 @@ float _DomainWarping2;
 float _ErosionNoiseMerge;
 
 #include "Assets/Shaders/Simplex.cginc"
-#include "Assets/Shaders/Cubemap.cginc"
 
-float getFlowErosionValueAtCoordinates(uint3 coordinates)
+float erodeHeight(int mapIndex, float height)
 {
-    uint index = coordinates.x + coordinates.y * _MapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += _MapWidth * _MapWidth;
-
-    if (coordinates.z <= 0) return flowErosionMap12[index];
-    else if (coordinates.z <= 1) return flowErosionMap12[index];
-    else if (coordinates.z <= 2) return flowErosionMap34[index];
-    else if (coordinates.z <= 3) return flowErosionMap34[index];
-    else if (coordinates.z <= 4) return flowErosionMap56[index];
-    else return flowErosionMap56[index];
-}
-
-float getMapValueAtCoordinates(uint3 coordinates)
-{
-    uint index = coordinates.x + coordinates.y * _MapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += _MapWidth * _MapWidth;
-
-    if (coordinates.z <= 0) return heightMap12[index];
-    else if (coordinates.z <= 1) return heightMap12[index];
-    else if (coordinates.z <= 2) return heightMap34[index];
-    else if (coordinates.z <= 3) return heightMap34[index];
-    else if (coordinates.z <= 4) return heightMap56[index];
-    else return heightMap56[index];
-}
-
-void setMapValueAtCoordinates(uint3 coordinates, float height)
-{
-    uint index = coordinates.x + coordinates.y * _MapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += _MapWidth * _MapWidth;
-
-    if (coordinates.z <= 0) heightMap12[index] = height;
-    else if (coordinates.z <= 1) heightMap12[index] = height;
-    else if (coordinates.z <= 2) heightMap34[index] = height;
-    else if (coordinates.z <= 3) heightMap34[index] = height;
-    else if (coordinates.z <= 4) heightMap56[index] = height;
-    else heightMap56[index] = height;
-}
-
-float erodeHeight(uint3 coordinates, float height)
-{
-    int index = coordinates.x + coordinates.z * _MapWidth + coordinates.y * 6 * _MapWidth;
-    float erodedHeight = getFlowErosionValueAtCoordinates(coordinates);
+    float erodedHeight = flowErosionMap[mapIndex];
     if (erodedHeight <= 0)
         return height;
 
-    float mergedHeight = height - erodedHeight * _ErosionNoiseMerge;
+    float mergedHeight = height - erodedHeight * erosionNoiseMerge;
 
     if (mergedHeight <= 0)
         return 0;
@@ -108,12 +55,11 @@ float erodeHeight(uint3 coordinates, float height)
 [numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
-	if (id.x >= (uint)_MapWidth || id.y >= (uint)_MapWidth || id.z >= 6)
-		return;
+    if (id.x >= (uint)_MapWidth * 4 || id.y >= (uint)_MapWidth * 2)
+        return;
 
-    uint3 cubemap = uint3(id.x, id.y, id.z);
-	float2 uv = cubemapXYZtoUV(id.x, id.y, id.z, _MapWidth);
-    float3 cartesian = uvToCartesian(uv);
+    int mapIndex = id.x + (id.y * _MapWidth * 4);
+    float2 uv = float2((float)id.x / (4.0 * (float)_MapWidth), (float)id.y / (2 * (float)_MapWidth));
 
 	float3 offset = float3(_xOffset, _yOffset, _zOffset);
 	float3 offset2 = float3(_xOffset2, _yOffset2, _zOffset2);
@@ -122,7 +68,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 		offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2,
 		_MinimumHeight, _MaximumHeight);
 
-    setMapValueAtCoordinates(cubemap, height);
+    heightMap[mapIndex] = height;
 
     float erodedHeight = erodeHeight(cubemap, height);
 

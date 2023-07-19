@@ -649,4 +649,14 @@ int3 getBottomLeftIntCoordinates(int3 cubemap, int mapWidth)
 	int3 newCoordinates = getNewIntCoordinates(cubemap, -1, -1, mapWidth);
 	return newCoordinates;
 }
+
+float Interpolate(float valueDL, float valueDR, float valueUL, float valueUR, float Xrate, float Yrate)
+{
+	float valueR = valueDR * (1 - Yrate) + valueUR * Yrate;
+	float valueL = valueDL * (1 - Yrate) + valueUL * Yrate;
+
+	float value = valueL * (1 - Xrate) + valueR * Xrate;
+	return value;
+}
+
 #endif

@@ -44,41 +44,14 @@ public class MapSliderField : MonoBehaviour, ISelectHandler, IDeselectHandler, I
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
-        {
-            if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift))
-            {
 
-            }
-            if (Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl))
-            {
-
-            }
-        }
-        if (Input.GetKeyDown(KeyCode.RightArrow))
-        {
-            if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift))
-            {
-
-            }
-            if (Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl))
-            {
-
-            }
-        }
-
-        float mouseWheel = Input.GetAxis("Mouse ScrollWheel");
-        if (mouseWheel != 0)
-        {
-            //slider.value += mouseWheel * mouseWheelMultiplier;
-        }
     }
 
     public void Init(float initialValue)
     {
         slider = GetComponent<Slider>();
         if (slider == null) return;
-        slider.value = initialValue;
+        slider.value = initialValue * valueDivisor;
         if (valueText == null)
         {
             TMP_InputField inputField = GetComponentInChildren<TMP_InputField>();
@@ -134,7 +107,7 @@ public class MapSliderField : MonoBehaviour, ISelectHandler, IDeselectHandler, I
             if (isPercent)
                 valueText.text += "%";
         }
-        OnSliderChanged?.Invoke(slider.value);
+        OnSliderChanged?.Invoke(slider.value / valueDivisor);
     }
 
     public void OnTextChanged()
@@ -150,8 +123,8 @@ public class MapSliderField : MonoBehaviour, ISelectHandler, IDeselectHandler, I
         valueText.text = levelText;
 
         sliderValue /= (isPercent ? 100 : 1);
+        sliderValue *= valueDivisor;
         slider.value = sliderValue;
-        OnSliderChanged?.Invoke(slider.value);
     }
 
     public void OnSelect(BaseEventData data)
@@ -167,6 +140,12 @@ public class MapSliderField : MonoBehaviour, ISelectHandler, IDeselectHandler, I
     public void OnPointerUp(PointerEventData eventData)
     {
         OnMouseUp?.Invoke();
+    }
+
+    public void Set(float value)
+    {
+        if (slider == null) return;
+        slider.value = value * valueDivisor;
     }
 }
 

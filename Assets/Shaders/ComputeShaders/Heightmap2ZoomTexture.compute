@@ -42,57 +42,50 @@ float _HeightExponent2;
 float _LayerStrength2;
 float _DomainWarping2;
 
-StructuredBuffer<float> heightMap12;
-StructuredBuffer<float> heightMap34;
-StructuredBuffer<float> heightMap56;
-
-StructuredBuffer<float> flowErosionMap12;
-StructuredBuffer<float> flowErosionMap34;
-StructuredBuffer<float> flowErosionMap56;
+StructuredBuffer<float> heightMap;
+StructuredBuffer<float> flowErosionMap;
 
 RWTexture2D<float4> result;
 
 #include "Assets/Shaders/Simplex.cginc"
-#include "Assets/Shaders/Cubemap.cginc"
 
-float getFlowErosionValueAtCoordinates(uint3 coordinates, int mapWidth)
+float Interpolate(float valueDL, float valueDR, float valueUL, float valueUR, float Xrate, float Yrate)
 {
-    uint index = coordinates.x + coordinates.y * mapWidth;
+    float valueR = valueDR * (1 - Yrate) + valueUR * Yrate;
+    float valueL = valueDL * (1 - Yrate) + valueUL * Yrate;
 
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) return flowErosionMap12[index];
-    else if (coordinates.z <= 1) return flowErosionMap12[index];
-    else if (coordinates.z <= 2) return flowErosionMap34[index];
-    else if (coordinates.z <= 3) return flowErosionMap34[index];
-    else if (coordinates.z <= 4) return flowErosionMap56[index];
-    else return flowErosionMap56[index];
+    float value = valueL * (1 - Xrate) + valueR * Xrate;
+    return value;
 }
 
-float getMapValueAtCoordinates(uint3 coordinates, int mapWidth)
+float erodeHeight(float2 worldTextureUV, float height)
 {
-    uint index = coordinates.x + coordinates.y * mapWidth;
+    int2 worldTextureUV_DR = int2(worldTextureUV.x + 1, worldTextureUV.y);
+    if (worldTextureUV_DR.x >= worldTextureWidth * 4) worldTextureUV_DR.x -= worldTextureWidth * 4;
 
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
+    int2 worldTextureUV_UL = int2(worldTextureUV.x, worldTextureUV.y + 1);
+    if (worldTextureUV_UL.y >= worldTextureWidth * 2) worldTextureUV_UL.y = worldTextureWidth * 4 - worldTextureUV_UL.y;
 
-    if (coordinates.z <= 0) return heightMap12[index];
-    else if (coordinates.z <= 1) return heightMap12[index];
-    else if (coordinates.z <= 2) return heightMap34[index];
-    else if (coordinates.z <= 3) return heightMap34[index];
-    else if (coordinates.z <= 4) return heightMap56[index];
-    else return heightMap56[index];
-}
+    int2 worldTextureUV_UR = int2(worldTextureUV.x + 1, worldTextureUV.y + 1);
+    if (worldTextureUV_UR.x >= worldTextureWidth * 4) worldTextureUV_UR.x -= worldTextureWidth * 4;
+    if (worldTextureUV_UR.y >= worldTextureWidth * 2) worldTextureUV_UR.y = worldTextureWidth * 4 - worldTextureUV_UR.y;
 
-float erodeHeight(uint3 coordinates, int mapWidth, float height)
-{
-    int index = coordinates.x + coordinates.z * mapWidth + coordinates.y * 6 * mapWidth;
-    float erodedHeight = getFlowErosionValueAtCoordinates(coordinates, mapWidth);
-    if (erodedHeight <= 0)
-        return height;
+    int index = (int)worldTextureUV.x + (int)worldTextureUV.y * worldTextureWidth * 4;
+    int indexR = (int)worldTextureUV_DR.x + (int)worldTextureUV_DR.y * worldTextureWidth * 4;
+    int indexU = (int)worldTextureUV_UL.x + (int)worldTextureUV_UL.y * worldTextureWidth * 4;
+    int indexUR = (int)worldTextureUV_UR.x + (int)worldTextureUV_UR.y * worldTextureWidth * 4;
 
-    float mergedHeight = height - erodedHeight * erosionNoiseMerge;
+    float erodedHeight = flowErosionMap[index];
+    float erodedHeightR = flowErosionMap[indexR];
+    float erodedHeightU = flowErosionMap[indexU];
+    float erodedHeightUR = flowErosionMap[indexUR];
+
+    float Xrate = worldTextureUV.x - (int)worldTextureUV.x;
+    float Yrate = worldTextureUV.y - (int)worldTextureUV.y;
+
+    float erosion = Interpolate(erodedHeight, erodedHeightR, erodedHeightU, erodedHeightUR, Xrate, Yrate);
+
+    float mergedHeight = height - erosion * erosionNoiseMerge;
 
     if (mergedHeight <= 0)
         return 0;
@@ -115,54 +108,6 @@ float3 RotateAboutAxis(float3 In, float3 Axis, float Rotation)
         one_minus_c * Axis.z * Axis.x - Axis.y * s, one_minus_c * Axis.y * Axis.z + Axis.x * s, one_minus_c * Axis.z * Axis.z + c
     };
     return mul(rot_mat, In);
-}
-
-float GetHeightmapHeight(float2 uv)
-{
-    float3 cartesian = uvToCartesian(uv);
-    float3 cubemap = cartesianToCubemap(cartesian);
-    int cubemapX = saturate(cubemap.x) * worldTextureWidth;
-    int cubemapY = saturate(cubemap.y) * worldTextureWidth;
-    uint x = uv.x * worldTextureWidth * 4;
-
-    // Adjustment for boundary pixels.
-    if (cubemap.z != 4 && cubemap.z != 5)
-    {
-        if (x == (uint)worldTextureWidth / 2)
-        {
-            cubemap.z = 0;
-            cubemapX = (uint)worldTextureWidth - 1;
-        }
-        else if (x == 3 * (uint)worldTextureWidth / 2)
-        {
-            cubemap.z = 1;
-            cubemapX = (uint)worldTextureWidth - 1;
-        }
-        else if (x == 5 * (uint)worldTextureWidth / 2)
-        {
-            cubemap.z = 2;
-            cubemapX = (uint)worldTextureWidth - 1;
-        }
-        else if (x == 7 * (uint)worldTextureWidth / 2)
-        {
-            cubemap.z = 3;
-            cubemapX = (uint)worldTextureWidth - 1;
-        }
-    }
-
-    uint3 iCubemap = uint3(cubemapX, cubemapY, cubemap.z);
-    float height = getMapValueAtCoordinates(iCubemap, worldTextureWidth);
-    height = erodeHeight(iCubemap, worldTextureWidth, height);
-    return height;
-}
-
-float Interpolate(float valueDL, float valueDR, float valueUL, float valueUR, float Xrate, float Yrate)
-{
-    float valueR = valueDR * ( 1 - Yrate ) + valueUR * Yrate;
-    float valueL = valueDL * ( 1 - Yrate ) + valueUL * Yrate;
-
-    float value = valueL * ( 1 - Xrate ) + valueR * Xrate;
-    return value;
 }
 
 [numthreads(16, 16, 1)]
@@ -195,39 +140,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     float2 worldTextureUV = float2(worldUV.x * worldTextureWidth * 4, worldUV.y * worldTextureWidth * 2);
 
-    int2 worldTextureUV_DL = int2(worldTextureUV.x, worldTextureUV.y);
-    int2 worldTextureUV_DR = int2(worldTextureUV.x + 1, worldTextureUV.y);
-    int2 worldTextureUV_UL = int2(worldTextureUV.x, worldTextureUV.y + 1);
-    int2 worldTextureUV_UR = int2(worldTextureUV.x + 1, worldTextureUV.y + 1);
-
-    float2 worldUV_DL = float2((float)worldTextureUV_DL.x / (worldTextureWidth * 4), (float)worldTextureUV_DL.y / (worldTextureWidth * 2));
-    float2 worldUV_DR = float2((float)worldTextureUV_DR.x / (worldTextureWidth * 4), (float)worldTextureUV_DR.y / (worldTextureWidth * 2));
-    float2 worldUV_UL = float2((float)worldTextureUV_UL.x / (worldTextureWidth * 4), (float)worldTextureUV_UL.y / (worldTextureWidth * 2));
-    float2 worldUV_UR = float2((float)worldTextureUV_UR.x / (worldTextureWidth * 4), (float)worldTextureUV_UR.y / (worldTextureWidth * 2));
-
     float height = sphereHeight(worldUV, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2, _MinimumHeight, _MaximumHeight);
-    float heightDL = sphereHeight(worldUV_DL, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2, _MinimumHeight, _MaximumHeight);
-    float heightDR = sphereHeight(worldUV_DR, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2, _MinimumHeight, _MaximumHeight);
-    float heightUL = sphereHeight(worldUV_UL, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2, _MinimumHeight, _MaximumHeight);
-    float heightUR = sphereHeight(worldUV_UR, offset, _Seed, _Multiplier, _Octaves, _Lacunarity, _Persistence, _RidgedNoise, _HeightExponent, _LayerStrength, _DomainWarping, offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2, _MinimumHeight, _MaximumHeight);
 
-    float mapHeight = GetHeightmapHeight(worldUV);
-    float mapHeightDL = GetHeightmapHeight(worldUV_DL);
-    float mapHeightDR = GetHeightmapHeight(worldUV_DR);
-    float mapHeightUL = GetHeightmapHeight(worldUV_UL);
-    float mapHeightUR = GetHeightmapHeight(worldUV_UR);
+    height = erodeHeight(worldTextureUV, height);
 
-    float Xrate = worldTextureUV.x - (int)worldTextureUV.x;
-    float Yrate = worldTextureUV.y - (int)worldTextureUV.y;
-
-    float deltaHeightDL = heightDL - mapHeightDL;
-    float deltaHeightDR = heightDR - mapHeightDR;
-    float deltaHeightUL = heightUL - mapHeightUL;
-    float deltaHeightUR = heightUR - mapHeightUR;
-
-    float deltaHeight = Interpolate(deltaHeightDL, deltaHeightDR, deltaHeightUL, deltaHeightUR, Xrate, Yrate);
-
-    float finalHeight = height - deltaHeight;
-
-    result[id.xy] = float4(finalHeight, finalHeight, finalHeight, 1);
+    result[id.xy] = float4(height, height, height, 1);
 }

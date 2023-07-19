@@ -42,7 +42,7 @@ public partial class Map : MonoBehaviour
         //}
 
         GenerateHeightMap();
-        if (connectivityMap1 == null)
+        if (connectivityMap == null)
             EstablishHeightmapConnectivity();
 
         RandomPlotRivers();
@@ -82,18 +82,12 @@ public partial class Map : MonoBehaviour
         if (establishConnectivity)
             EstablishHeightmapConnectivity();
 
-        InciseFlowErosion();
+        InciseFlowErosion(heightMapBuffer);
 
         if (saveTemporaryTextures)
         {
             if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
-            //float maxErosion = TextureManager.instance.FlowErosionMapMaxValue;
-            ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "flowErosionMap1.png"));
-            ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "flowErosionMap2.png"));
-            ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "flowErosionMap3.png"));
-            ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "flowErosionMap4.png"));
-            ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "flowErosionMap5.png"));
-            ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.FlowErosionMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "flowErosionMap6.png"));
+            ImageTools.SaveTextureFloatArray(TextureManager.instance.FlowErosionMap, TextureManager.instance.Settings.textureWidth * 4, Path.Combine(Application.persistentDataPath, "Textures", "flowErosionMap.png"));
         }
 
         if (inciseFlowSettings.postBlur > 0)
@@ -120,46 +114,17 @@ public partial class Map : MonoBehaviour
         UpdateZoomCamMaterialProperties();
     }
 
-    void InciseFlowErosion()
+    void InciseFlowErosion(ComputeBuffer heightMapBuffer)
     {
-        ComputeBuffer flowMapBuffer12 = new ComputeBuffer(TextureManager.instance.InciseFlowMap1.Length * 2, sizeof(uint));
-        flowMapBuffer12.SetData(TextureManager.instance.InciseFlowMap1, 0, 0, TextureManager.instance.InciseFlowMap1.Length);
-        flowMapBuffer12.SetData(TextureManager.instance.InciseFlowMap2, 0, TextureManager.instance.InciseFlowMap1.Length, TextureManager.instance.InciseFlowMap1.Length);
+        ComputeBuffer flowMapBuffer = new ComputeBuffer(TextureManager.instance.InciseFlowMap.Length, sizeof(uint));
+        flowMapBuffer.SetData(TextureManager.instance.InciseFlowMap, 0, 0, TextureManager.instance.InciseFlowMap.Length);
 
-        ComputeBuffer flowMapBuffer34 = new ComputeBuffer(TextureManager.instance.InciseFlowMap3.Length * 2, sizeof(uint));
-        flowMapBuffer34.SetData(TextureManager.instance.InciseFlowMap3, 0, 0, TextureManager.instance.InciseFlowMap1.Length);
-        flowMapBuffer34.SetData(TextureManager.instance.InciseFlowMap4, 0, TextureManager.instance.InciseFlowMap1.Length, TextureManager.instance.InciseFlowMap1.Length);
-
-        ComputeBuffer flowMapBuffer56 = new ComputeBuffer(TextureManager.instance.InciseFlowMap5.Length * 2, sizeof(uint));
-        flowMapBuffer56.SetData(TextureManager.instance.InciseFlowMap5, 0, 0, TextureManager.instance.InciseFlowMap1.Length);
-        flowMapBuffer56.SetData(TextureManager.instance.InciseFlowMap6, 0, TextureManager.instance.InciseFlowMap1.Length, TextureManager.instance.InciseFlowMap1.Length);
-
-        if (TextureManager.instance.FlowErosionMap1 == null || TextureManager.instance.FlowErosionMap1.Length != TextureManager.instance.HeightMap1.Length)
+        if (TextureManager.instance.FlowErosionMap == null || TextureManager.instance.FlowErosionMap.Length != TextureManager.instance.HeightMap.Length)
             TextureManager.instance.InstantiateFlowErosionMap();
 
-        ComputeBuffer inciseFlowMapBuffer12 = new ComputeBuffer(TextureManager.instance.FlowErosionMap1.Length * 2, sizeof(float));
-        //inciseFlowMapBuffer12.SetData(TextureManager.instance.FlowErosionMap1, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
-        //inciseFlowMapBuffer12.SetData(TextureManager.instance.FlowErosionMap2, 0, TextureManager.instance.FlowErosionMap1.Length, TextureManager.instance.FlowErosionMap1.Length);
+        ComputeBuffer inciseFlowMapBuffer = new ComputeBuffer(TextureManager.instance.FlowErosionMap.Length, sizeof(uint));
 
-        ComputeBuffer inciseFlowMapBuffer34 = new ComputeBuffer(TextureManager.instance.FlowErosionMap3.Length * 2, sizeof(float));
-        //inciseFlowMapBuffer34.SetData(TextureManager.instance.FlowErosionMap3, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
-        //inciseFlowMapBuffer34.SetData(TextureManager.instance.FlowErosionMap4, 0, TextureManager.instance.FlowErosionMap1.Length, TextureManager.instance.FlowErosionMap1.Length);
-
-        ComputeBuffer inciseFlowMapBuffer56 = new ComputeBuffer(TextureManager.instance.FlowErosionMap5.Length * 2, sizeof(float));
-        //inciseFlowMapBuffer56.SetData(TextureManager.instance.FlowErosionMap5, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
-        //inciseFlowMapBuffer56.SetData(TextureManager.instance.FlowErosionMap6, 0, TextureManager.instance.FlowErosionMap1.Length, TextureManager.instance.FlowErosionMap1.Length);
-
-        ComputeBuffer heightMapBuffer12 = new ComputeBuffer(TextureManager.instance.HeightMap1.Length * 2, sizeof(float));
-        heightMapBuffer12.SetData(TextureManager.instance.HeightMap1, 0, 0, TextureManager.instance.HeightMap1.Length);
-        heightMapBuffer12.SetData(TextureManager.instance.HeightMap2, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap2.Length);
-
-        ComputeBuffer heightMapBuffer34 = new ComputeBuffer(TextureManager.instance.HeightMap3.Length * 2, sizeof(float));
-        heightMapBuffer34.SetData(TextureManager.instance.HeightMap3, 0, 0, TextureManager.instance.HeightMap3.Length);
-        heightMapBuffer34.SetData(TextureManager.instance.HeightMap4, 0, TextureManager.instance.HeightMap3.Length, TextureManager.instance.HeightMap4.Length);
-
-        ComputeBuffer heightMapBuffer56 = new ComputeBuffer(TextureManager.instance.HeightMap5.Length * 2, sizeof(float));
-        heightMapBuffer56.SetData(TextureManager.instance.HeightMap5, 0, 0, TextureManager.instance.HeightMap5.Length);
-        heightMapBuffer56.SetData(TextureManager.instance.HeightMap6, 0, TextureManager.instance.HeightMap5.Length, TextureManager.instance.HeightMap6.Length);
+        heightMapBuffer.SetData(TextureManager.instance.HeightMap, 0, 0, TextureManager.instance.HeightMap.Length);
 
         inciseFlowErosion.SetInt("mapWidth", TextureManager.instance.Settings.textureWidth);
         inciseFlowErosion.SetFloat("exponent", inciseFlowSettings.exponent);
@@ -173,34 +138,17 @@ public partial class Map : MonoBehaviour
         inciseFlowErosion.SetFloat("maximumHeight", MapData.instance.HighestHeight);
         inciseFlowErosion.SetFloat("blur", inciseFlowSettings.preBlur);
         inciseFlowErosion.SetFloat("flowMapMaxValue", flowMapMaxValue);
-        inciseFlowErosion.SetBuffer(0, "heightMap12", heightMapBuffer12);
-        inciseFlowErosion.SetBuffer(0, "heightMap34", heightMapBuffer34);
-        inciseFlowErosion.SetBuffer(0, "heightMap56", heightMapBuffer56);
-        inciseFlowErosion.SetBuffer(0, "flowMap12", flowMapBuffer12);
-        inciseFlowErosion.SetBuffer(0, "flowMap34", flowMapBuffer34);
-        inciseFlowErosion.SetBuffer(0, "flowMap56", flowMapBuffer56);
-        inciseFlowErosion.SetBuffer(0, "inciseFlowErosionMap12", inciseFlowMapBuffer12);
-        inciseFlowErosion.SetBuffer(0, "inciseFlowErosionMap34", inciseFlowMapBuffer34);
-        inciseFlowErosion.SetBuffer(0, "inciseFlowErosionMap56", inciseFlowMapBuffer56);
 
-        inciseFlowErosion.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 16f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 16f), 6);
+        inciseFlowErosion.SetBuffer(0, "heightMap", heightMapBuffer);
+        inciseFlowErosion.SetBuffer(0, "flowMap", flowMapBuffer);
+        inciseFlowErosion.SetBuffer(0, "inciseFlowErosionMap", inciseFlowMapBuffer);
 
-        inciseFlowMapBuffer12.GetData(TextureManager.instance.FlowErosionMap1, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
-        inciseFlowMapBuffer12.GetData(TextureManager.instance.FlowErosionMap2, 0, TextureManager.instance.FlowErosionMap2.Length, TextureManager.instance.FlowErosionMap2.Length);
-        inciseFlowMapBuffer34.GetData(TextureManager.instance.FlowErosionMap3, 0, 0, TextureManager.instance.FlowErosionMap3.Length);
-        inciseFlowMapBuffer34.GetData(TextureManager.instance.FlowErosionMap4, 0, TextureManager.instance.FlowErosionMap4.Length, TextureManager.instance.FlowErosionMap4.Length);
-        inciseFlowMapBuffer56.GetData(TextureManager.instance.FlowErosionMap5, 0, 0, TextureManager.instance.FlowErosionMap5.Length);
-        inciseFlowMapBuffer56.GetData(TextureManager.instance.FlowErosionMap6, 0, TextureManager.instance.FlowErosionMap6.Length, TextureManager.instance.FlowErosionMap6.Length);
+        inciseFlowErosion.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 4 / 16f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 2 / 16f), 6);
 
-        heightMapBuffer12.Release();
-        heightMapBuffer34.Release();
-        heightMapBuffer56.Release();
-        flowMapBuffer12.Release();
-        flowMapBuffer34.Release();
-        flowMapBuffer56.Release();
-        inciseFlowMapBuffer12.Release();
-        inciseFlowMapBuffer34.Release();
-        inciseFlowMapBuffer56.Release();
+        inciseFlowMapBuffer.GetData(TextureManager.instance.FlowErosionMap, 0, 0, TextureManager.instance.FlowErosionMap.Length);
+
+        flowMapBuffer.Release();
+        inciseFlowMapBuffer.Release();
     }
 
     public ComputeShader inciseFlowPlotRivers;
@@ -234,71 +182,36 @@ public partial class Map : MonoBehaviour
         }
         plotRiversRT.Release();
 
-        if (inciseFlowSettings.plotRivers && TextureManager.instance.InciseFlowMap1 != null)
+        if (inciseFlowSettings.plotRivers && TextureManager.instance.InciseFlowMap != null)
         {
-            float flowMaxValue = TextureManager.instance.InciseFlowMapMaxValue;
+            //float flowMaxValue = TextureManager.instance.InciseFlowMapMaxValue;
 
-            ComputeBuffer flowMapBuffer12 = new ComputeBuffer(TextureManager.instance.InciseFlowMap1.Length * 2, sizeof(uint));
-            flowMapBuffer12.SetData(TextureManager.instance.InciseFlowMap1, 0, 0, TextureManager.instance.InciseFlowMap1.Length);
-            flowMapBuffer12.SetData(TextureManager.instance.InciseFlowMap2, 0, TextureManager.instance.InciseFlowMap2.Length, TextureManager.instance.InciseFlowMap2.Length);
-
-            ComputeBuffer flowMapBuffer34 = new ComputeBuffer(TextureManager.instance.InciseFlowMap3.Length * 2, sizeof(uint));
-            flowMapBuffer34.SetData(TextureManager.instance.InciseFlowMap3, 0, 0, TextureManager.instance.InciseFlowMap3.Length);
-            flowMapBuffer34.SetData(TextureManager.instance.InciseFlowMap4, 0, TextureManager.instance.InciseFlowMap4.Length, TextureManager.instance.InciseFlowMap4.Length);
-
-            ComputeBuffer flowMapBuffer56 = new ComputeBuffer(TextureManager.instance.InciseFlowMap5.Length * 2, sizeof(uint));
-            flowMapBuffer56.SetData(TextureManager.instance.InciseFlowMap5, 0, 0, TextureManager.instance.InciseFlowMap5.Length);
-            flowMapBuffer56.SetData(TextureManager.instance.InciseFlowMap6, 0, TextureManager.instance.InciseFlowMap6.Length, TextureManager.instance.InciseFlowMap6.Length);
-
-            ComputeBuffer intermediateFlowMapBuffer = new ComputeBuffer(plotRiversRT.width * plotRiversRT.height, sizeof(uint));
+            ComputeBuffer flowMapBuffer = new ComputeBuffer(TextureManager.instance.InciseFlowMap.Length, sizeof(uint));
+            flowMapBuffer.SetData(TextureManager.instance.InciseFlowMap, 0, 0, TextureManager.instance.InciseFlowMap.Length);
 
             //RenderTexture prevActive = RenderTexture.active;
             //RenderTexture.active = rTexture;
             inciseFlowPlotRivers.SetInt("mapWidth", TextureManager.instance.Settings.textureWidth);
             inciseFlowPlotRivers.SetFloat("lowerLimit", inciseFlowSettings.LowerRiverAmount);
             inciseFlowPlotRivers.SetFloat("higherLimit", inciseFlowSettings.UpperRiverAmount);
-            inciseFlowPlotRivers.SetFloat("maxValue", flowMaxValue);
+            inciseFlowPlotRivers.SetFloat("maxValue", flowMapMaxValue);
             inciseFlowPlotRivers.SetFloat("riverExponent", inciseFlowSettings.riverExponent);
             inciseFlowPlotRivers.SetFloats("riverColor", new float[] { inciseFlowSettings.riverColor.r, inciseFlowSettings.riverColor.g, inciseFlowSettings.riverColor.b });
 
-            inciseFlowPlotRivers.SetBuffer(0, "inciseFlowMap12", flowMapBuffer12);
-            inciseFlowPlotRivers.SetBuffer(0, "inciseFlowMap34", flowMapBuffer34);
-            inciseFlowPlotRivers.SetBuffer(0, "inciseFlowMap56", flowMapBuffer56);
-            inciseFlowPlotRivers.SetBuffer(0, "intermediateFlowMap", intermediateFlowMapBuffer);
+            inciseFlowPlotRivers.SetTexture(0, "result", plotRiversRT);
+            inciseFlowPlotRivers.SetBuffer(0, "inciseFlowMap", flowMapBuffer);
 
-            inciseFlowPlotRivers.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 32f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 32f), 6);
-
-            if (saveTemporaryTextures)
-            {
-                if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
-                uint[] intermediateFlowMap = new uint[plotRiversRT.width * plotRiversRT.height];
-                intermediateFlowMapBuffer.GetData(intermediateFlowMap);
-                uint maxValue = intermediateFlowMap.Max();
-                ImageTools.SaveTextureUIntArray(intermediateFlowMap, plotRiversRT.width, plotRiversRT.height, Path.Combine(Application.persistentDataPath, "Textures", "flowMapIntermediate.png"), maxValue);
-                TextureManager.instance.FlowTexture.SaveAsPNG(Path.Combine(Application.persistentDataPath, "Textures", "flowMap.png"));
-            }
-
-            inciseFlowPlotRivers.SetBuffer(1, "inciseFlowMap12", flowMapBuffer12);
-            inciseFlowPlotRivers.SetBuffer(1, "inciseFlowMap34", flowMapBuffer34);
-            inciseFlowPlotRivers.SetBuffer(1, "inciseFlowMap56", flowMapBuffer56);
-            inciseFlowPlotRivers.SetBuffer(1, "intermediateFlowMap", intermediateFlowMapBuffer);
-            inciseFlowPlotRivers.SetTexture(1, "result", plotRiversRT);
-            inciseFlowPlotRivers.Dispatch(1, Mathf.CeilToInt(plotRiversRT.width / 32f), Mathf.CeilToInt(plotRiversRT.height / 32f), 1);
+            inciseFlowPlotRivers.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 4 / 32f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 2 / 32f), 1);
 
             //RenderTexture.active = prevActive;
             //plotRiversRT.SaveToFile(Path.Combine(Application.persistentDataPath, "flowTexture1.png"));
-            flowMapBuffer12.Release();
-            flowMapBuffer34.Release();
-            flowMapBuffer56.Release();
-            intermediateFlowMapBuffer.Release();
+            flowMapBuffer.Release();
         }
 
         if (inciseFlowSettings.plotRiversRandomly)
         {
-            //GenerateHeightMap();
-            if (connectivityMap1 == null)
+            if (connectivityMap == null)
                 EstablishHeightmapConnectivity();
-            CalculateLandMask();
 
             RandomPlotRivers();
         }
@@ -325,120 +238,103 @@ public partial class Map : MonoBehaviour
     void RandomPlotRivers()
     {
         int actualNumberOfRiverSources = inciseFlowSettings.numberOfRivers;
-        if (actualNumberOfRiverSources > landMaskCount)
-            actualNumberOfRiverSources = landMaskCount;
 
-        int[] riverFlowMask12 = new int[2 * TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth];
-        int[] riverFlowMask34 = new int[2 * TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth];
-        int[] riverFlowMask56 = new int[2 * TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth];
+        int[] riverFlowMask = new int[2 * TextureManager.instance.Settings.textureWidth * 4 * TextureManager.instance.Settings.textureWidth];
 
         System.Random random = new System.Random(inciseFlowSettings.riverPlotSeed);
         for (int i = 0; i < actualNumberOfRiverSources; i++)
         {
             Vector3 pointInSpace = new Vector3((float)(random.NextDouble() - 0.5), (float)(random.NextDouble() - 0.5), (float)(random.NextDouble() - 0.5));
-            Vector3 cubemap = pointInSpace.CartesianToCubemap();
+            Vector2 uv = pointInSpace.CartesianToPolarRatio(1);
 
-            int mapX = (int)(cubemap.x * TextureManager.instance.Settings.textureWidth);
-            int mapY = (int)(cubemap.y * TextureManager.instance.Settings.textureWidth);
-            int mapZ = (int)cubemap.z;
+            int mapX = (int)(uv.x * TextureManager.instance.Settings.textureWidth * 4);
+            int mapY = (int)(uv.y * TextureManager.instance.Settings.textureWidth * 2);
 
-            if (TextureManager.instance.HeightMapValueAtCoordinates(mapX, mapY, mapZ) <= TextureManager.instance.Settings.waterLevel)
+            if (TextureManager.instance.HeightMapValueAtCoordinates(mapX, mapY) <= TextureManager.instance.Settings.waterLevel)
             {
                 i--;
                 continue;
             }
 
-            int dropPointIndex = mapY * TextureManager.instance.Settings.textureWidth + mapX;
-            if (mapZ == 1 || mapZ == 3 || mapZ == 5)
-            {
-                dropPointIndex += TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth;
-            }
+            int dropPointIndex = mapY * TextureManager.instance.Settings.textureWidth * 4 + mapX;
 
-            if (mapZ == 0 || mapZ == 1)
-            {
-                riverFlowMask12[dropPointIndex] = 1;
-            }
-            else if (mapZ == 2 || mapZ == 3)
-            {
-                riverFlowMask34[dropPointIndex] = 1;
-            }
-            else if (mapZ == 4 || mapZ == 5)
-            {
-                riverFlowMask56[dropPointIndex] = 1;
-            }
+            riverFlowMask[dropPointIndex] = 1;
         }
 
-        ComputeBuffer riverFlowMaskBuffer12 = new ComputeBuffer(riverFlowMask12.Length, sizeof(int));
-        riverFlowMaskBuffer12.SetData(riverFlowMask12);
+        if (plotRiversRT != null && (plotRiversRT.width != 2 * TextureManager.instance.Settings.textureWidth || plotRiversRT.height != TextureManager.instance.Settings.textureWidth))
+        {
+            Destroy(plotRiversRT);
+            plotRiversRT = null;
+        }
 
-        ComputeBuffer riverFlowMaskBuffer34 = new ComputeBuffer(riverFlowMask34.Length, sizeof(int));
-        riverFlowMaskBuffer34.SetData(riverFlowMask34);
+        if (plotRiversRT == null)
+        {
+            plotRiversRT = new RenderTexture(TextureManager.instance.Settings.textureWidth * 4, TextureManager.instance.Settings.textureWidth * 2, 32, RenderTextureFormat.ARGBHalf);
+            plotRiversRT.wrapMode = TextureWrapMode.Repeat;
+            plotRiversRT.name = "Heightmap Render Texture";
+            plotRiversRT.enableRandomWrite = true;
+            plotRiversRT.Create();
+        }
+        plotRiversRT.Release();
 
-        ComputeBuffer riverFlowMaskBuffer56 = new ComputeBuffer(riverFlowMask56.Length, sizeof(int));
-        riverFlowMaskBuffer56.SetData(riverFlowMask56);
+        ComputeBuffer riverFlowMaskBuffer = new ComputeBuffer(riverFlowMask.Length, sizeof(int));
+        riverFlowMaskBuffer.SetData(riverFlowMask);
 
-        ComputeBuffer connectivityMapBuffer12 = new ComputeBuffer(connectivityMap1.Length * 2, sizeof(float));
-        connectivityMapBuffer12.SetData(connectivityMap1, 0, 0, connectivityMap1.Length);
-        connectivityMapBuffer12.SetData(connectivityMap2, 0, connectivityMap2.Length, connectivityMap2.Length);
+        ComputeBuffer connectivityMapBuffer = new ComputeBuffer(connectivityMap.Length, sizeof(int));
+        connectivityMapBuffer.SetData(connectivityMap, 0, 0, connectivityMap.Length);
 
-        ComputeBuffer connectivityMapBuffer34 = new ComputeBuffer(connectivityMap3.Length * 2, sizeof(float));
-        connectivityMapBuffer34.SetData(connectivityMap3, 0, 0, connectivityMap3.Length);
-        connectivityMapBuffer34.SetData(connectivityMap3, 0, connectivityMap4.Length, connectivityMap4.Length);
+        ComputeBuffer flowMapBuffer = new ComputeBuffer(TextureManager.instance.InciseFlowMap.Length, sizeof(uint));
+        flowMapBuffer.SetData(TextureManager.instance.InciseFlowMap, 0, 0, TextureManager.instance.InciseFlowMap.Length);
 
-        ComputeBuffer connectivityMapBuffer56 = new ComputeBuffer(connectivityMap5.Length * 2, sizeof(float));
-        connectivityMapBuffer56.SetData(connectivityMap5, 0, 0, connectivityMap5.Length);
-        connectivityMapBuffer56.SetData(connectivityMap6, 0, connectivityMap6.Length, connectivityMap6.Length);
+        ComputeBuffer alphasBuffer = new ComputeBuffer(TextureManager.instance.InciseFlowMap.Length, sizeof(float));
 
         randomPlotRivers.SetInt("mapWidth", TextureManager.instance.Settings.textureWidth);
         randomPlotRivers.SetInt("mapHeight", TextureManager.instance.Settings.textureWidth);
-        randomPlotRivers.SetFloat("waterLevel", TextureManager.instance.Settings.waterLevel);
-        randomPlotRivers.SetFloat("startingAlpha", inciseFlowSettings.startingAlpha);
+        randomPlotRivers.SetFloat("flowMapMaxValue", flowMapMaxValue);
+        randomPlotRivers.SetFloat("riverExponent", inciseFlowSettings.riverExponent);
+        randomPlotRivers.SetFloat("lowerLimit", inciseFlowSettings.LowerRiverAmount);
+        randomPlotRivers.SetFloat("higherLimit", inciseFlowSettings.UpperRiverAmount);
+        randomPlotRivers.SetInt("maxRiverLength", 1000);
         randomPlotRivers.SetFloats("riverColor", new float[] { inciseFlowSettings.riverColor.r, inciseFlowSettings.riverColor.g, inciseFlowSettings.riverColor.b });
-        randomPlotRivers.SetBuffer(0, "riverFlowMask12", riverFlowMaskBuffer12);
-        randomPlotRivers.SetBuffer(0, "riverFlowMask34", riverFlowMaskBuffer34);
-        randomPlotRivers.SetBuffer(0, "riverFlowMask56", riverFlowMaskBuffer56);
-        randomPlotRivers.SetBuffer(0, "connectivityMap12", connectivityMapBuffer12);
-        randomPlotRivers.SetBuffer(0, "connectivityMap34", connectivityMapBuffer34);
-        randomPlotRivers.SetBuffer(0, "connectivityMap56", connectivityMapBuffer56);
-        randomPlotRivers.SetTexture(0, "original", TextureManager.instance.FlowTexture);
-        randomPlotRivers.SetTexture(0, "result", plotRiversRT);
+        randomPlotRivers.SetBuffer(0, "riverFlowMask", riverFlowMaskBuffer);
+        randomPlotRivers.SetBuffer(0, "connectivityMap", connectivityMapBuffer);
+        randomPlotRivers.SetBuffer(0, "flowMap", flowMapBuffer);
+        randomPlotRivers.SetBuffer(0, "riverAlphas", alphasBuffer);
 
-        int numPasses = (int)(TextureManager.instance.Settings.textureWidth * (1 - TextureManager.instance.Settings.waterLevel) / 3);
-        for (int i = 0; i < numPasses; i++)
-            randomPlotRivers.Dispatch(0, Mathf.CeilToInt(plotRiversRT.width / 8f), Mathf.CeilToInt(plotRiversRT.height / 8f), 1);
+        randomPlotRivers.Dispatch(0, Mathf.CeilToInt(plotRiversRT.width / 32f), Mathf.CeilToInt(plotRiversRT.height / 32f), 1);
 
-        riverFlowMaskBuffer12.Release();
-        riverFlowMaskBuffer34.Release();
-        riverFlowMaskBuffer56.Release();
+        if (saveTemporaryTextures)
+        {
+            if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
+            float[] alphas = new float[TextureManager.instance.InciseFlowMap.Length];
+            alphasBuffer.GetData(alphas);
+            ImageTools.SaveTextureFloatArray(alphas, TextureManager.instance.Settings.textureWidth * 4, Path.Combine(Application.persistentDataPath, "Textures", "riverAlphas.png"));
+        }
 
-        connectivityMapBuffer12.Release();
-        connectivityMapBuffer34.Release();
-        connectivityMapBuffer56.Release();
+        randomPlotRivers.SetBuffer(1, "riverAlphas", alphasBuffer);
+        randomPlotRivers.SetTexture(1, "result", plotRiversRT);
+
+        randomPlotRivers.Dispatch(1, Mathf.CeilToInt(plotRiversRT.width / 32f), Mathf.CeilToInt(plotRiversRT.height / 32f), 1);
+
+        riverFlowMaskBuffer.Release();
+        connectivityMapBuffer.Release();
+        flowMapBuffer.Release();
+        alphasBuffer.Release();
     }
 
     public ComputeShader heightmapConnectivityShader;
     public ComputeShader heightmapFlowMapShader;
     public ComputeShader heightmapAverageShader;
 
-    int[] connectivityMap1;
-    int[] connectivityMap2;
-    int[] connectivityMap3;
-    int[] connectivityMap4;
-    int[] connectivityMap5;
-    int[] connectivityMap6;
+    int[] connectivityMap;
 
     float flowMapMaxValue = 1000000;
 
     void EstablishHeightmapConnectivity()
     {
-        if (connectivityMap1 == null || connectivityMap1.Length != TextureManager.instance.HeightMap1.Length)
+        if (connectivityMap == null || connectivityMap.Length != TextureManager.instance.HeightMap.Length)
         {
-            connectivityMap1 = new int[TextureManager.instance.HeightMap1.Length];
-            connectivityMap2 = new int[TextureManager.instance.HeightMap1.Length];
-            connectivityMap3 = new int[TextureManager.instance.HeightMap1.Length];
-            connectivityMap4 = new int[TextureManager.instance.HeightMap1.Length];
-            connectivityMap5 = new int[TextureManager.instance.HeightMap1.Length];
-            connectivityMap6 = new int[TextureManager.instance.HeightMap1.Length];
+            connectivityMap = new int[TextureManager.instance.HeightMap.Length];
         }
 
         int numPasses = (int)(TextureManager.instance.Settings.textureWidth / 4);
@@ -447,52 +343,18 @@ public partial class Map : MonoBehaviour
         //outputMap[0] = 1;
         flowMapMaxValue = 1000000;
 
-        ComputeBuffer heightMapBuffer12 = new ComputeBuffer(TextureManager.instance.HeightMap1.Length * 2, sizeof(float));
-        heightMapBuffer12.SetData(TextureManager.instance.HeightMap1, 0, 0, TextureManager.instance.HeightMap1.Length);
-        heightMapBuffer12.SetData(TextureManager.instance.HeightMap2, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap1.Length);
+        heightMapBuffer.SetData(TextureManager.instance.HeightMap, 0, 0, TextureManager.instance.HeightMap.Length);
 
-        ComputeBuffer heightMapBuffer34 = new ComputeBuffer(TextureManager.instance.HeightMap3.Length * 2, sizeof(float));
-        heightMapBuffer34.SetData(TextureManager.instance.HeightMap3, 0, 0, TextureManager.instance.HeightMap1.Length);
-        heightMapBuffer34.SetData(TextureManager.instance.HeightMap4, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap1.Length);
+        ComputeBuffer connectivityMapBuffer = new ComputeBuffer(connectivityMap.Length, sizeof(int));
+        connectivityMapBuffer.SetData(connectivityMap, 0, 0, connectivityMap.Length);
 
-        ComputeBuffer heightMapBuffer56 = new ComputeBuffer(TextureManager.instance.HeightMap5.Length * 2, sizeof(float));
-        heightMapBuffer56.SetData(TextureManager.instance.HeightMap5, 0, 0, TextureManager.instance.HeightMap1.Length);
-        heightMapBuffer56.SetData(TextureManager.instance.HeightMap6, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap1.Length);
+        ComputeBuffer distanceToWaterBuffer = new ComputeBuffer(TextureManager.instance.HeightMap.Length, sizeof(float));
 
-        ComputeBuffer connectivityMapBuffer12 = new ComputeBuffer(connectivityMap1.Length * 2, sizeof(float));
-        connectivityMapBuffer12.SetData(connectivityMap1, 0, 0, connectivityMap1.Length);
-        connectivityMapBuffer12.SetData(connectivityMap2, 0, connectivityMap2.Length, connectivityMap2.Length);
-
-        ComputeBuffer connectivityMapBuffer34 = new ComputeBuffer(connectivityMap3.Length * 2, sizeof(float));
-        connectivityMapBuffer34.SetData(connectivityMap3, 0, 0, connectivityMap3.Length);
-        connectivityMapBuffer34.SetData(connectivityMap3, 0, connectivityMap4.Length, connectivityMap4.Length);
-
-        ComputeBuffer connectivityMapBuffer56 = new ComputeBuffer(connectivityMap5.Length * 2, sizeof(float));
-        connectivityMapBuffer56.SetData(connectivityMap5, 0, 0, connectivityMap5.Length);
-        connectivityMapBuffer56.SetData(connectivityMap6, 0, connectivityMap6.Length, connectivityMap6.Length);
-
-        ComputeBuffer distanceToWaterBuffer12 = new ComputeBuffer(TextureManager.instance.HeightMap1.Length * 2, sizeof(float));
-        ComputeBuffer distanceToWaterBuffer34 = new ComputeBuffer(TextureManager.instance.HeightMap1.Length * 2, sizeof(float));
-        ComputeBuffer distanceToWaterBuffer56 = new ComputeBuffer(TextureManager.instance.HeightMap1.Length * 2, sizeof(float));
-        //ComputeBuffer distanceHeightMapBuffer = new ComputeBuffer(TextureManager.instance.HeightMap1.Length * 6, sizeof(float));
-
-        if (TextureManager.instance.InciseFlowMap1 == null || TextureManager.instance.InciseFlowMap1.Length != TextureManager.instance.HeightMap1.Length * 6)
+        if (TextureManager.instance.InciseFlowMap == null || TextureManager.instance.InciseFlowMap.Length != TextureManager.instance.HeightMap.Length)
             TextureManager.instance.InstantiateInciseFlowMap();
 
-        ComputeBuffer flowMapBuffer12 = new ComputeBuffer(TextureManager.instance.InciseFlowMap1.Length * 2, sizeof(uint));
-        flowMapBuffer12.SetData(TextureManager.instance.InciseFlowMap1, 0, 0, TextureManager.instance.InciseFlowMap1.Length);
-        flowMapBuffer12.SetData(TextureManager.instance.InciseFlowMap2, 0, TextureManager.instance.InciseFlowMap2.Length, TextureManager.instance.InciseFlowMap2.Length);
-
-        ComputeBuffer flowMapBuffer34 = new ComputeBuffer(TextureManager.instance.InciseFlowMap3.Length * 2, sizeof(uint));
-        flowMapBuffer34.SetData(TextureManager.instance.InciseFlowMap3, 0, 0, TextureManager.instance.InciseFlowMap3.Length);
-        flowMapBuffer34.SetData(TextureManager.instance.InciseFlowMap4, 0, TextureManager.instance.InciseFlowMap4.Length, TextureManager.instance.InciseFlowMap4.Length);
-
-        ComputeBuffer flowMapBuffer56 = new ComputeBuffer(TextureManager.instance.InciseFlowMap5.Length * 2, sizeof(uint));
-        flowMapBuffer56.SetData(TextureManager.instance.InciseFlowMap5, 0, 0, TextureManager.instance.InciseFlowMap5.Length);
-        flowMapBuffer56.SetData(TextureManager.instance.InciseFlowMap6, 0, TextureManager.instance.InciseFlowMap6.Length, TextureManager.instance.InciseFlowMap6.Length);
-
-        //ComputeBuffer outputBuffer = new ComputeBuffer(outputMap.Length, sizeof(float));
-        //outputBuffer.SetData(outputMap);
+        ComputeBuffer flowMapBuffer = new ComputeBuffer(TextureManager.instance.InciseFlowMap.Length, sizeof(uint));
+        flowMapBuffer.SetData(TextureManager.instance.InciseFlowMap, 0, 0, TextureManager.instance.InciseFlowMap.Length);
 
         heightmapConnectivityShader.SetInt("mapWidth", TextureManager.instance.Settings.textureWidth);
         heightmapConnectivityShader.SetInt("mapHeight", TextureManager.instance.Settings.textureWidth);
@@ -502,30 +364,17 @@ public partial class Map : MonoBehaviour
         heightmapConnectivityShader.SetFloat("upwardWeight", inciseFlowSettings.upwardWeight);
         heightmapConnectivityShader.SetFloat("downwardWeight", inciseFlowSettings.downwardWeight);
         heightmapConnectivityShader.SetFloat("distanceWeight", inciseFlowSettings.distanceWeight);
+        heightmapConnectivityShader.SetInt("maxRiverLength", 1000);
 
-        heightmapConnectivityShader.SetBuffer(0, "heightMap12", heightMapBuffer12);
-        heightmapConnectivityShader.SetBuffer(0, "heightMap34", heightMapBuffer34);
-        heightmapConnectivityShader.SetBuffer(0, "heightMap56", heightMapBuffer56);
-
-        //heightmapConnectivityShader.SetBuffer(0, "flowMap12", flowMapBuffer12);
-        //heightmapConnectivityShader.SetBuffer(0, "flowMap34", flowMapBuffer34);
-        //heightmapConnectivityShader.SetBuffer(0, "flowMap56", flowMapBuffer56);
-
-        heightmapConnectivityShader.SetBuffer(0, "distanceMap12", distanceToWaterBuffer12);
-        heightmapConnectivityShader.SetBuffer(0, "distanceMap34", distanceToWaterBuffer34);
-        heightmapConnectivityShader.SetBuffer(0, "distanceMap56", distanceToWaterBuffer56);
-
-        //heightmapConnectivityShader.SetBuffer(0, "distanceHeightMap", distanceHeightMapBuffer);
-        heightmapConnectivityShader.SetBuffer(0, "connectivityMap12", connectivityMapBuffer12);
-        heightmapConnectivityShader.SetBuffer(0, "connectivityMap34", connectivityMapBuffer34);
-        heightmapConnectivityShader.SetBuffer(0, "connectivityMap56", connectivityMapBuffer56);
-        //heightmapConnectivityShader.SetBuffer(0, "output", outputBuffer);
+        heightmapConnectivityShader.SetBuffer(0, "heightMap", heightMapBuffer);
+        heightmapConnectivityShader.SetBuffer(0, "distanceMap", distanceToWaterBuffer);
+        heightmapConnectivityShader.SetBuffer(0, "connectivityMap", connectivityMapBuffer);
 
         for (int i = 0; i < numPasses; i++)
         {
             //outputMap[0] = 1;
             //outputBuffer.SetData(outputMap);
-            heightmapConnectivityShader.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 8f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 8f), 1);
+            heightmapConnectivityShader.Dispatch(0, Mathf.CeilToInt((TextureManager.instance.Settings.textureWidth * 4) / 8f), Mathf.CeilToInt((TextureManager.instance.Settings.textureWidth * 2) / 8f), 1);
             //connectivityIndexesBuffer.GetData(connectivityMap);
             //connectivityMap.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth * 6, Path.Combine(Application.persistentDataPath, "connectivityMap-" + i + ".png"));
             //outputBuffer.GetData(outputMap);
@@ -533,119 +382,41 @@ public partial class Map : MonoBehaviour
             //    break;
         }
 
-        connectivityMapBuffer12.GetData(connectivityMap1, 0, 0, connectivityMap1.Length);
-        connectivityMapBuffer12.GetData(connectivityMap2, 0, connectivityMap2.Length, connectivityMap2.Length);
-        connectivityMapBuffer34.GetData(connectivityMap3, 0, 0, connectivityMap3.Length);
-        connectivityMapBuffer34.GetData(connectivityMap4, 0, connectivityMap4.Length, connectivityMap4.Length);
-        connectivityMapBuffer56.GetData(connectivityMap5, 0, 0, connectivityMap5.Length);
-        connectivityMapBuffer56.GetData(connectivityMap6, 0, connectivityMap6.Length, connectivityMap6.Length);
+        connectivityMapBuffer.GetData(connectivityMap, 0, 0, connectivityMap.Length);
 
         if (saveTemporaryTextures)
         {
             if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
-            connectivityMap1.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityMap1.png"));
-            connectivityMap2.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityMap2.png"));
-            connectivityMap3.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityMap3.png"));
-            connectivityMap4.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityMap4.png"));
-            connectivityMap5.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityMap5.png"));
-            connectivityMap6.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "connectivityMap6.png"));
-        }
-
-        //float maxHeight = 0;
-        //float minHeight = 0;
-        //TextureManager.instance.HeightMapMinMaxHeights(ref minHeight, ref maxHeight);
-
-        if (saveTemporaryTextures)
-        {
-            if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
-            float flowMaxValue = TextureManager.instance.InciseFlowMapMaxValue;
-            if (flowMaxValue == 0) flowMaxValue = 1;
-            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap1.png"), flowMaxValue);
-            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap2.png"), flowMaxValue);
-            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap3.png"), flowMaxValue);
-            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap4.png"), flowMaxValue);
-            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap5.png"), flowMaxValue);
-            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap6.png"), flowMaxValue);
+            connectivityMap.SaveConnectivityMap(TextureManager.instance.Settings.textureWidth * 4, Path.Combine(Application.persistentDataPath, "Textures", "connectivityMap.png"));
         }
 
         //Flow Map
-        heightmapFlowMapShader.SetInt("mapWidth", TextureManager.instance.Settings.textureWidth);
-        heightmapFlowMapShader.SetFloat("flowAmount", 1);
-        heightmapFlowMapShader.SetFloat("maxFlow", flowMapMaxValue);
-        heightmapFlowMapShader.SetInt("numPasses", 1000);
+        heightmapConnectivityShader.SetBuffer(1, "connectivityMap", connectivityMapBuffer);
+        heightmapConnectivityShader.SetBuffer(1, "flowMap", flowMapBuffer);
+        heightmapConnectivityShader.Dispatch(1, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 4 / 8f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 2 / 8f), 1);
 
-        heightmapFlowMapShader.SetBuffer(0, "connectivityMap12", connectivityMapBuffer12);
-        heightmapFlowMapShader.SetBuffer(0, "connectivityMap34", connectivityMapBuffer34);
-        heightmapFlowMapShader.SetBuffer(0, "connectivityMap56", connectivityMapBuffer56);
-
-        heightmapFlowMapShader.SetBuffer(0, "flowMap12", flowMapBuffer12);
-        heightmapFlowMapShader.SetBuffer(0, "flowMap34", flowMapBuffer34);
-        heightmapFlowMapShader.SetBuffer(0, "flowMap56", flowMapBuffer56);
-
-        heightmapFlowMapShader.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 8f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 8f), 6);
-
-        flowMapBuffer12.GetData(TextureManager.instance.InciseFlowMap1, 0, 0, TextureManager.instance.InciseFlowMap1.Length);
-        flowMapBuffer12.GetData(TextureManager.instance.InciseFlowMap2, 0, TextureManager.instance.InciseFlowMap2.Length, TextureManager.instance.InciseFlowMap2.Length);
-        flowMapBuffer34.GetData(TextureManager.instance.InciseFlowMap3, 0, 0, TextureManager.instance.InciseFlowMap3.Length);
-        flowMapBuffer34.GetData(TextureManager.instance.InciseFlowMap4, 0, TextureManager.instance.InciseFlowMap4.Length, TextureManager.instance.InciseFlowMap4.Length);
-        flowMapBuffer56.GetData(TextureManager.instance.InciseFlowMap5, 0, 0, TextureManager.instance.InciseFlowMap5.Length);
-        flowMapBuffer56.GetData(TextureManager.instance.InciseFlowMap6, 0, TextureManager.instance.InciseFlowMap6.Length, TextureManager.instance.InciseFlowMap6.Length);
+        flowMapBuffer.GetData(TextureManager.instance.InciseFlowMap, 0, 0, TextureManager.instance.InciseFlowMap.Length);
 
         flowMapMaxValue = TextureManager.instance.InciseFlowMapMaxValue;
 
         if (saveTemporaryTextures)
         {
             if (!Directory.Exists(Path.Combine(Application.persistentDataPath, "Textures"))) Directory.CreateDirectory(Path.Combine(Application.persistentDataPath, "Textures"));
-            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap1.png"), flowMapMaxValue);
-            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap2.png"), flowMapMaxValue);
-            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap3.png"), flowMapMaxValue);
-            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap4.png"), flowMapMaxValue);
-            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap5.png"), flowMapMaxValue);
-            ImageTools.SaveTextureCubemapFaceUIntArray(TextureManager.instance.InciseFlowMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap6.png"), flowMapMaxValue);
+            ImageTools.SaveTextureUIntArray(TextureManager.instance.InciseFlowMap, TextureManager.instance.Settings.textureWidth * 4, Path.Combine(Application.persistentDataPath, "Textures", "inciseFlowMap.png"), flowMapMaxValue);
         }
 
-        heightMapBuffer12.Release();
-        heightMapBuffer34.Release();
-        heightMapBuffer56.Release();
-
-        connectivityMapBuffer12.Release();
-        connectivityMapBuffer34.Release();
-        connectivityMapBuffer56.Release();
-
-        distanceToWaterBuffer12.Release();
-        distanceToWaterBuffer34.Release();
-        distanceToWaterBuffer56.Release();
-
-        flowMapBuffer12.Release();
-        flowMapBuffer34.Release();
-        flowMapBuffer56.Release();
+        connectivityMapBuffer.Release();
+        distanceToWaterBuffer.Release();
+        flowMapBuffer.Release();
     }
 
     void AverageHeightMap(float blur)
     {
-        ComputeBuffer heightBuffer12 = new ComputeBuffer(TextureManager.instance.FlowErosionMap1.Length * 2, sizeof(float));
-        heightBuffer12.SetData(TextureManager.instance.FlowErosionMap1, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
-        heightBuffer12.SetData(TextureManager.instance.FlowErosionMap2, 0, TextureManager.instance.FlowErosionMap2.Length, TextureManager.instance.FlowErosionMap2.Length);
+        ComputeBuffer heightBuffer = new ComputeBuffer(TextureManager.instance.FlowErosionMap.Length, sizeof(float));
+        heightBuffer.SetData(TextureManager.instance.FlowErosionMap, 0, 0, TextureManager.instance.FlowErosionMap.Length);
 
-        ComputeBuffer heightBuffer34 = new ComputeBuffer(TextureManager.instance.FlowErosionMap3.Length * 2, sizeof(float));
-        heightBuffer34.SetData(TextureManager.instance.FlowErosionMap3, 0, 0, TextureManager.instance.FlowErosionMap3.Length);
-        heightBuffer34.SetData(TextureManager.instance.FlowErosionMap4, 0, TextureManager.instance.FlowErosionMap4.Length, TextureManager.instance.FlowErosionMap4.Length);
-
-        ComputeBuffer heightBuffer56 = new ComputeBuffer(TextureManager.instance.FlowErosionMap5.Length * 2, sizeof(float));
-        heightBuffer56.SetData(TextureManager.instance.FlowErosionMap5, 0, 0, TextureManager.instance.FlowErosionMap5.Length);
-        heightBuffer56.SetData(TextureManager.instance.FlowErosionMap6, 0, TextureManager.instance.FlowErosionMap6.Length, TextureManager.instance.FlowErosionMap6.Length);
-
-        ComputeBuffer targetBuffer12 = new ComputeBuffer(TextureManager.instance.FlowErosionMap1.Length * 2, sizeof(float));
-        targetBuffer12.SetData(TextureManager.instance.FlowErosionMap1, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
-        targetBuffer12.SetData(TextureManager.instance.FlowErosionMap2, 0, TextureManager.instance.FlowErosionMap2.Length, TextureManager.instance.FlowErosionMap2.Length);
-
-        ComputeBuffer targetBuffer34 = new ComputeBuffer(TextureManager.instance.FlowErosionMap3.Length * 2, sizeof(float));
-        targetBuffer34.SetData(TextureManager.instance.FlowErosionMap3, 0, 0, TextureManager.instance.FlowErosionMap3.Length);
-        targetBuffer34.SetData(TextureManager.instance.FlowErosionMap4, 0, TextureManager.instance.FlowErosionMap4.Length, TextureManager.instance.FlowErosionMap4.Length);
-
-        ComputeBuffer targetBuffer56 = new ComputeBuffer(TextureManager.instance.FlowErosionMap5.Length * 2, sizeof(float));
-        targetBuffer56.SetData(TextureManager.instance.FlowErosionMap5, 0, 0, TextureManager.instance.FlowErosionMap5.Length);
-        targetBuffer56.SetData(TextureManager.instance.FlowErosionMap6, 0, TextureManager.instance.FlowErosionMap6.Length, TextureManager.instance.FlowErosionMap6.Length);
+        ComputeBuffer targetBuffer = new ComputeBuffer(TextureManager.instance.FlowErosionMap.Length, sizeof(float));
+        targetBuffer.SetData(TextureManager.instance.FlowErosionMap, 0, 0, TextureManager.instance.FlowErosionMap.Length);
 
         heightmapAverageShader.SetInt("mapWidth", TextureManager.instance.Settings.textureWidth);
         heightmapAverageShader.SetFloat("blur", blur);
@@ -656,53 +427,28 @@ public partial class Map : MonoBehaviour
             heightmapAverageShader.SetInt("blurStep", i + 1);
             if (i % 2 == 0)
             {
-                heightmapAverageShader.SetBuffer(0, "sourceHeightMap12", heightBuffer12);
-                heightmapAverageShader.SetBuffer(0, "sourceHeightMap34", heightBuffer34);
-                heightmapAverageShader.SetBuffer(0, "sourceHeightMap56", heightBuffer56);
-
-                heightmapAverageShader.SetBuffer(0, "targetHeightMap12", targetBuffer12);
-                heightmapAverageShader.SetBuffer(0, "targetHeightMap34", targetBuffer34);
-                heightmapAverageShader.SetBuffer(0, "targetHeightMap56", targetBuffer56);
+                heightmapAverageShader.SetBuffer(0, "sourceHeightMap", heightBuffer);
+                heightmapAverageShader.SetBuffer(0, "targetHeightMap", targetBuffer);
             }
             else
             {
-                heightmapAverageShader.SetBuffer(0, "sourceHeightMap12", targetBuffer12);
-                heightmapAverageShader.SetBuffer(0, "sourceHeightMap34", targetBuffer34);
-                heightmapAverageShader.SetBuffer(0, "sourceHeightMap56", targetBuffer56);
-
-                heightmapAverageShader.SetBuffer(0, "targetHeightMap12", heightBuffer12);
-                heightmapAverageShader.SetBuffer(0, "targetHeightMap34", heightBuffer34);
-                heightmapAverageShader.SetBuffer(0, "targetHeightMap56", heightBuffer56);
+                heightmapAverageShader.SetBuffer(0, "sourceHeightMap", targetBuffer);
+                heightmapAverageShader.SetBuffer(0, "targetHeightMap", heightBuffer);
             }
 
-            heightmapAverageShader.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 8f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 8f), 1);
+            heightmapAverageShader.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 4 / 8f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth * 2 / 8f), 1);
         }
 
         if (i % 2 == 0)
         {
-            heightBuffer12.GetData(TextureManager.instance.FlowErosionMap1, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
-            heightBuffer12.GetData(TextureManager.instance.FlowErosionMap2, 0, TextureManager.instance.FlowErosionMap2.Length, TextureManager.instance.FlowErosionMap2.Length);
-            heightBuffer34.GetData(TextureManager.instance.FlowErosionMap3, 0, 0, TextureManager.instance.FlowErosionMap3.Length);
-            heightBuffer34.GetData(TextureManager.instance.FlowErosionMap4, 0, TextureManager.instance.FlowErosionMap4.Length, TextureManager.instance.FlowErosionMap4.Length);
-            heightBuffer56.GetData(TextureManager.instance.FlowErosionMap5, 0, 0, TextureManager.instance.FlowErosionMap5.Length);
-            heightBuffer56.GetData(TextureManager.instance.FlowErosionMap6, 0, TextureManager.instance.FlowErosionMap6.Length, TextureManager.instance.FlowErosionMap6.Length);
+            heightBuffer.GetData(TextureManager.instance.FlowErosionMap, 0, 0, TextureManager.instance.FlowErosionMap.Length);
         }
         else
         {
-            targetBuffer12.GetData(TextureManager.instance.FlowErosionMap1, 0, 0, TextureManager.instance.FlowErosionMap1.Length);
-            targetBuffer12.GetData(TextureManager.instance.FlowErosionMap2, 0, TextureManager.instance.FlowErosionMap2.Length, TextureManager.instance.FlowErosionMap2.Length);
-            targetBuffer34.GetData(TextureManager.instance.FlowErosionMap3, 0, 0, TextureManager.instance.FlowErosionMap3.Length);
-            targetBuffer34.GetData(TextureManager.instance.FlowErosionMap4, 0, TextureManager.instance.FlowErosionMap4.Length, TextureManager.instance.FlowErosionMap4.Length);
-            targetBuffer56.GetData(TextureManager.instance.FlowErosionMap5, 0, 0, TextureManager.instance.FlowErosionMap5.Length);
-            targetBuffer56.GetData(TextureManager.instance.FlowErosionMap6, 0, TextureManager.instance.FlowErosionMap6.Length, TextureManager.instance.FlowErosionMap6.Length);
+            targetBuffer.GetData(TextureManager.instance.FlowErosionMap, 0, 0, TextureManager.instance.FlowErosionMap.Length);
         }
 
-        heightBuffer12.Release();
-        heightBuffer34.Release();
-        heightBuffer56.Release();
-
-        targetBuffer12.Release();
-        targetBuffer34.Release();
-        targetBuffer56.Release();
+        heightBuffer.Release();
+        targetBuffer.Release();
     }
 }

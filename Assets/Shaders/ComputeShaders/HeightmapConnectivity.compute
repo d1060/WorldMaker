@@ -1,5 +1,6 @@
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+#pragma kernel Connectivity
+#pragma kernel FlowMap
 
 int mapWidth;
 int mapHeight;
@@ -9,45 +10,21 @@ float downwardWeight = 1;
 float distanceWeight = 10;
 float flowAmount = 1;
 float maxFlow = 1000;
-StructuredBuffer<float> heightMap12;
-StructuredBuffer<float> heightMap34;
-StructuredBuffer<float> heightMap56;
+int maxRiverLength;
+StructuredBuffer<float> heightMap;
+RWStructuredBuffer<float> distanceMap;
+RWStructuredBuffer<uint> connectivityMap;
+RWStructuredBuffer<uint> flowMap; // The Flow Map contains a number indicating how much water is flowing into each pixel.
 
-RWStructuredBuffer<float> distanceMap12;
-RWStructuredBuffer<float> distanceMap34;
-RWStructuredBuffer<float> distanceMap56;
-
-RWStructuredBuffer<int> connectivityMap12;
-RWStructuredBuffer<int> connectivityMap34;
-RWStructuredBuffer<int> connectivityMap56;
-
-#include "Assets/Shaders/Cubemap.cginc"
-
-float getMapValueAtCoordinates(int3 coordinates)
+float diagonalHeight(int index, float thisHeight)
 {
-    int index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) return heightMap12[index];
-    else if (coordinates.z <= 1) return heightMap12[index];
-    else if (coordinates.z <= 2) return heightMap34[index];
-    else if (coordinates.z <= 3) return heightMap34[index];
-    else if (coordinates.z <= 4) return heightMap56[index];
-    else return heightMap56[index];
-}
-
-float diagonalHeight(int3 coordinates, float thisHeight)
-{
-    float diagonalHeight = getMapValueAtCoordinates(coordinates);
+    float diagonalHeight = heightMap[index];
     float actualHeight = (diagonalHeight - thisHeight) / 1.41421356 + thisHeight;
     return actualHeight;
 }
 
-void checkIsCloser(float neighborDistance, int neighborConnectivity, int neighborIndex, int3 coordinates, float neighborHeight, float myHeight, float distance, inout float lowestConnectedDistance, inout int lowestConnectedIndex)
+void checkIsCloser(float neighborDistance, int neighborConnectivity, int neighborIndex, int index, float neighborHeight, float myHeight, float distance, inout float lowestConnectedDistance, inout int lowestConnectedIndex)
 {
-    int myIndex = coordinates.x + coordinates.z * mapWidth + coordinates.y * mapWidth * 6;
     float effectiveWaterLevel = waterLevel * 0.9;
 
     if (neighborHeight < effectiveWaterLevel)
@@ -57,7 +34,7 @@ void checkIsCloser(float neighborDistance, int neighborConnectivity, int neighbo
             lowestConnectedDistance = 0.0000001;
         lowestConnectedIndex = neighborIndex;
     }
-    else if (neighborDistance != 0 && neighborConnectivity != myIndex)
+    else if (neighborDistance != 0 && neighborConnectivity != index)
     {
         float slope = neighborHeight - myHeight; // Downward slope is NEGATIVE. Upward is POSITIVE.
         if (slope > 0)
@@ -77,120 +54,85 @@ void checkIsCloser(float neighborDistance, int neighborConnectivity, int neighbo
     }
 }
 
-int getConnectivityFrom(int3 coordinates)
+[numthreads(8, 8, 1)]
+void Connectivity(uint3 id : SV_DispatchThreadID)
 {
-    int index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) return connectivityMap12[index];
-    else if (coordinates.z <= 1) return connectivityMap12[index];
-    else if (coordinates.z <= 2) return connectivityMap34[index];
-    else if (coordinates.z <= 3) return connectivityMap34[index];
-    else if (coordinates.z <= 4) return connectivityMap56[index];
-    else return connectivityMap56[index];
-}
-
-void setConnectivityAt(int3 coordinates, int value)
-{
-    int index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) connectivityMap12[index] = value;
-    else if (coordinates.z <= 1) connectivityMap12[index] = value;
-    else if (coordinates.z <= 2) connectivityMap34[index] = value;
-    else if (coordinates.z <= 3) connectivityMap34[index] = value;
-    else if (coordinates.z <= 4) connectivityMap56[index] = value;
-    else connectivityMap56[index] = value;
-}
-
-float getDistanceFrom(int3 coordinates)
-{
-    int index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) return distanceMap12[index];
-    else if (coordinates.z <= 1) return distanceMap12[index];
-    else if (coordinates.z <= 2) return distanceMap34[index];
-    else if (coordinates.z <= 3) return distanceMap34[index];
-    else if (coordinates.z <= 4) return distanceMap56[index];
-    else return distanceMap56[index];
-}
-
-void setDistanceAt(int3 coordinates, float value)
-{
-    int index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) distanceMap12[index] = value;
-    else if (coordinates.z <= 1) distanceMap12[index] = value;
-    else if (coordinates.z <= 2) distanceMap34[index] = value;
-    else if (coordinates.z <= 3) distanceMap34[index] = value;
-    else if (coordinates.z <= 4) distanceMap56[index] = value;
-    else distanceMap56[index] = value;
-}
-
-[numthreads(8, 8, 6)]
-void CSMain(uint3 id : SV_DispatchThreadID)
-{
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapWidth || id.z >= 6)
+    if (id.x >= (uint)mapWidth * 4 || id.y >= (uint)mapWidth * 2)
         return;
 
-    int3 cubemap = int3(id.x, id.y, id.z);
+    int index = id.x + id.y * mapWidth * 4;
 
     float linearStep = 1 / (float)mapWidth;
     linearStep *= distanceWeight;
     float diagonalStep = linearStep * 1.41421356;
 
-    float height = getMapValueAtCoordinates(cubemap);
+    float height = heightMap[index];
 
-    int3 cubemapLeft = getLeftIntCoordinates(cubemap, mapWidth);
-    int3 cubemapRight = getRightIntCoordinates(cubemap, mapWidth);
-    int3 cubemapTop = getTopIntCoordinates(cubemap, mapWidth);
-    int3 cubemapBottom = getBottomIntCoordinates(cubemap, mapWidth);
+    uint2 uvL = uint2(id.x - 1, id.y);
+    uint2 uvR = uint2(id.x + 1, id.y);
+    uint2 uvT = uint2(id.x, id.y + 1);
+    uint2 uvB = uint2(id.x, id.y - 1);
+    uint2 uvTL = uint2(id.x - 1, id.y + 1);
+    uint2 uvBR = uint2(id.x + 1, id.y - 1);
+    uint2 uvTR = uint2(id.x + 1, id.y + 1);
+    uint2 uvBL = uint2(id.x - 1, id.y - 1);
 
-    int3 cubemapTopLeft = getTopLeftIntCoordinates(cubemap, mapWidth);
-    int3 cubemapBottomRight = getBottomRightIntCoordinates(cubemap, mapWidth);
-    int3 cubemapTopRight = getTopRightIntCoordinates(cubemap, mapWidth);
-    int3 cubemapBottomLeft = getBottomLeftIntCoordinates(cubemap, mapWidth);
+    if (uvL.x < 0)
+    {
+        uvL.x += mapWidth * 4;
+        uvTL.x += mapWidth * 4;
+        uvBL.x += mapWidth * 4;
+    }
 
-    float heightD = getMapValueAtCoordinates(cubemapBottom);
-    float heightR = getMapValueAtCoordinates(cubemapRight);
-    float heightU = getMapValueAtCoordinates(cubemapTop);
-    float heightL = getMapValueAtCoordinates(cubemapLeft);
+    if (uvR.x >= (uint)mapWidth * 4)
+    {
+        uvR.x -= mapWidth * 4;
+        uvTR.x -= mapWidth * 4;
+        uvBR.x -= mapWidth * 4;
+    }
 
-    float heightDL = diagonalHeight(cubemapBottomLeft, height);
-    float heightDR = diagonalHeight(cubemapBottomRight, height);
-    float heightUR = diagonalHeight(cubemapTopRight, height);
-    float heightUL = diagonalHeight(cubemapTopLeft, height);
+    if (uvB.y < 0)
+    {
+        uvB.y = 0;
+        uvBL.y = 0;
+        uvBR.y = 0;
+    }
 
-    uint index = id.x + id.z * mapWidth + id.y * mapWidth * 6;
+    if (uvT.y >= (uint)mapWidth * 2)
+    {
+        uvT.y = mapWidth * 2 - 1;
+        uvTR.y = mapWidth * 2 - 1;
+        uvTL.y = mapWidth * 2 - 1;
+    }
 
-    int indexL = cubemapLeft.x + cubemapLeft.z * mapWidth + cubemapLeft.y * mapWidth * 6;
-    int indexR = cubemapRight.x + cubemapRight.z * mapWidth + cubemapRight.y * mapWidth * 6;
-    int indexT = cubemapTop.x + cubemapTop.z * mapWidth + cubemapTop.y * mapWidth * 6;
-    int indexB = cubemapBottom.x + cubemapBottom.z * mapWidth + cubemapBottom.y * mapWidth * 6;
-    int indexBL = cubemapBottomLeft.x + cubemapBottomLeft.z * mapWidth + cubemapBottomLeft.y * mapWidth * 6;
-    int indexBR = cubemapBottomRight.x + cubemapBottomRight.z * mapWidth + cubemapBottomRight.y * mapWidth * 6;
-    int indexTL = cubemapTopLeft.x + cubemapTopLeft.z * mapWidth + cubemapTopLeft.y * mapWidth * 6;
-    int indexTR = cubemapTopRight.x + cubemapTopRight.z * mapWidth + cubemapTopRight.y * mapWidth * 6;
+    int indexL = uvL.x + uvL.y * mapWidth * 4;
+    int indexR = uvR.x + uvR.y * mapWidth * 4;
+    int indexT = uvT.x + uvT.y * mapWidth * 4;
+    int indexB = uvB.x + uvB.y * mapWidth * 4;
+    int indexTL = uvTL.x + uvTL.y * mapWidth * 4;
+    int indexBR = uvBR.x + uvBR.y * mapWidth * 4;
+    int indexTR = uvTR.x + uvTR.y * mapWidth * 4;
+    int indexBL = uvBL.x + uvBL.y * mapWidth * 4;
 
-    float distance = getDistanceFrom(cubemap);
-    float distanceL = getDistanceFrom(cubemapLeft);
-    float distanceR = getDistanceFrom(cubemapRight);
-    float distanceT = getDistanceFrom(cubemapTop);
-    float distanceB = getDistanceFrom(cubemapBottom);
-    float distanceBL = getDistanceFrom(cubemapBottomLeft);
-    float distanceBR = getDistanceFrom(cubemapBottomRight);
-    float distanceTL = getDistanceFrom(cubemapTopLeft);
-    float distanceTR = getDistanceFrom(cubemapTopRight);
+    float heightD = heightMap[indexB];
+    float heightR = heightMap[indexR];
+    float heightU = heightMap[indexT];
+    float heightL = heightMap[indexL];
+
+    float heightDL = diagonalHeight(indexBL, height);
+    float heightDR = diagonalHeight(indexBR, height);
+    float heightUR = diagonalHeight(indexTR, height);
+    float heightUL = diagonalHeight(indexTL, height);
+
+    float distance = distanceMap[index];
+    float distanceL = distanceMap[indexL];
+    float distanceR = distanceMap[indexR];
+    float distanceT = distanceMap[indexT];
+    float distanceB = distanceMap[indexB];
+    float distanceBL = distanceMap[indexBL];
+    float distanceBR = distanceMap[indexBR];
+    float distanceTL = distanceMap[indexTL];
+    float distanceTR = distanceMap[indexTR];
 
     float effectiveWaterLevel = waterLevel * 0.9;
 
@@ -210,35 +152,56 @@ void CSMain(uint3 id : SV_DispatchThreadID)
             distanceTL != 0 || heightUL <= waterLevel ||
             distanceTR != 0 || heightUR <= waterLevel)
         {
-            int connectivityL = getConnectivityFrom(cubemapLeft);
-            int connectivityR = getConnectivityFrom(cubemapRight);
-            int connectivityT = getConnectivityFrom(cubemapTop);
-            int connectivityB = getConnectivityFrom(cubemapBottom);
-            int connectivityBL = getConnectivityFrom(cubemapBottomLeft);
-            int connectivityBR = getConnectivityFrom(cubemapBottomRight);
-            int connectivityTL = getConnectivityFrom(cubemapTopLeft);
-            int connectivityTR = getConnectivityFrom(cubemapTopRight);
+            int connectivityL = connectivityMap[indexL];
+            int connectivityR = connectivityMap[indexR];
+            int connectivityT = connectivityMap[indexT];
+            int connectivityB = connectivityMap[indexB];
+            int connectivityBL = connectivityMap[indexBL];
+            int connectivityBR = connectivityMap[indexBR];
+            int connectivityTL = connectivityMap[indexTL];
+            int connectivityTR = connectivityMap[indexTR];
 
             float lowestConnectedDistance = 9999999;
             int lowestConnectedIndex = -1;
 
-            checkIsCloser(distanceTL, connectivityTL, indexTL, cubemap, heightUL, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
-            checkIsCloser(distanceT, connectivityT, indexT, cubemap, heightU, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
-            checkIsCloser(distanceTR, connectivityTR, indexTR, cubemap, heightUR, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
-            checkIsCloser(distanceL, connectivityL, indexL, cubemap, heightL, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
-            checkIsCloser(distanceR, connectivityR, indexR, cubemap, heightR, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
-            checkIsCloser(distanceBL, connectivityBL, indexBL, cubemap, heightDL, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
-            checkIsCloser(distanceB, connectivityB, indexB, cubemap, heightD, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
-            checkIsCloser(distanceBR, connectivityBR, indexBR, cubemap, heightDR, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceTL, connectivityTL, indexTL, index, heightUL, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceT, connectivityT, indexT, index, heightU, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceTR, connectivityTR, indexTR, index, heightUR, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceL, connectivityL, indexL, index, heightL, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceR, connectivityR, indexR, index, heightR, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceBL, connectivityBL, indexBL, index, heightDL, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceB, connectivityB, indexB, index, heightD, height, linearStep, lowestConnectedDistance, lowestConnectedIndex);
+            checkIsCloser(distanceBR, connectivityBR, indexBR, index, heightDR, height, diagonalStep, lowestConnectedDistance, lowestConnectedIndex);
 
             if (lowestConnectedIndex == -1)
                 return;
 
             if (distance == 0 || distance > lowestConnectedDistance)
             {
-                setDistanceAt(cubemap, lowestConnectedDistance);
-                setConnectivityAt(cubemap, lowestConnectedIndex);
+                distanceMap[index] = lowestConnectedDistance;
+                connectivityMap[index] = lowestConnectedIndex;
             }
         }
+    }
+}
+
+[numthreads(8, 8, 1)]
+void FlowMap(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)mapWidth * 4 || id.y >= (uint)mapWidth * 2)
+        return;
+
+    int index = id.x + id.y * mapWidth * 4;
+    int connectivity = index;
+    float addFlowAmount = flowAmount > 0.000001 ? flowAmount : 0.000001;
+
+    for (int i = 0; i < maxRiverLength; i++)
+    {
+        int newIndex = connectivityMap[connectivity];
+        if (newIndex == 0)
+            return;
+
+        InterlockedAdd(flowMap[newIndex], addFlowAmount);
+        connectivity = newIndex;
     }
 }
