@@ -64,3 +64,6 @@ crashlytics-build.properties
 
 /Assets/WSATestCertificate.pfx
 /Assets/WSATestCertificate.pfx.meta
+*.meta
+*.*.meta
+/.gitignore
