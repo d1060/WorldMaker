@@ -983,17 +983,6 @@ public partial class Map : MonoBehaviour
         }
     }
 
-    public void NewWaterLevelStr(string value)
-    {
-        TextureManager.instance.Settings.waterLevel = value.ToFloat();
-        if (!firstUpdate)
-        {
-            UpdateSurfaceMaterialProperties(false);
-            MapData.instance.Save();
-            UpdateUISlider(setupPanelTransform, "Water Level Slider", TextureManager.instance.Settings.waterLevel);
-        }
-    }
-
     public void NewLowerHeightLimit(float value)
     {
         TextureManager.instance.Settings.minHeight = value;
@@ -1047,7 +1036,7 @@ public partial class Map : MonoBehaviour
     public void SetErosionNoiseMerge(float value)
     {
         TextureManager.instance.Settings.erosionNoiseMerge = value;
-        if (TextureManager.instance.HeightMap1 == null)
+        if (TextureManager.instance.HeightMap == null)
             return;
 
         HeightMap2Texture();
@@ -1315,6 +1304,9 @@ public partial class Map : MonoBehaviour
             planetSurfaceMaterial.SetInt("_IsFlowTexSet", 1);
         else
             planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
+
+        UpdateUIElementActive(inciseFlowPanelTransform, "Number of Rivers Text Box", inciseFlowSettings.plotRiversRandomly);
+        UpdateUIElementActive(inciseFlowPanelTransform, "Button Replot Rivers", inciseFlowSettings.plotRiversRandomly);
     }
 
     public void NewNumberOfRivers(string value)
@@ -2253,7 +2245,7 @@ public partial class Map : MonoBehaviour
         //    planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
         //}
         HeightMap2Texture();
-        isEroded = TextureManager.instance.HeightMap1 != null;
+        isEroded = TextureManager.instance.HeightMap != null;
         UpdateSurfaceMaterialHeightMap();
         worldNameText.interactable = true;
     }

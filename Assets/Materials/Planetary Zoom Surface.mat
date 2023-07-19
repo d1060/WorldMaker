@@ -83,11 +83,11 @@ Material:
     m_Ints: []
     m_Floats:
     - _BakedNormalIntensity: 1
-    - _BoundaryU: 0.075
-    - _BoundaryV: 0.075
+    - _BoundaryU: 0.0705
+    - _BoundaryV: 0.141
     - _BumpScale: 1
-    - _CenterU: 0.5
-    - _CenterV: 0.5
+    - _CenterU: 0.49965626
+    - _CenterV: 0.9977552
     - _ColorStep1: 0.01
     - _ColorStep2: 0.1
     - _ColorStep3: 0.3
@@ -116,8 +116,8 @@ Material:
     - _HumidityExponent: 2.718281
     - _HumidityMultiplier: 11
     - _IceLandNormalScale: 75
-    - _IceTemperatureThreshold1: 2.5
-    - _IceTemperatureThreshold2: 2.3
+    - _IceTemperatureThreshold1: 3
+    - _IceTemperatureThreshold2: 2.8
     - _IceWaterNormalScale: 20
     - _IsFlowTexSet: 1
     - _IsLandmaskSet: 0
@@ -159,14 +159,14 @@ Material:
     - _TemperatureElevationRatio: 10
     - _TemperatureExponent: 2.718281
     - _TemperatureLatitudeDrop: 0
-    - _TemperatureLatitudeMultiplier: 24
-    - _TemperatureRatio: 11
+    - _TemperatureLatitudeMultiplier: 22
+    - _TemperatureRatio: 7.3333335
     - _TemperatureWaterDrop: 1.25
-    - _TextureWidth: 512
+    - _TextureWidth: 1024
     - _UVSec: 0
     - _UnderwaterNormalInfluence: 0
     - _UnderwaterNormalScale: 10
-    - _WaterLevel: 0.506848
+    - _WaterLevel: 0.7
     - _XOffset: 0.39319837
     - _XOffset2: 0.44215328
     - _YOffset: 0.55095726
@@ -174,7 +174,7 @@ Material:
     - _ZOffset: 0.04737884
     - _ZOffset2: 0.5725585
     - _ZWrite: 1
-    - _ZoomTextureHeight: 1024
+    - _ZoomTextureHeight: 2048
     - _ZoomTextureWidth: 2048
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}

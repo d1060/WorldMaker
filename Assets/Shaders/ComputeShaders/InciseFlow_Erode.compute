@@ -13,99 +13,24 @@ float minimumHeight;
 float maximumHeight;
 float blur = 0;
 float flowMapMaxValue = 1000000;
-StructuredBuffer<float> heightMap12;
-StructuredBuffer<float> heightMap34;
-StructuredBuffer<float> heightMap56;
-StructuredBuffer<uint> flowMap12;
-StructuredBuffer<uint> flowMap34;
-StructuredBuffer<uint> flowMap56;
-
-RWStructuredBuffer<float> inciseFlowErosionMap12;
-RWStructuredBuffer<float> inciseFlowErosionMap34;
-RWStructuredBuffer<float> inciseFlowErosionMap56;
+StructuredBuffer<float> heightMap;
+StructuredBuffer<uint> flowMap;
+RWStructuredBuffer<float> inciseFlowErosionMap;
 
 #include "Assets/Shaders/Cubemap.cginc"
 
 #define MIN_WATER_HEIGHT 0.0045
 
-void setErosionFlowMapValueAtCoordinates(uint3 coordinates, float value)
+float getErodeValueFromFlowCoordinates(int index)
 {
-    uint index = coordinates.x + coordinates.y * mapWidth;
+    uint flowValue = flowMap[index];
 
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) inciseFlowErosionMap12[index] = value;
-    else if (coordinates.z <= 1) inciseFlowErosionMap12[index] = value;
-    else if (coordinates.z <= 2) inciseFlowErosionMap34[index] = value;
-    else if (coordinates.z <= 3) inciseFlowErosionMap34[index] = value;
-    else if (coordinates.z <= 4) inciseFlowErosionMap56[index] = value;
-    else inciseFlowErosionMap56[index] = value;
-}
-
-float getErosionFlowMapValueAtCoordinates(uint3 coordinates)
-{
-    uint index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) return inciseFlowErosionMap12[index];
-    else if (coordinates.z <= 1) return inciseFlowErosionMap12[index];
-    else if (coordinates.z <= 2) return inciseFlowErosionMap34[index];
-    else if (coordinates.z <= 3) return inciseFlowErosionMap34[index];
-    else if (coordinates.z <= 4) return inciseFlowErosionMap56[index];
-    else return inciseFlowErosionMap56[index];
-}
-
-float getMapValueAtCoordinates(uint3 coordinates)
-{
-    uint index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) return heightMap12[index];
-    else if (coordinates.z <= 1) return heightMap12[index];
-    else if (coordinates.z <= 2) return heightMap34[index];
-    else if (coordinates.z <= 3) return heightMap34[index];
-    else if (coordinates.z <= 4) return heightMap56[index];
-    else return heightMap56[index];
-}
-
-uint getFlowMapValueAtCoordinates(uint3 coordinates)
-{
-    uint index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) return flowMap12[index];
-    else if (coordinates.z <= 1) return flowMap12[index];
-    else if (coordinates.z <= 2) return flowMap34[index];
-    else if (coordinates.z <= 3) return flowMap34[index];
-    else if (coordinates.z <= 4) return flowMap56[index];
-    else return flowMap56[index];
-}
-
-float getErodeValueFromFlowCoordinates(uint3 coordinates)
-{
-    uint flowValue = getFlowMapValueAtCoordinates(coordinates);
-
-    //if (flowValue < 1) flowValue = 1;
-    //float erodeValue = (log(flowValue) / log(logBase)) * heightFactor;
     float erodeValue = (flowValue / flowMapMaxValue);
     erodeValue = pow(abs(erodeValue), exponent);
     if (erodeValue < minAmount)
         erodeValue = 0;
     else
         erodeValue = (erodeValue - minAmount) / (1 - minAmount);
-
-    //if (erodeValue > flowHeight - waterLevel - MIN_WATER_HEIGHT)
-    //    erodeValue = flowHeight - waterLevel - MIN_WATER_HEIGHT;
-    //else 
-    //if (erodeValue > heightFactor)
-    //    erodeValue = heightFactor;
 
     if (erodeValue < 0)
         erodeValue = 0;
@@ -119,18 +44,18 @@ float getErodeValueFromFlowCoordinates(uint3 coordinates)
 [numthreads(16, 16, 1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)mapWidth || id.y >= (uint)mapWidth || id.z >= 6)
+    if (id.x >= (uint)mapWidth * 4 || id.y >= (uint)mapWidth * 2)
         return;
 
-    uint3 cubemap = uint3(id.x, id.y, id.z);
+    int index = id.x + id.y * mapWidth * 4;
 
-    float height = getMapValueAtCoordinates(id);
+    float height = heightMap[index];
     //if (height <= waterLevel)
     //    return;
 
     //if (exponent <= 1) exponent = 1.1;
 
-    float erodeValue = getErodeValueFromFlowCoordinates(cubemap);
+    float erodeValue = getErodeValueFromFlowCoordinates(index);
     //float erodeCount = 1;
 
     if (blur > 0)
@@ -147,12 +72,17 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                 float distance = sqrt(blurRelativeX * blurRelativeX + blurRelativeY * blurRelativeY);
                 if (distance > blur) continue;
 
-                uint3 erodeCoordinates = getNewCoordinates(id, blurRelativeX, blurRelativeY, mapWidth);
+                uint2 erodeCoordinates = uint2(id.x + blurRelativeX, id.y + blurRelativeY);
+                if (erodeCoordinates.x < 0) erodeCoordinates.x += mapWidth * 4;
+                if (erodeCoordinates.x >= mapWidth * 4) erodeCoordinates.x -= mapWidth * 4;
+                if (erodeCoordinates.y < 0) erodeCoordinates.x = 0;
+                if (erodeCoordinates.y >= mapWidth * 2) erodeCoordinates.x = mapWidth * 2 - 1;
+
+                uint erodeIndex = erodeCoordinates.x + erodeCoordinates.y * mapWidth * 4;
 
                 float distanceRatio = 1 - distance / blur;
-                uint3 blurCubemap = uint3(erodeCoordinates.x, erodeCoordinates.y, erodeCoordinates.z);
 
-                float blurErodeValue = getErodeValueFromFlowCoordinates(blurCubemap);
+                float blurErodeValue = getErodeValueFromFlowCoordinates(erodeIndex);
                 blurErodeValue *= distanceRatio;
 
                 if (erodeValue < blurErodeValue) erodeValue = blurErodeValue;
@@ -170,5 +100,5 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     erodeValue = (erodeValue * (1 - heightInfluence)) + (erosionValueAtHeightInfluence1 * heightInfluence);
 
-    setErosionFlowMapValueAtCoordinates(cubemap, erodeValue);
+    inciseFlowErosionMap[index] = erodeValue;
 }

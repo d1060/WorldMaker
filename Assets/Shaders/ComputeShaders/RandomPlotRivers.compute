@@ -1,123 +1,68 @@
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+#pragma kernel RiverAlphas
+#pragma kernel ConsolidateTexture
 
 int mapWidth;
-float waterLevel = 0.6;
-float startingAlpha;
+int maxRiverLength;
+float flowMapMaxValue;
 float3 riverColor;
+float riverExponent;
+float lowerLimit;
+float higherLimit;
 
-RWStructuredBuffer<int> riverFlowMask12;
-RWStructuredBuffer<int> riverFlowMask34;
-RWStructuredBuffer<int> riverFlowMask56;
+StructuredBuffer<int> riverFlowMask;
+StructuredBuffer<uint> connectivityMap;
+StructuredBuffer<uint> flowMap;
 
-StructuredBuffer<int> connectivityMap12;
-StructuredBuffer<int> connectivityMap34;
-StructuredBuffer<int> connectivityMap56;
-
-Texture2D<float4> original;
+RWStructuredBuffer<float> riverAlphas;
 RWTexture2D<float4> result;
 
-#include "Assets/Shaders/Cubemap.cginc"
-
-int getConnectivityFrom(int3 coordinates)
-{
-    int index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) return connectivityMap12[index];
-    else if (coordinates.z <= 1) return connectivityMap12[index];
-    else if (coordinates.z <= 2) return connectivityMap34[index];
-    else if (coordinates.z <= 3) return connectivityMap34[index];
-    else if (coordinates.z <= 4) return connectivityMap56[index];
-    else return connectivityMap56[index];
-}
-
-int getFlowFrom(int3 coordinates, int thisIndex)
-{
-    int connectedIndex = getConnectivityFrom(coordinates);
-    if (connectedIndex != thisIndex)
-        return 0;
-
-    int flowIndex = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        flowIndex += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) return riverFlowMask12[flowIndex];
-    else if (coordinates.z <= 1) return riverFlowMask12[flowIndex];
-    else if (coordinates.z <= 2) return riverFlowMask34[flowIndex];
-    else if (coordinates.z <= 3) return riverFlowMask34[flowIndex];
-    else if (coordinates.z <= 4) return riverFlowMask56[flowIndex];
-    else return riverFlowMask56[flowIndex];
-}
-
-void setFlowAt(int3 coordinates, int value)
-{
-    int index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) riverFlowMask12[index] = value;
-    else if (coordinates.z <= 1) riverFlowMask12[index] = value;
-    else if (coordinates.z <= 2) riverFlowMask34[index] = value;
-    else if (coordinates.z <= 3) riverFlowMask34[index] = value;
-    else if (coordinates.z <= 4) riverFlowMask56[index] = value;
-    else riverFlowMask56[index] = value;
-}
-
 [numthreads(32,32,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+void RiverAlphas (uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= (uint)mapWidth * 4 || id.y >= (uint)mapWidth * 2)
         return;
 
-    float2 uv = float2((float)id.x / (4 * mapWidth), (float)id.y / (2 * mapWidth));
-    float3 cartesian = uvToCartesian(uv);
-    float3 cubemap = cartesianToCubemap(cartesian);
-    cubemap.x *= mapWidth;
-    cubemap.y *= mapWidth;
-
-    int index = toIndex(cubemap, mapWidth);
-
-    int3 cubemapLeft = getLeftIntCoordinates(cubemap, mapWidth);
-    int3 cubemapRight = getRightIntCoordinates(cubemap, mapWidth);
-    int3 cubemapTop = getTopIntCoordinates(cubemap, mapWidth);
-    int3 cubemapBottom = getBottomIntCoordinates(cubemap, mapWidth);
-
-    int3 cubemapTopLeft = getTopLeftIntCoordinates(cubemap, mapWidth);
-    int3 cubemapBottomRight = getBottomRightIntCoordinates(cubemap, mapWidth);
-    int3 cubemapTopRight = getTopRightIntCoordinates(cubemap, mapWidth);
-    int3 cubemapBottomLeft = getBottomLeftIntCoordinates(cubemap, mapWidth);
-
-    int incomingFlow = 0;
-    incomingFlow += getFlowFrom(cubemapLeft, index);
-    incomingFlow += getFlowFrom(cubemapRight, index);
-    incomingFlow += getFlowFrom(cubemapTop, index);
-    incomingFlow += getFlowFrom(cubemapBottom, index);
-    incomingFlow += getFlowFrom(cubemapTopLeft, index);
-    incomingFlow += getFlowFrom(cubemapBottomRight, index);
-    incomingFlow += getFlowFrom(cubemapTopRight, index);
-    incomingFlow += getFlowFrom(cubemapBottomLeft, index);
-
-    if (incomingFlow == 0)
+    uint index = id.x + id.y * mapWidth * 4;
+    if (riverFlowMask[index] != 1)
         return;
 
-    setFlowAt(cubemap, incomingFlow + 1);
-
-    float thisVarAlpha = (incomingFlow / 128.0);
-    float thisAlpha = thisVarAlpha + startingAlpha;
-    if (thisAlpha > 1)
-        thisAlpha = 1;
-
-    float4 currentColor = original[id.xy];
-    float4 newColor = float4(riverColor.r, riverColor.g, riverColor.b, thisAlpha);
-    if (currentColor.a > 0)
+    uint connectivity = index;
+    for (int i = 0; i < maxRiverLength; i++)
     {
-        newColor = float4(currentColor.r, currentColor.g, currentColor.b, currentColor.a + thisVarAlpha);
-    }
+        uint newIndex = connectivityMap[connectivity];
+        if (newIndex == 0)
+            return;
 
-    result[id.xy] = newColor;
+        connectivity = newIndex;
+
+        float flow = (float)flowMap[newIndex] / flowMapMaxValue;
+
+        flow = pow(abs(flow), riverExponent);
+
+        float alpha = 1;
+        if (flow < lowerLimit)
+            alpha = 0;
+        else if (flow < higherLimit)
+            alpha = (flow - lowerLimit) / (higherLimit - lowerLimit);
+
+        if (alpha > 0)
+        {
+            float originalAlpha;
+            //riverAlphas[newIndex] = alpha;
+            InterlockedExchange(riverAlphas[newIndex], alpha, originalAlpha);
+        }
+    }
+}
+
+[numthreads(32, 32, 1)]
+void ConsolidateTexture(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x + id.y * mapWidth * 4;
+    float alpha = riverAlphas[index];
+    if (alpha <= 0)
+        return;
+
+    float4 color = float4(riverColor.r, riverColor.g, riverColor.b, alpha);
+    result[id.xy] = color;
 }

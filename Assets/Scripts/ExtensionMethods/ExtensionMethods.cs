@@ -426,10 +426,10 @@ public static partial class ExtensionMethods
                 Color color = new Color(0, 0, 0, 1);
                 if (drainageIndex != 0)
                 {
-                    int drainX = drainageIndex % (width * 6);
+                    int drainX = drainageIndex % width;
                     int drainZ = drainX / width;
                     drainX -= drainZ * width;
-                    int drainY = drainageIndex / (width * 6);
+                    int drainY = drainageIndex / width;
 
                     int relX = drainX - x;
                     int relY = drainY - y;

@@ -9,7 +9,6 @@ RWStructuredBuffer<float2> velocityMap;
 RWStructuredBuffer<float> waterHeightMap;
 
 #include "Assets/Shaders/ComputeShaders/interpolate.cginc"
-#include "Assets/Shaders/Cubemap.cginc"
 
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
@@ -17,7 +16,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     if (id.x >= 6 * (uint)mapWidth || id.y >= (uint)mapHeight)
         return;
 
-    #include "Assets/Shaders/ComputeShaders/indexes.cginc"
+    int index = id.x + mapWidth * 4 * id.y;
 
     // Sediment Transportation
     sedimentMap[index] = interpolate(sedimentMap, float2(id.x - velocityMap[index].x, id.y - velocityMap[index].y));

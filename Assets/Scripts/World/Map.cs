@@ -115,6 +115,8 @@ public partial class Map : MonoBehaviour
         UpdateMenuFields();
         UpdateRecentWorldsPanel();
         UpdateSurfaceMaterialProperties(false);
+        InstantiateComputeBuffers();
+
         if (!LoadTerrainTransformations())
         {
             GenerateHeightMap();
@@ -243,6 +245,7 @@ public partial class Map : MonoBehaviour
         planetSurfaceMaterial.SetInt("_IsEroded", 0);
         planetSurfaceMaterial.SetInt("_IsHeightmapSet", 0);
         planetSurfaceMaterial.SetInt("_IsLandMaskSet", 0);
+        ReleaseComputeBuffers();
     }
     #endregion
 
@@ -610,7 +613,13 @@ public partial class Map : MonoBehaviour
     {
         MapData.instance.Save();
 
-        string directory = System.IO.Path.GetDirectoryName(AppData.instance.RecentWorlds.Count > 0 ? AppData.instance.RecentWorlds[0] : AppData.instance.LastSavedImageFolder);
+        string path = AppData.instance.RecentWorlds.Count > 0 ? AppData.instance.RecentWorlds[0] : AppData.instance.LastSavedImageFolder;
+        string directory;
+        if (path != "")
+            directory = System.IO.Path.GetDirectoryName(path);
+        else
+            directory = Application.persistentDataPath;
+
         string savedFile = StandaloneFileBrowser.SaveFilePanel("Save Map as JSON file", directory, MapData.instance.WorldName + ".json", new[] {
                 new ExtensionFilter("JSon File", "json")
             });
@@ -851,124 +860,23 @@ public partial class Map : MonoBehaviour
         string tempDataFolder = Path.Combine(Application.persistentDataPath, "Temp", mapSettings.Seed.ToString());
         bool noFileExists = true;
 
-        if (TextureManager.instance.HeightMap1 != null)
+        if (TextureManager.instance.HeightMap != null)
         {
             if (!Directory.Exists(tempDataFolder))
                 Directory.CreateDirectory(tempDataFolder);
             noFileExists = false;
-            TextureManager.instance.HeightMap1.SaveBytes(Path.Combine(tempDataFolder, "HeightMap1.raw"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap1-save.png"));
+            TextureManager.instance.HeightMap.SaveBytes(Path.Combine(tempDataFolder, "HeightMap.raw"));
         }
-        else if (File.Exists(Path.Combine(tempDataFolder, "HeightMap1.raw")))
-            File.Delete(Path.Combine(tempDataFolder, "HeightMap1.raw"));
-
-        if (TextureManager.instance.HeightMap2 != null)
-        {
-            if (!Directory.Exists(tempDataFolder))
-                Directory.CreateDirectory(tempDataFolder);
-            noFileExists = false;
-            TextureManager.instance.HeightMap2.SaveBytes(Path.Combine(tempDataFolder, "HeightMap2.raw"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap2-save.png"));
-        }
-        else if (File.Exists(Path.Combine(tempDataFolder, "HeightMap2.raw")))
-            File.Delete(Path.Combine(tempDataFolder, "HeightMap2.raw"));
-
-        if (TextureManager.instance.HeightMap3 != null)
-        {
-            if (!Directory.Exists(tempDataFolder))
-                Directory.CreateDirectory(tempDataFolder);
-            noFileExists = false;
-            TextureManager.instance.HeightMap3.SaveBytes(Path.Combine(tempDataFolder, "HeightMap3.raw"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap3-save.png"));
-        }
-        else if (File.Exists(Path.Combine(tempDataFolder, "HeightMap3.raw")))
-            File.Delete(Path.Combine(tempDataFolder, "HeightMap3.raw"));
-
-        if (TextureManager.instance.HeightMap4 != null)
-        {
-            if (!Directory.Exists(tempDataFolder))
-                Directory.CreateDirectory(tempDataFolder);
-            noFileExists = false;
-            TextureManager.instance.HeightMap4.SaveBytes(Path.Combine(tempDataFolder, "HeightMap4.raw"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap4-save.png"));
-        }
-        else if (File.Exists(Path.Combine(tempDataFolder, "HeightMap4.raw")))
-            File.Delete(Path.Combine(tempDataFolder, "HeightMap4.raw"));
-
-        if (TextureManager.instance.HeightMap5 != null)
-        {
-            if (!Directory.Exists(tempDataFolder))
-                Directory.CreateDirectory(tempDataFolder);
-            noFileExists = false;
-            TextureManager.instance.HeightMap5.SaveBytes(Path.Combine(tempDataFolder, "HeightMap5.raw"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap5-save.png"));
-        }
-        else if (File.Exists(Path.Combine(tempDataFolder, "HeightMap5.raw")))
-            File.Delete(Path.Combine(tempDataFolder, "HeightMap5.raw"));
-
-        if (TextureManager.instance.HeightMap6 != null)
-        {
-            if (!Directory.Exists(tempDataFolder))
-                Directory.CreateDirectory(tempDataFolder);
-            noFileExists = false;
-            TextureManager.instance.HeightMap6.SaveBytes(Path.Combine(tempDataFolder, "HeightMap6.raw"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap6-save.png"));
-        }
-        else if (File.Exists(Path.Combine(tempDataFolder, "HeightMap6.raw")))
-            File.Delete(Path.Combine(tempDataFolder, "HeightMap6.raw"));
-
-        //if (TextureManager.instance.ErodedHeightMap != null)
-        //{
-        //    if (!Directory.Exists(tempDataFolder))
-        //        Directory.CreateDirectory(tempDataFolder);
-        //    noFileExists = false;
-        //    TextureManager.instance.ErodedHeightMap.SaveBytes(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
-        //}
-        //else if (File.Exists(Path.Combine(tempDataFolder, "erodedHeightMap.raw")))
-        //    File.Delete(Path.Combine(tempDataFolder, "erodedHeightMap.raw"));
-
-        //if (TextureManager.instance.MergedHeightMap != null)
-        //{
-        //    if (!Directory.Exists(tempDataFolder))
-        //        Directory.CreateDirectory(tempDataFolder);
-        //    noFileExists = false;
-        //    TextureManager.instance.MergedHeightMap.SaveBytes(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
-        //}
-        //else if (File.Exists(Path.Combine(tempDataFolder, "mergedHeightMap.raw")))
-        //    File.Delete(Path.Combine(tempDataFolder, "mergedHeightMap.raw"));
-
-        //if (TextureManager.instance.FlowTexture != null)
-        //{
-        //    if (!Directory.Exists(tempDataFolder))
-        //        Directory.CreateDirectory(tempDataFolder);
-        //    noFileExists = false;
-        //    TextureManager.instance.FlowTexture.SaveAsPNG(Path.Combine(tempDataFolder, "flow.png"));
-        //}
-        //else if (File.Exists(Path.Combine(tempDataFolder, "flow.png")))
-        //    File.Delete(Path.Combine(tempDataFolder, "flow.png"));
-
-        //if (TextureManager.instance.FlowTextureRandom != null)
-        //{
-        //    if (!Directory.Exists(tempDataFolder))
-        //        Directory.CreateDirectory(tempDataFolder);
-        //    noFileExists = false;
-        //    TextureManager.instance.FlowTextureRandom.SaveAsPNG(Path.Combine(tempDataFolder, "flowRandom.png"));
-        //}
-        //else if (File.Exists(Path.Combine(tempDataFolder, "flowRandom.png")))
-        //    File.Delete(Path.Combine(tempDataFolder, "flowRandom.png"));
-
-        //if (TextureManager.instance.InciseFlowMap != null)
-        //{
-        //    if (!Directory.Exists(tempDataFolder))
-        //        Directory.CreateDirectory(tempDataFolder);
-        //    noFileExists = false;
-        //    TextureManager.instance.InciseFlowMap.SaveBytes(Path.Combine(tempDataFolder, "inciseFlow.raw"));
-        //}
-        //else if (File.Exists(Path.Combine(tempDataFolder, "inciseFlow.raw")))
-        //    File.Delete(Path.Combine(tempDataFolder, "inciseFlow.raw"));
+        else if (File.Exists(Path.Combine(tempDataFolder, "HeightMap.raw")))
+            File.Delete(Path.Combine(tempDataFolder, "HeightMap.raw"));
 
         if (noFileExists && Directory.Exists(tempDataFolder))
+        {
+            DirectoryInfo di = new DirectoryInfo(tempDataFolder);
+            foreach (FileInfo file in di.GetFiles())
+                file.Delete();
             Directory.Delete(tempDataFolder);
+        }
     }
 
     bool LoadTerrainTransformations()
@@ -978,88 +886,16 @@ public partial class Map : MonoBehaviour
             return false;
 
         bool updateMaterial = false;
-        //bool updateFlow = false;
-        if (File.Exists(Path.Combine(tempDataFolder, "HeightMap1.raw")))
+        if (File.Exists(Path.Combine(tempDataFolder, "HeightMap.raw")))
         {
-            TextureManager.instance.HeightMap1 = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "HeightMap1.raw"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap1, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap1-load.png"));
-            if (TextureManager.instance.HeightMap1.Length > 0 && TextureManager.instance.HeightMap1.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
+            TextureManager.instance.HeightMap = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "HeightMap.raw"));
+            if (TextureManager.instance.HeightMap.Length > 0 && TextureManager.instance.HeightMap.Length != TextureManager.instance.Settings.textureWidth * 4 * TextureManager.instance.Settings.textureWidth * 2)
             {
-                TextureManager.instance.HeightMap1 = null;
-                File.Delete(Path.Combine(tempDataFolder, "HeightMap1.raw"));
+                TextureManager.instance.HeightMap = null;
+                File.Delete(Path.Combine(tempDataFolder, "HeightMap.raw"));
             }
 
-            if (TextureManager.instance.HeightMap1 != null && TextureManager.instance.HeightMap1.Length > 0)
-                updateMaterial = true;
-        }
-
-        if (File.Exists(Path.Combine(tempDataFolder, "HeightMap2.raw")))
-        {
-            TextureManager.instance.HeightMap2 = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "HeightMap2.raw"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap2, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap2-load.png"));
-            if (TextureManager.instance.HeightMap2.Length > 0 && TextureManager.instance.HeightMap2.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
-            {
-                TextureManager.instance.HeightMap2 = null;
-                File.Delete(Path.Combine(tempDataFolder, "HeightMap2.raw"));
-            }
-
-            if (TextureManager.instance.HeightMap2 != null && TextureManager.instance.HeightMap2.Length > 0)
-                updateMaterial = true;
-        }
-
-        if (File.Exists(Path.Combine(tempDataFolder, "HeightMap3.raw")))
-        {
-            TextureManager.instance.HeightMap3 = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "HeightMap3.raw"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap3, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap3-load.png"));
-            if (TextureManager.instance.HeightMap3.Length > 0 && TextureManager.instance.HeightMap3.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
-            {
-                TextureManager.instance.HeightMap3 = null;
-                File.Delete(Path.Combine(tempDataFolder, "HeightMap3.raw"));
-            }
-
-            if (TextureManager.instance.HeightMap3 != null && TextureManager.instance.HeightMap3.Length > 0)
-                updateMaterial = true;
-        }
-
-        if (File.Exists(Path.Combine(tempDataFolder, "HeightMap4.raw")))
-        {
-            TextureManager.instance.HeightMap4 = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "HeightMap4.raw"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap4, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap4-load.png"));
-            if (TextureManager.instance.HeightMap4.Length > 0 && TextureManager.instance.HeightMap4.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
-            {
-                TextureManager.instance.HeightMap4 = null;
-                File.Delete(Path.Combine(tempDataFolder, "HeightMap4.raw"));
-            }
-
-            if (TextureManager.instance.HeightMap4 != null && TextureManager.instance.HeightMap4.Length > 0)
-                updateMaterial = true;
-        }
-
-        if (File.Exists(Path.Combine(tempDataFolder, "HeightMap5.raw")))
-        {
-            TextureManager.instance.HeightMap5 = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "HeightMap5.raw"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap5, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap5-load.png"));
-            if (TextureManager.instance.HeightMap5.Length > 0 && TextureManager.instance.HeightMap5.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
-            {
-                TextureManager.instance.HeightMap5 = null;
-                File.Delete(Path.Combine(tempDataFolder, "HeightMap5.raw"));
-            }
-
-            if (TextureManager.instance.HeightMap5 != null && TextureManager.instance.HeightMap5.Length > 0)
-                updateMaterial = true;
-        }
-
-        if (File.Exists(Path.Combine(tempDataFolder, "HeightMap6.raw")))
-        {
-            TextureManager.instance.HeightMap6 = LoadFloatArrayFromFile(Path.Combine(tempDataFolder, "HeightMap6.raw"));
-            //ImageTools.SaveTextureCubemapFaceFloatArray(TextureManager.instance.HeightMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(tempDataFolder, "HeightMap6-load.png"));
-            if (TextureManager.instance.HeightMap6.Length > 0 && TextureManager.instance.HeightMap6.Length != TextureManager.instance.Settings.textureWidth * TextureManager.instance.Settings.textureWidth)
-            {
-                TextureManager.instance.HeightMap6 = null;
-                File.Delete(Path.Combine(tempDataFolder, "HeightMap6.raw"));
-            }
-
-            if (TextureManager.instance.HeightMap6 != null && TextureManager.instance.HeightMap6.Length > 0)
+            if (TextureManager.instance.HeightMap != null && TextureManager.instance.HeightMap.Length > 0)
                 updateMaterial = true;
         }
 

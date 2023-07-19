@@ -6,15 +6,9 @@
 
 #pragma kernel CSMain
 
-RWStructuredBuffer<float> map12;
-RWStructuredBuffer<float> map34;
-RWStructuredBuffer<float> map56;
+RWStructuredBuffer<float> map;
 
-//RWStructuredBuffer<float> erosionMap12;
-//RWStructuredBuffer<float> erosionMap34;
-//RWStructuredBuffer<float> erosionMap56;
-
-StructuredBuffer<float> randomIndices;
+StructuredBuffer<float2> randomUVs;
 StructuredBuffer<int> brushIndices;
 StructuredBuffer<float> brushWeights;
 
@@ -24,7 +18,7 @@ int brushLength;
 int maxLifetime;
 float inertia;
 float sedimentCapacityFactor;
-float minSedimentCapacity;
+float minSedimentCapacity; // Should be very small.
 float depositSpeed;
 float erodeSpeed;
 
@@ -34,155 +28,60 @@ float startSpeed;
 float startWater;
 //float waterLevel;
 
-#include "Assets/Shaders/Cubemap.cginc"
-
-float getMapValueAtCoordinates(int3 coordinates)
+void wrapCoordinates(inout uint2 coordinates)
 {
-    int index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (index < 0 || index >= 2 * mapWidth * mapWidth)
-        return 0;
-
-    if (coordinates.z == 0) return map12[index];
-    else if (coordinates.z == 1) return map12[index];
-    else if (coordinates.z == 2) return map34[index];
-    else if (coordinates.z == 3) return map34[index];
-    else if (coordinates.z == 4) return map56[index];
-    else return map56[index];
+    if (coordinates.x >= (uint)mapWidth * 4) coordinates.x -= mapWidth * 4;
+    if (coordinates.y >= (uint)mapWidth * 2) coordinates.y = mapWidth * 4 - coordinates.y;
 }
 
-void CalculateHeightAndGradient(float3 coordinates, inout float2 gradient, inout float height)
+void wrapFloatCoordinates(inout float2 coordinates)
 {
-    int3 coord = int3((int)coordinates.x, (int)coordinates.y, (int)coordinates.z);
+    if (coordinates.x < 0) coordinates.x += mapWidth * 4;
+    if (coordinates.x >= mapWidth * 4) coordinates.x -= mapWidth * 4;
+    if (coordinates.y < 0) coordinates.y = -coordinates.y;
+    if (coordinates.y >= mapWidth * 2) coordinates.y = mapWidth * 4 - coordinates.y;
+}
+
+void CalculateHeightAndGradient(float2 coordinates, inout float2 gradient, inout float height)
+{
+    uint2 coord = uint2((uint)coordinates.x, (uint)coordinates.y);
 
     float u = coordinates.x - coord.x;
     float v = coordinates.y - coord.y;
 
-    uint3 coordR = getRightCoordinates(coord, mapWidth);
-    uint3 coordT = getTopCoordinates(coord, mapWidth);
-    uint3 coordTR = getTopRightCoordinates(coord, mapWidth);
+    uint2 coordR = uint2(coord.x + 1, coord.y);
+    wrapCoordinates(coordR);
+    uint2 coordT = uint2(coord.x, coord.y + 1);
+    wrapCoordinates(coordT);
+    uint2 coordTR = uint2(coord.x + 1, coord.y + 1);
+    wrapCoordinates(coordTR);
 
-    float a = getMapValueAtCoordinates(coord);
-    float b = getMapValueAtCoordinates(coordR);
-    float c = getMapValueAtCoordinates(coordT);
-    float d = getMapValueAtCoordinates(coordTR);
+    int index = coord.x + coord.y * mapWidth * 4;
+    int indexR = coordR.x + coordR.y * mapWidth * 4;
+    int indexT = coordT.x + coordT.y * mapWidth * 4;
+    int indexTR = coordTR.x + coordTR.y * mapWidth * 4;
 
-    height = (1 - v) * ((1 - u) * a + u * b) + v * ((1 - u) * c + u * d);
-    gradient = float2((1 - v) * (b - a) + v * (d - c), 
-                      (1 - u) * (c - a) + u * (d - b));
-}
+    float heightDL = map[index];
+    float heightDR = map[indexR];
+    float heightUL = map[indexT];
+    float heightUR = map[indexTR];
 
-void updateMapAtCoordinates(int3 coords, float amount)
-{
-    int index = coords.x + coords.y * mapWidth;
-
-    if (coords.z == 1 || coords.z == 3 || coords.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (index < 0 || index >= 2 * mapWidth * mapWidth)
-        return;
-
-    if (coords.z == 0) map12[index] += amount;
-    else if (coords.z == 1) map12[index] += amount;
-    else if (coords.z == 2) map34[index] += amount;
-    else if (coords.z == 3) map34[index] += amount;
-    else if (coords.z == 4) map56[index] += amount;
-    else map56[index] += amount;
-}
-
-void shiftGradient(float3 prevCoordinates, float3 newCoordinates, inout float dirX, inout float dirY)
-{
-    if (prevCoordinates.z == 0 && newCoordinates.z == 4) 
-    {
-        float prevX = dirX;
-        dirX = dirY;
-        dirY = -prevX;
-    }
-    else if (prevCoordinates.z == 2 && newCoordinates.z == 4)
-    {
-        float prevX = dirX;
-        dirX = -dirY;
-        dirY = prevX;
-    }
-    else if (prevCoordinates.z == 3 && newCoordinates.z == 4)
-    {
-        dirX = -dirX;
-        dirY = -dirY;
-    }
-
-    else if (prevCoordinates.z == 4 && newCoordinates.z == 0)
-    {
-        float prevX = dirX;
-        dirX = -dirY;
-        dirY = prevX;
-    }
-    else if (prevCoordinates.z == 4 && newCoordinates.z == 2)
-    {
-        float prevX = dirX;
-        dirX = dirY;
-        dirY = -prevX;
-    }
-    else if (prevCoordinates.z == 4 && newCoordinates.z == 3)
-    {
-        dirX = -dirX;
-        dirY = -dirY;
-    }
-
-    else if (prevCoordinates.z == 0 && newCoordinates.z == 5)
-    {
-        float prevX = dirX;
-        dirX = -dirY;
-        dirY = prevX;
-    }
-    else if (prevCoordinates.z == 2 && newCoordinates.z == 5)
-    {
-        float prevX = dirX;
-        dirX = dirY;
-        dirY = -prevX;
-    }
-    else if (prevCoordinates.z == 3 && newCoordinates.z == 5)
-    {
-        dirX = -dirX;
-        dirY = -dirY;
-    }
-
-    else if (prevCoordinates.z == 5 && newCoordinates.z == 0)
-    {
-        float prevX = dirX;
-        dirX = dirY;
-        dirY = -prevX;
-    }
-    else if (prevCoordinates.z == 5 && newCoordinates.z == 2)
-    {
-        float prevX = dirX;
-        dirX = -dirY;
-        dirY = prevX;
-    }
-    else if (prevCoordinates.z == 5 && newCoordinates.z == 3)
-    {
-        dirX = -dirX;
-        dirY = -dirY;
-    }
+    height = (1 - v) * ((1 - u) * heightDL + u * heightDR) + v * ((1 - u) * heightUL + u * heightUR);
+    gradient = float2((1 - v) * (heightDR - heightDL) + v * (heightUR - heightUL),
+                      (1 - u) * (heightUL - heightDL) + u * (heightUR - heightDR));
 }
 
 [numthreads(64, 1, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    float x = randomIndices[id.x];
-    float y = randomIndices[id.x + 1];
-    int z = randomIndices[id.x + 2];
-    
-    //float x = id.x;
-    //float y = id.y;
-    //int z = id.z;
+    float2 uv = randomUVs[id.x];
+    uint x = uv.x * mapWidth * 4;
+    uint y = uv.y * mapWidth * 2;
 
-    if (x >= mapWidth || y >= mapWidth || z >= 6)
+    if (x >= (uint)mapWidth * 4 || y >= (uint)mapWidth * 2)
         return;
 
-    float3 coordinates = float3(x, y, z);
+    float2 coordinates = float2(uv.x * mapWidth * 4, uv.y * mapWidth * 2);
 
     float dirX = 0;
     float dirY = 0;
@@ -195,6 +94,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     {
         int nodeX = (int)(coordinates.x);
         int nodeY = (int)(coordinates.y);
+        int prevIndex = nodeX + nodeY * mapWidth * 4;
 
         // Calculate droplet's offset inside the cell (0,0) = at NW node, (1,1) = at SE node
         float cellOffsetX = coordinates.x - nodeX;
@@ -217,8 +117,12 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         dirX /= len;
         dirY /= len;
 
-        float3 newCoordinates = getNewCoordinates(coordinates, dirX, dirY, mapWidth);
-        shiftGradient(coordinates, newCoordinates, dirX, dirY);
+        float2 newCoordinates = float2(coordinates.x + dirX, coordinates.y + dirY);
+        if (newCoordinates.x < 0) newCoordinates.x += mapWidth * 4;
+        if (newCoordinates.x >= mapWidth * 4) newCoordinates.x -= mapWidth * 4;
+        if (newCoordinates.y < 0) newCoordinates.y = -newCoordinates.y;
+        if (newCoordinates.y >= mapWidth * 2) newCoordinates.y = mapWidth * 4 - newCoordinates.y;
+
         coordinates = newCoordinates;
 
         // Find the droplet's new height and calculate the deltaHeight
@@ -249,16 +153,25 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
             sediment -= amountToDeposit;
 
-            // Add the sediment to the four nodes of the current cell using bilinear interpolation
+            // Add the sediment to the four nodes of the previous cell using bilinear interpolation
             // Deposition is not distributed over a radius (like erosion) so that it can fill small pits
-            int3 eastCoordinates = getRightIntCoordinates(coordinates, mapWidth);
-            int3 northCoordinates = getTopIntCoordinates(coordinates, mapWidth);
-            int3 northEastCoordinates = getTopRightIntCoordinates(coordinates, mapWidth);
+            uint2 coord = uint2(nodeX, nodeY);
+            uint2 coordR = uint2(coord.x + 1, coord.y);
+            wrapCoordinates(coordR);
+            uint2 coordT = uint2(coord.x, coord.y + 1);
+            wrapCoordinates(coordT);
+            uint2 coordTR = uint2(coord.x + 1, coord.y + 1);
+            wrapCoordinates(coordTR);
 
-            updateMapAtCoordinates(coordinates, amountToDeposit * (1 - cellOffsetX) * (1 - cellOffsetY));
-            updateMapAtCoordinates(eastCoordinates, amountToDeposit * (1 - cellOffsetX) * cellOffsetY);
-            updateMapAtCoordinates(northCoordinates, amountToDeposit * cellOffsetX * (1 - cellOffsetY));
-            updateMapAtCoordinates(northEastCoordinates, amountToDeposit * cellOffsetX * cellOffsetY);
+            int index = coord.x + coord.y * mapWidth * 4;
+            int indexR = coordR.x + coordR.y * mapWidth * 4;
+            int indexT = coordT.x + coordT.y * mapWidth * 4;
+            int indexTR = coordTR.x + coordTR.y * mapWidth * 4;
+
+            map[index] += amountToDeposit * (1 - cellOffsetX) * (1 - cellOffsetY);
+            map[indexR] += amountToDeposit * (1 - cellOffsetX) * cellOffsetY;
+            map[indexT] += amountToDeposit * cellOffsetX * (1 - cellOffsetY);
+            map[indexTR] += amountToDeposit * cellOffsetX * cellOffsetY;
         }
         else
         {
@@ -271,13 +184,16 @@ void CSMain(uint3 id : SV_DispatchThreadID)
                 int brushX = brushIndices[i * 2];
                 int brushY = brushIndices[i * 2 + 1];
 
-                float3 erodeCoordinates = getNewCoordinates(coordinates, brushX, brushY, mapWidth);
+                float2 erodeCoordinates = float2(coordinates.x + brushX, coordinates.y + brushY);
+                wrapFloatCoordinates(erodeCoordinates);
+                int index = (int)erodeCoordinates.x + (int)erodeCoordinates.y * mapWidth * 4;
+
                 //shiftGradient(coordinates, erodeCoordinates, dirX, dirY);
 
                 float weightedErodeAmount = amountToErode * brushWeights[i];
-                float mapValue = getMapValueAtCoordinates(erodeCoordinates);
+                float mapValue = map[index];
                 float deltaSediment = (mapValue < weightedErodeAmount) ? mapValue : weightedErodeAmount;
-                updateMapAtCoordinates(erodeCoordinates, -deltaSediment);
+                map[index] += -deltaSediment;
                 sediment += deltaSediment;
             }
         }

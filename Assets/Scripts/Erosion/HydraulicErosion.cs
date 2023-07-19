@@ -47,7 +47,7 @@ public class HydraulicErosion
     }
     #endregion
 
-    public void Erode()
+    public void Erode(ComputeBuffer heightMapBuffer)
     {
         // Create brush
         List<int> brushIndexOffsets = new List<int>();
@@ -91,29 +91,9 @@ public class HydraulicErosion
         erosion.SetBuffer(0, "brushWeights", brushWeightBuffer);
 
         // Heightmap buffer
-        ComputeBuffer heightMapBuffer12 = new ComputeBuffer(TextureManager.instance.HeightMap1.Length * 2, sizeof(float));
-        heightMapBuffer12.SetData(TextureManager.instance.HeightMap1, 0, 0, TextureManager.instance.HeightMap1.Length);
-        heightMapBuffer12.SetData(TextureManager.instance.HeightMap2, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap1.Length);
+        heightMapBuffer.SetData(TextureManager.instance.HeightMap, 0, 0, TextureManager.instance.HeightMap.Length);
 
-        ComputeBuffer heightMapBuffer34 = new ComputeBuffer(TextureManager.instance.HeightMap3.Length * 2, sizeof(float));
-        heightMapBuffer34.SetData(TextureManager.instance.HeightMap3, 0, 0, TextureManager.instance.HeightMap1.Length);
-        heightMapBuffer34.SetData(TextureManager.instance.HeightMap4, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap1.Length);
-
-        ComputeBuffer heightMapBuffer56 = new ComputeBuffer(TextureManager.instance.HeightMap5.Length * 2, sizeof(float));
-        heightMapBuffer56.SetData(TextureManager.instance.HeightMap5, 0, 0, TextureManager.instance.HeightMap1.Length);
-        heightMapBuffer56.SetData(TextureManager.instance.HeightMap6, 0, TextureManager.instance.HeightMap1.Length, TextureManager.instance.HeightMap1.Length);
-
-        erosion.SetBuffer(0, "map12", heightMapBuffer12);
-        erosion.SetBuffer(0, "map34", heightMapBuffer34);
-        erosion.SetBuffer(0, "map56", heightMapBuffer56);
-
-        //ComputeBuffer erosionMapBuffer12 = new ComputeBuffer(TextureManager.instance.HeightMap1.Length * 2, sizeof(float));
-        //ComputeBuffer erosionMapBuffer34 = new ComputeBuffer(TextureManager.instance.HeightMap3.Length * 2, sizeof(float));
-        //ComputeBuffer erosionMapBuffer56 = new ComputeBuffer(TextureManager.instance.HeightMap5.Length * 2, sizeof(float));
-
-        //erosion.SetBuffer(0, "erosionMap12", erosionMapBuffer12);
-        //erosion.SetBuffer(0, "erosionMap34", erosionMapBuffer34);
-        //erosion.SetBuffer(0, "erosionMap56", erosionMapBuffer56);
+        erosion.SetBuffer(0, "map", heightMapBuffer);
 
         // Settings
         erosion.SetInt("mapWidth", mapWidth);
@@ -143,49 +123,37 @@ public class HydraulicErosion
             }
 
             // Generate random indices for droplet placement
-            float[] randomIndices = new float[currentInteractions * 3];
-            for (int i = 0; i < currentInteractions * 3; i += 3)
+            Vector2[] randomUVs = new Vector2[currentInteractions];
+            for (int i = 0; i < currentInteractions; i ++)
             {
-                float randomX = Random.Range(0f, mapWidth - 0.000001f);
-                float randomY = Random.Range(0f, mapWidth - 0.000001f);
-                int randomZ = Random.Range(0, 6);
+                float randomX = Random.Range(-1f, 1f);
+                float randomY = Random.Range(-1f, 1f);
+                float randomZ = Random.Range(-1f, 1f);
 
-                randomIndices[i] = randomX;
-                randomIndices[i + 1] = randomY;
-                randomIndices[i + 2] = randomZ;
+                if (randomX * randomX + randomY * randomY + randomZ * randomZ > 1)
+                {
+                    i--;
+                    continue;
+                }
+
+                Vector3 sphere = new Vector3(randomX, randomY, randomZ);
+                Vector2 uv = sphere.CartesianToPolarRatio(1);
+
+                randomUVs[i] = uv;
             }
 
             // Send random indices to compute shader
-            ComputeBuffer randomIndexBuffer = new ComputeBuffer(randomIndices.Length, sizeof(float));
-            randomIndexBuffer.SetData(randomIndices);
-            erosion.SetBuffer(0, "randomIndices", randomIndexBuffer);
+            ComputeBuffer randomUVsBuffer = new ComputeBuffer(randomUVs.Length, sizeof(float) * 2);
+            randomUVsBuffer.SetData(randomUVs);
+            erosion.SetBuffer(0, "randomUVs", randomUVsBuffer);
 
             erosion.Dispatch(0, Mathf.CeilToInt(currentInteractions / 64f), 1, 1);
 
-            randomIndexBuffer.Release();
+            randomUVsBuffer.Release();
             numTotalInteractions -= 65535 * 64;
         }
 
-        //erosion.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 8f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 64f), 6);
-
-        //erosionUpdate.SetInt("mapWidth", mapWidth);
-
-        //erosionUpdate.SetBuffer(0, "erosionMap12", erosionMapBuffer12);
-        //erosionUpdate.SetBuffer(0, "erosionMap34", erosionMapBuffer34);
-        //erosionUpdate.SetBuffer(0, "erosionMap56", erosionMapBuffer56);
-
-        //erosionUpdate.SetBuffer(0, "heightMap12", heightMapBuffer12);
-        //erosionUpdate.SetBuffer(0, "heightMap34", heightMapBuffer34);
-        //erosionUpdate.SetBuffer(0, "heightMap56", heightMapBuffer56);
-
-        //erosionUpdate.Dispatch(0, Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 32f), Mathf.CeilToInt(TextureManager.instance.Settings.textureWidth / 32f), 6);
-
-        heightMapBuffer12.GetData(TextureManager.instance.HeightMap1, 0, 0, TextureManager.instance.HeightMap1.Length);
-        heightMapBuffer12.GetData(TextureManager.instance.HeightMap2, 0, TextureManager.instance.HeightMap2.Length, TextureManager.instance.HeightMap2.Length);
-        heightMapBuffer34.GetData(TextureManager.instance.HeightMap3, 0, 0, TextureManager.instance.HeightMap3.Length);
-        heightMapBuffer34.GetData(TextureManager.instance.HeightMap4, 0, TextureManager.instance.HeightMap4.Length, TextureManager.instance.HeightMap4.Length);
-        heightMapBuffer56.GetData(TextureManager.instance.HeightMap5, 0, 0, TextureManager.instance.HeightMap5.Length);
-        heightMapBuffer56.GetData(TextureManager.instance.HeightMap6, 0, TextureManager.instance.HeightMap6.Length, TextureManager.instance.HeightMap6.Length);
+        heightMapBuffer.GetData(TextureManager.instance.HeightMap, 0, 0, TextureManager.instance.HeightMap.Length);
 
         //float[] erosionMap1 = new float[TextureManager.instance.HeightMap1.Length];
         //float[] erosionMap2 = new float[TextureManager.instance.HeightMap1.Length];
@@ -209,9 +177,9 @@ public class HydraulicErosion
         //ImageTools.SaveTextureCubemapFaceFloatArray(erosionMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "erosionMap5.png"), 0.01f);
 
         // Release buffers
-        heightMapBuffer12.Release();
-        heightMapBuffer34.Release();
-        heightMapBuffer56.Release();
+        //heightMapBuffer12.Release();
+        //heightMapBuffer34.Release();
+        //heightMapBuffer56.Release();
 
         //erosionMapBuffer12.Release();
         //erosionMapBuffer34.Release();
@@ -255,12 +223,7 @@ public class HydraulicErosion
             brushWeights[i] /= weightSum;
         }
 
-        float[] erosionMap1 = new float[TextureManager.instance.HeightMap1.Length];
-        float[] erosionMap2 = new float[TextureManager.instance.HeightMap1.Length];
-        float[] erosionMap3 = new float[TextureManager.instance.HeightMap1.Length];
-        float[] erosionMap4 = new float[TextureManager.instance.HeightMap1.Length];
-        float[] erosionMap5 = new float[TextureManager.instance.HeightMap1.Length];
-        float[] erosionMap6 = new float[TextureManager.instance.HeightMap1.Length];
+        float[] erosionMap = new float[TextureManager.instance.HeightMap.Length];
 
         // Generate random indices for droplet placement
         //for (int i = 0; i < erosionSettings.numErosionIterations; i++)
@@ -278,7 +241,7 @@ public class HydraulicErosion
             {
                 for (int z = 0; z < 6; z++)
                 {
-                    ErodeDroplet(x, y, z, brushIndexOffsets, brushWeights, erosionMap1, erosionMap2, erosionMap3, erosionMap4, erosionMap5, erosionMap6);
+                    ErodeDroplet(x, y, z, brushIndexOffsets, brushWeights, erosionMap);
                 }
             }
         }
@@ -289,19 +252,9 @@ public class HydraulicErosion
             {
                 int index = x + y * mapWidth;
 
-                float erosionValue1 = erosionMap1[index];
-                float erosionValue2 = erosionMap2[index];
-                float erosionValue3 = erosionMap3[index];
-                float erosionValue4 = erosionMap4[index];
-                float erosionValue5 = erosionMap5[index];
-                float erosionValue6 = erosionMap6[index];
+                float erosionValue1 = erosionMap[index];
 
-                TextureManager.instance.HeightMap1[index] -= erosionValue1;
-                TextureManager.instance.HeightMap2[index] -= erosionValue2;
-                TextureManager.instance.HeightMap3[index] -= erosionValue3;
-                TextureManager.instance.HeightMap4[index] -= erosionValue4;
-                TextureManager.instance.HeightMap5[index] -= erosionValue5;
-                TextureManager.instance.HeightMap6[index] -= erosionValue6;
+                TextureManager.instance.HeightMap[index] -= erosionValue1;
             }
         }
 
@@ -313,7 +266,7 @@ public class HydraulicErosion
         //ImageTools.SaveTextureCubemapFaceFloatArray(erosionMap6, TextureManager.instance.Settings.textureWidth, Path.Combine(Application.persistentDataPath, "erosionMap5.png"), 0.01f);
     }
 
-    void ErodeDroplet(float x, float y, int z, List<int> brushIndices, List<float> brushWeights, float[] erosionMap1, float[] erosionMap2, float[] erosionMap3, float[] erosionMap4, float[] erosionMap5, float[] erosionMap6)
+    void ErodeDroplet(float x, float y, int z, List<int> brushIndices, List<float> brushWeights, float[] erosionMap)
     {
         if (x >= mapWidth || y >= mapHeight || z >= 6)
             return;
@@ -375,10 +328,10 @@ public class HydraulicErosion
                 Int3 northCoordinates = Cubemap.getTopIntCoordinates(new Int3(coordinates), mapWidth);
                 Int3 northEastCoordinates = Cubemap.getTopRightIntCoordinates(new Int3(coordinates), mapWidth);
 
-                updateErosionMapAtCoordinates(new Int3(coordinates), amountToDeposit * (1 - cellOffsetX) * (1 - cellOffsetY), erosionMap1, erosionMap2, erosionMap3, erosionMap4, erosionMap5, erosionMap6);
-                updateErosionMapAtCoordinates(eastCoordinates, amountToDeposit * (1 - cellOffsetX) * cellOffsetY, erosionMap1, erosionMap2, erosionMap3, erosionMap4, erosionMap5, erosionMap6);
-                updateErosionMapAtCoordinates(northCoordinates, amountToDeposit * cellOffsetX * (1 - cellOffsetY), erosionMap1, erosionMap2, erosionMap3, erosionMap4, erosionMap5, erosionMap6);
-                updateErosionMapAtCoordinates(northEastCoordinates, amountToDeposit * cellOffsetX * cellOffsetY, erosionMap1, erosionMap2, erosionMap3, erosionMap4, erosionMap5, erosionMap6);
+                updateErosionMapAtCoordinates(new Int3(coordinates), amountToDeposit * (1 - cellOffsetX) * (1 - cellOffsetY), erosionMap);
+                updateErosionMapAtCoordinates(eastCoordinates, amountToDeposit * (1 - cellOffsetX) * cellOffsetY, erosionMap);
+                updateErosionMapAtCoordinates(northCoordinates, amountToDeposit * cellOffsetX * (1 - cellOffsetY), erosionMap);
+                updateErosionMapAtCoordinates(northEastCoordinates, amountToDeposit * cellOffsetX * cellOffsetY, erosionMap);
             }
             else
             {
@@ -397,7 +350,7 @@ public class HydraulicErosion
                     float weightedErodeAmount = amountToErode * brushWeights[i];
                     float mapValue = getMapValueAtCoordinates(new Int3(coordinates));
                     float deltaSediment = (mapValue < weightedErodeAmount) ? mapValue : weightedErodeAmount;
-                    updateErosionMapAtCoordinates(new Int3(coordinates), -deltaSediment, erosionMap1, erosionMap2, erosionMap3, erosionMap4, erosionMap5, erosionMap6);
+                    updateErosionMapAtCoordinates(new Int3(coordinates), -deltaSediment, erosionMap);
                     sediment += deltaSediment;
                 }
             }
@@ -548,29 +501,19 @@ public class HydraulicErosion
     {
         int index = coordinates.x + coordinates.y * mapWidth;
 
-        if (index < 0 || index >= TextureManager.instance.HeightMap1.Length)
+        if (index < 0 || index >= TextureManager.instance.HeightMap.Length)
             return 0;
 
-        if (coordinates.z == 0) return TextureManager.instance.HeightMap1[index];
-        else if (coordinates.z == 1) return TextureManager.instance.HeightMap2[index];
-        else if (coordinates.z == 2) return TextureManager.instance.HeightMap3[index];
-        else if (coordinates.z == 3) return TextureManager.instance.HeightMap4[index];
-        else if (coordinates.z == 4) return TextureManager.instance.HeightMap5[index];
-        else return TextureManager.instance.HeightMap6[index];
+        return TextureManager.instance.HeightMap[index];
     }
 
-    void updateErosionMapAtCoordinates(Int3 coords, float amount, float[] erosionMap1, float[] erosionMap2, float[] erosionMap3, float[] erosionMap4, float[] erosionMap5, float[] erosionMap6)
+    void updateErosionMapAtCoordinates(Int3 coords, float amount, float[] erosionMap)
     {
         int index = coords.x + coords.y * mapWidth;
 
-        if (index < 0 || index >= TextureManager.instance.HeightMap1.Length)
+        if (index < 0 || index >= TextureManager.instance.HeightMap.Length)
             return;
 
-        if (coords.z == 0) erosionMap1[index] += amount;
-        else if (coords.z == 1) erosionMap2[index] += amount;
-        else if (coords.z == 2) erosionMap3[index] += amount;
-        else if (coords.z == 3) erosionMap4[index] += amount;
-        else if (coords.z == 4) erosionMap5[index] += amount;
-        else erosionMap6[index] += amount;
+        erosionMap[index] += amount;
     }
 }

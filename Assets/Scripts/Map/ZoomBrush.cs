@@ -124,6 +124,7 @@ public class ZoomBrush : MonoBehaviour
             zoomCamMaterial = zoomCamRawImage.material;
         }
 
+        zoomCamMaterial.SetFloat("_WaterLevel", TextureManager.instance.Settings.waterLevel);
         zoomCamMaterial.SetFloat("_TextureWidth", TextureManager.instance.Settings.textureWidth);
         zoomCamMaterial.SetFloat("_ZoomTextureWidth", width);
         zoomCamMaterial.SetFloat("_ZoomTextureHeight", height);

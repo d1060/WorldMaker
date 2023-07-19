@@ -123,8 +123,8 @@ public class MapSliderField : MonoBehaviour, ISelectHandler, IDeselectHandler, I
         valueText.text = levelText;
 
         sliderValue /= (isPercent ? 100 : 1);
+        sliderValue *= valueDivisor;
         slider.value = sliderValue;
-        OnSliderChanged?.Invoke(slider.value);
     }
 
     public void OnSelect(BaseEventData data)

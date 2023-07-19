@@ -1,5 +1,4 @@
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel IntermediateBuffer
 #pragma kernel FinalTexture
 
 uint mapWidth;
@@ -9,90 +8,10 @@ float3 riverColor;
 float maxValue;
 float riverExponent;
 
-StructuredBuffer<uint> inciseFlowMap12;
-StructuredBuffer<uint> inciseFlowMap34;
-StructuredBuffer<uint> inciseFlowMap56;
-
-RWStructuredBuffer<uint> intermediateFlowMap;
+StructuredBuffer<uint> inciseFlowMap;
 RWTexture2D<float4> result;
 
-#include "Assets/Shaders/Cubemap.cginc"
-
 #define INV_SQR_2 0.7071067
-
-uint getInciseFlowMapValueAtCoordinates(uint3 coordinates)
-{
-    uint index = coordinates.x + coordinates.y * mapWidth;
-
-    if (coordinates.z == 1 || coordinates.z == 3 || coordinates.z == 5)
-        index += mapWidth * mapWidth;
-
-    if (coordinates.z <= 0) return inciseFlowMap12[index];
-    else if (coordinates.z <= 1) return inciseFlowMap12[index];
-    else if (coordinates.z <= 2) return inciseFlowMap34[index];
-    else if (coordinates.z <= 3) return inciseFlowMap34[index];
-    else if (coordinates.z <= 4) return inciseFlowMap56[index];
-    else return inciseFlowMap56[index];
-}
-
-[numthreads(32, 32, 1)]
-void IntermediateBuffer (uint3 id : SV_DispatchThreadID)
-{
-    if (id.x >= mapWidth || id.y >= mapWidth || id.z >= 6)
-        return;
-
-    uint3 cubemap = uint3(id.x, id.y, id.z);
-    float flow = getInciseFlowMapValueAtCoordinates(cubemap);
-    if (flow == 0)
-        return;
-
-    uint3 cubemapUR = getTopRightIntCoordinates(cubemap, mapWidth);
-
-    float2 uv = cubemapToUV(cubemap, mapWidth);
-    float2 uvUR = cubemapToUV(cubemapUR, mapWidth);
-
-    float2 uvWorld = float2(uv.x * mapWidth * 4, uv.y * mapWidth * 2);
-    float2 uvWorldUR = float2(uvUR.x * mapWidth * 4, uvUR.y * mapWidth * 2);
-
-    //uint2 uvDL = uint2((uint)uvWorld.x, (uint)uvWorld.y);
-    //uint2 uvDR = uint2((uint)ceil(uvWorld.x), (uint)uvWorld.y);
-    //uint2 uvUL = uint2((uint)uvWorld.x, (uint)ceil(uvWorld.y));
-    //uint2 uvUR = uint2((uint)ceil(uvWorld.x), (uint)ceil(uvWorld.y));
-
-    float rateX = uvWorld.x - (uint)uvWorld.x;
-    float rateY = uvWorld.y - (uint)uvWorld.y;
-
-    for (int x = uvWorld.x; x <= uvWorldUR.x; x++)
-    {
-        for (int y = uvWorld.y; y <= uvWorldUR.y; y++)
-        {
-            uint index = x + y * mapWidth * 4;
-            InterlockedAdd(intermediateFlowMap[index], flow);
-            if (y == uvWorldUR.y)
-                break;
-        }
-        if (x == uvWorldUR.x)
-            break;
-    }
-
-    //float upperFlow = flow * rateY;
-    //float lowerFlow = flow * (1 - rateY);
-
-    //float upperRightFlow = upperFlow * rateX;
-    //float upperLeftFlow = upperFlow * (1 - rateX);
-    //float lowerRightFlow = lowerFlow * rateX;
-    //float lowerLeftFlow = lowerFlow * (1 - rateX);
-
-    //uint upperRightIndex = uvUR.x + uvUR.y * mapWidth * 4;
-    //uint upperLeftIndex = uvUL.x + uvUL.y * mapWidth * 4;
-    //uint lowerRightIndex = uvDR.x + uvDR.y * mapWidth * 4;
-    //uint lowerLeftIndex = uvDL.x + uvDL.y * mapWidth * 4;
-
-    //InterlockedAdd(intermediateFlowMap[upperRightIndex], upperRightFlow);
-    //InterlockedAdd(intermediateFlowMap[upperLeftIndex], upperLeftFlow);
-    //InterlockedAdd(intermediateFlowMap[lowerRightIndex], lowerRightFlow);
-    //InterlockedAdd(intermediateFlowMap[lowerLeftIndex], lowerLeftFlow);
-}
 
 [numthreads(32,32,1)]
 void FinalTexture (uint3 id : SV_DispatchThreadID)
@@ -100,35 +19,8 @@ void FinalTexture (uint3 id : SV_DispatchThreadID)
     if (id.x >= mapWidth * 4 || id.y >= mapWidth * 2)
         return;
 
-    //float2 uv = float2((float)id.x / mapWidth * 4, (float)id.y / mapWidth * 2);
-    //float3 cubemap = cartesianToCubemap(uvToCartesian(uv));
-    //cubemap.x *= mapWidth;
-    //cubemap.y *= mapWidth;
-
-    //float rateX = cubemap.x - (uint)cubemap.x;
-    //float rateY = cubemap.y - (uint)cubemap.y;
-
-    //uint3 cubemapDL = uint3(cubemap.x, cubemap.y, cubemap.z);
-    //uint3 cubemapUL = getNewCoordinates(cubemapDL, 0, 1, mapWidth);
-    //uint3 cubemapDR = getNewCoordinates(cubemapDL, 1, 0, mapWidth);
-    //uint3 cubemapUR = getNewCoordinates(cubemapDL, 1, 1, mapWidth);
-
-    //uint flowDL = getInciseFlowMapValueAtCoordinates(cubemapDL);
-    //uint flowUL = getInciseFlowMapValueAtCoordinates(cubemapUL);
-    //uint flowDR = getInciseFlowMapValueAtCoordinates(cubemapDR);
-    //uint flowUR = getInciseFlowMapValueAtCoordinates(cubemapUR);
-
-    //float upperFlow = flowUR * rateX + flowUL * (1 - rateX);
-    //float lowerFlow = flowDR * rateX + flowDL * (1 - rateX);
-
-    //float inverseFlow = upperFlow * rateY + lowerFlow * (1 - rateY);
-    //inverseFlow /= maxValue;
-
-
-    uint intermedtateIndex = id.x + id.y * mapWidth * 4;
-    float flow = intermediateFlowMap[intermedtateIndex] / maxValue;
-
-    //if (inverseFlow > flow) flow = inverseFlow;
+    uint index = id.x + id.y * mapWidth * 4;
+    float flow = inciseFlowMap[index] / maxValue;
 
     flow = pow(abs(flow), riverExponent);
 

@@ -1,11 +1,6 @@
 #pragma kernel CSMain
 
-RWStructuredBuffer<float> heightMap1;
-RWStructuredBuffer<float> heightMap2;
-RWStructuredBuffer<float> heightMap3;
-RWStructuredBuffer<float> heightMap4;
-RWStructuredBuffer<float> heightMap5;
-RWStructuredBuffer<float> heightMap6;
+RWStructuredBuffer<float> heightMap;
 RWStructuredBuffer<float> minMax;
 
 int _MapWidth;
@@ -39,15 +34,14 @@ float _LayerStrength2;
 float _DomainWarping2;
 
 #include "Assets/Shaders/Simplex.cginc"
-#include "Assets/Shaders/Cubemap.cginc"
 
-[numthreads(8, 8, 6)]
+[numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)_MapWidth || id.y >= (uint)_MapWidth || id.z >= 6)
+    if (id.x >= (uint)_MapWidth * 4 || id.y >= (uint)_MapWidth * 2)
 		return;
 
-	float2 uv = cubemapXYZtoUV(id.x, id.y, id.z, _MapWidth);
+	float2 uv = float2((float)id.x / (_MapWidth * 4), (float)id.y / (_MapWidth * 2));
 
 	float3 offset = float3(_xOffset, _yOffset, _zOffset);
 	float3 offset2 = float3(_xOffset2, _yOffset2, _zOffset2);
@@ -57,14 +51,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 		                            offset2, _Seed2, _Multiplier2, _Octaves2, _Lacunarity2, _Persistence2, _RidgedNoise2, _HeightExponent2, _LayerStrength2, _DomainWarping2,
 		                            _MinimumHeight, _MaximumHeight);
 
-	int mapIndex = id.x + (id.y * _MapWidth);
-
-	if (id.z == 0) heightMap1[mapIndex] = height;
-	else if (id.z == 1) heightMap2[mapIndex] = height;
-	else if (id.z == 2) heightMap3[mapIndex] = height;
-	else if (id.z == 3) heightMap4[mapIndex] = height;
-	else if (id.z == 4) heightMap5[mapIndex] = height;
-	else if (id.z == 5) heightMap6[mapIndex] = height;
+	int mapIndex = id.x + (id.y * _MapWidth * 4);
+	heightMap[mapIndex] = height;
 
 	if (height < minMax[0]) minMax[0] = height;
 	if (height > minMax[1]) minMax[1] = height;

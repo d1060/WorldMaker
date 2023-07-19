@@ -6,31 +6,19 @@
 int textureWidth;
 Texture2D<float4> renderTexture;
 SamplerState MyLinearMirrorSampler;
-RWStructuredBuffer<float> heightMap1;
-RWStructuredBuffer<float> heightMap2;
-RWStructuredBuffer<float> heightMap3;
-RWStructuredBuffer<float> heightMap4;
-RWStructuredBuffer<float> heightMap5;
-RWStructuredBuffer<float> heightMap6;
-
-#include "Assets/Shaders/Cubemap.cginc"
+RWStructuredBuffer<float> heightMap;
 
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)textureWidth || id.y >= (uint)textureWidth || id.z >= 6)
+    if (id.x >= (uint)textureWidth * 4 || id.y >= (uint)textureWidth * 2)
         return;
 
-    float2 uv = cubemapXYZtoUV(id.x, id.y, id.z, textureWidth);
+    float2 uv = float2((float)id.x / (textureWidth * 4), (float)id.y / (textureWidth * 2));
     float4 rtColor = renderTexture.SampleLevel(MyLinearMirrorSampler, uv, 0);
     float height = (rtColor.x + rtColor.y + rtColor.z) / 3;
 
-    int index = id.x + id.y * textureWidth;
+    int index = id.x + id.y * textureWidth * 4;
 
-    if (id.z == 0) heightMap1[index] = height;
-    else if (id.z == 1) heightMap2[index] = height;
-    else if (id.z == 2) heightMap3[index] = height;
-    else if (id.z == 3) heightMap4[index] = height;
-    else if (id.z == 4) heightMap5[index] = height;
-    else if (id.z == 5) heightMap6[index] = height;
+    heightMap[index] = height;
 }

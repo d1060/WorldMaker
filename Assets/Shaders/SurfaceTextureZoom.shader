@@ -368,45 +368,97 @@ Shader "Noise/PlanetarySurfaceTextureZoom"
                 o.Metallic = 0;
                 o.Smoothness = 0;
             }
-            else if (_DrawType == 2) // Drawing a Landmask.
+            else if (_DrawType == 2 || _DrawType == 7) // Drawing a 2 = Landmask or a 7 = inverted Landmask.
             {
                 if (_IsLandmaskSet)
                 {
                     float4 lmc = tex2D(_LandMask, uv);
-                    o.Albedo = lmc;
+                    if (_DrawType == 2)
+                        o.Albedo = lmc;
+                    else
+                        o.Albedo = float4(1 - lmc.r, 1 - lmc.g, 1 - lmc.b, 1);
                 }
                 else
                 {
-                    if (isAboveWater)
-                    {
-                        o.Albedo = float3(1, 1, 1);
-                    }
-                    else
-                    {
-                        o.Albedo = float3(0, 0, 0);
-                    }
-                }
+                    float heightDL = 0;
+                    float heightDR = 0;
+                    float heightUL = 0;
+                    float heightUR = 0;
 
-                o.Metallic = 0;
-                o.Smoothness = 0;
-            }
-            else if (_DrawType == 7) // Drawing an inverted Landmask.
-            {
-                if (_IsLandmaskSet)
-                {
-                    float4 lmc = tex2D(_LandMask, uv);
-                    o.Albedo = float4(1 - lmc.r, 1 - lmc.g, 1 - lmc.b, 1);
-                }
-                else
-                {
-                    if (isAboveWater)
+                    if (_IsZoomHeightMapSet)
                     {
-                        o.Albedo = float3(0, 0, 0);
+                        float2 uvDL = float2((int)(originalUV.x * _ZoomTextureWidth) / (float)(_ZoomTextureWidth), (int)(originalUV.y * _ZoomTextureHeight) / (float)(_ZoomTextureHeight));
+                        float2 uvDR = float2(((int)(originalUV.x * _ZoomTextureWidth) + 1) / (float)(_ZoomTextureWidth), (int)(originalUV.y * _ZoomTextureHeight) / (float)(_ZoomTextureHeight));
+                        float2 uvUL = float2((int)(originalUV.x * _ZoomTextureWidth) / (float)(_ZoomTextureWidth), ((int)(originalUV.y * _ZoomTextureHeight) + 1) / (float)(_ZoomTextureHeight));
+                        float2 uvUR = float2(((int)(originalUV.x * _ZoomTextureWidth) + 1) / (float)(_ZoomTextureWidth), ((int)(originalUV.y * _ZoomTextureHeight) + 1) / (float)(_ZoomTextureHeight));
+
+                        if (uvDR.x > 1)
+                        {
+                            uvDR.x -= 1;
+                            uvUR.x -= 1;
+                        }
+
+                        if (uvUL.y > 1)
+                        {
+                            uvUL.y = 1;
+                            uvUR.y = 1;
+                        }
+
+                        float4 cDL = tex2D(_ZoomHeightMap, uvDL);
+                        heightDL = (cDL.r + cDL.g + cDL.b) / 3;
+
+                        float4 cDR = tex2D(_ZoomHeightMap, uvDR);
+                        heightDR = (cDR.r + cDR.g + cDR.b) / 3;
+
+                        float4 cUL = tex2D(_ZoomHeightMap, uvUL);
+                        heightUL = (cUL.r + cUL.g + cUL.b) / 3;
+
+                        float4 cUR = tex2D(_ZoomHeightMap, uvUR);
+                        heightUR = (cUR.r + cUR.g + cUR.b) / 3;
                     }
                     else
                     {
-                        o.Albedo = float3(1, 1, 1);
+                        float2 uvDL = float2((int)(uv.x * _TextureWidth * 4) / (float)(_TextureWidth * 4), (int)(uv.y * _TextureWidth * 2) / (float)(_TextureWidth * 2));
+                        float2 uvDR = float2(((int)(uv.x * _TextureWidth * 4) + 1) / (float)(_TextureWidth * 4), (int)(uv.y * _TextureWidth * 2) / (float)(_TextureWidth * 2));
+                        float2 uvUL = float2((int)(uv.x * _TextureWidth * 4) / (float)(_TextureWidth * 4), ((int)(uv.y * _TextureWidth * 2) + 1) / (float)(_TextureWidth * 2));
+                        float2 uvUR = float2(((int)(uv.x * _TextureWidth * 4) + 1) / (float)(_TextureWidth * 4), ((int)(uv.y * _TextureWidth * 2) + 1) / (float)(_TextureWidth * 2));
+
+                        if (uvDR.x > 1)
+                        {
+                            uvDR.x -= 1;
+                            uvUR.x -= 1;
+                        }
+
+                        if (uvUL.y > 1)
+                        {
+                            uvUL.y = 1;
+                            uvUR.y = 1;
+                        }
+
+                        float4 cDL = tex2D(_HeightMap, uvDL);
+                        heightDL = (cDL.r + cDL.g + cDL.b) / 3;
+
+                        float4 cDR = tex2D(_HeightMap, uvDR);
+                        heightDR = (cDR.r + cDR.g + cDR.b) / 3;
+
+                        float4 cUL = tex2D(_HeightMap, uvUL);
+                        heightUL = (cUL.r + cUL.g + cUL.b) / 3;
+
+                        float4 cUR = tex2D(_HeightMap, uvUR);
+                        heightUR = (cUR.r + cUR.g + cUR.b) / 3;
                     }
+
+                    bool isAboveWaterDL = heightDL > _WaterLevel;
+                    bool isAboveWaterDR = heightDR > _WaterLevel;
+                    bool isAboveWaterUL = heightUL > _WaterLevel;
+                    bool isAboveWaterUR = heightUR > _WaterLevel;
+
+                    float greyScale = (isAboveWaterDL ? 0.25 : 0) + (isAboveWaterDR ? 0.25 : 0) + (isAboveWaterUL ? 0.25 : 0) + (isAboveWaterUR ? 0.25 : 0);
+
+                    if (_DrawType == 2)
+                        o.Albedo = float3(greyScale, greyScale, greyScale);
+                    else
+                        o.Albedo = float3(1 - greyScale, 1 - greyScale, 1 - greyScale);
                 }
 
                 o.Metallic = 0;
