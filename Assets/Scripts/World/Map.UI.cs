@@ -333,6 +333,7 @@ public partial class Map : MonoBehaviour
             double dValue = 0;
             if (System.Double.TryParse(value, out dValue))
             {
+                UpdatePathLabels((float)mapSettings.RadiusInKm, (float)dValue);
                 mapSettings.RadiusInKm = dValue;
             }
             MapData.instance.Save();
@@ -2357,6 +2358,29 @@ public partial class Map : MonoBehaviour
         RectTransform rectTransform = childComponent as RectTransform;
         Vector3 newPosition = new Vector3(0, -1680, rectTransform.localPosition.z);
         rectTransform.localPosition = newPosition;
+    }
+
+    void UpdatePathLabels(float oldRadius, float newRadius)
+    {
+        foreach (Transform mapChildTransform in transform)
+        {
+            if (mapChildTransform.name.EndsWith(" km label"))
+            {
+                TMPro.TextMeshPro tmp = mapChildTransform.GetComponent<TMPro.TextMeshPro>();
+                if (tmp == null)
+                    continue;
+
+                string labelAmount = mapChildTransform.name;
+                labelAmount = labelAmount.Replace(" km label", "");
+                float kms = 0;
+                float.TryParse(labelAmount, out kms);
+
+                kms = kms * newRadius / oldRadius;
+
+                tmp.text = kms.ToString("#0") + " km";
+                mapChildTransform.name = kms.ToString("#0") + " km label";
+            }
+        }
     }
 
     #region RecentWorlds

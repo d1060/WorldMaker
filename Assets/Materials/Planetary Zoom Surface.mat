@@ -83,11 +83,11 @@ Material:
     m_Ints: []
     m_Floats:
     - _BakedNormalIntensity: 1
-    - _BoundaryU: 0.0705
-    - _BoundaryV: 0.141
+    - _BoundaryU: 0.07
+    - _BoundaryV: 0.14
     - _BumpScale: 1
-    - _CenterU: 0.49965626
-    - _CenterV: 0.9977552
+    - _CenterU: 0.5
+    - _CenterV: 0.5
     - _ColorStep1: 0.01
     - _ColorStep2: 0.1
     - _ColorStep3: 0.3
@@ -162,7 +162,7 @@ Material:
     - _TemperatureLatitudeMultiplier: 22
     - _TemperatureRatio: 7.3333335
     - _TemperatureWaterDrop: 1.25
-    - _TextureWidth: 1024
+    - _TextureWidth: 2048
     - _UVSec: 0
     - _UnderwaterNormalInfluence: 0
     - _UnderwaterNormalScale: 10

@@ -74,9 +74,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
                 uint2 erodeCoordinates = uint2(id.x + blurRelativeX, id.y + blurRelativeY);
                 if (erodeCoordinates.x < 0) erodeCoordinates.x += mapWidth * 4;
-                if (erodeCoordinates.x >= mapWidth * 4) erodeCoordinates.x -= mapWidth * 4;
+                if (erodeCoordinates.x >= (uint)mapWidth * 4) erodeCoordinates.x -= mapWidth * 4;
                 if (erodeCoordinates.y < 0) erodeCoordinates.x = 0;
-                if (erodeCoordinates.y >= mapWidth * 2) erodeCoordinates.x = mapWidth * 2 - 1;
+                if (erodeCoordinates.y >= (uint)mapWidth * 2) erodeCoordinates.x = mapWidth * 2 - 1;
 
                 uint erodeIndex = erodeCoordinates.x + erodeCoordinates.y * mapWidth * 4;
 

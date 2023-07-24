@@ -121,9 +121,9 @@ public class MapWaypoint : Pathfinding.Node
         RectTransform rectTransform = lengthLabelGameObject.GetComponent<RectTransform>();
         rectTransform.sizeDelta = new Vector2(30, 5);
 
-        TMPro.TMP_FontAsset clonedFont = (TMPro.TMP_FontAsset)Object.Instantiate(map.pathLabelFont);
-        clonedFont.material.renderQueue = 2500;
-        textMeshPro.font = clonedFont;
+        //TMPro.TMP_FontAsset clonedFont = (TMPro.TMP_FontAsset)Object.Instantiate(map.pathLabelFont);
+        //clonedFont.material.renderQueue = 2500;
+        //textMeshPro.font = clonedFont;
 
         textMeshPro.fontSize = 60;
         textMeshPro.fontStyle = TMPro.FontStyles.Bold;

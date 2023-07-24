@@ -261,12 +261,7 @@ public class WaypointController : MonoBehaviour
             }
         }
 
-        float totalPathLength = 0;
-        foreach (Waypoint waypoint in waypoints)
-        {
-            totalPathLength += waypoint.PathLength;
-        }
-        totalPathLabel.text = "Total Path Length: " + totalPathLength.ToString("#0") + " km";
+        UpdateTotalPathLength();
     }
 
     //public float GetObjectHeightInFlatMap(Vector3 mapPosition)
@@ -345,6 +340,11 @@ public class WaypointController : MonoBehaviour
             }
         }
 
+        UpdateTotalPathLength();
+    }
+
+    public void UpdateTotalPathLength()
+    {
         float totalPathLength = 0;
         foreach (Waypoint waypoint in waypoints)
         {
