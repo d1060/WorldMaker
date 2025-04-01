@@ -11,6 +11,7 @@ using UnityEngine.EventSystems;
 
 public partial class Map : MonoBehaviour
 {
+    Transform menuButtonTransform = null;
     Transform uiCanvasTransform = null;
     Transform mainMenuPanelTransform = null;
     Transform setupPanelTransform = null;
@@ -1040,7 +1041,7 @@ public partial class Map : MonoBehaviour
         if (TextureManager.instance.HeightMap == null)
             return;
 
-        HeightMap2Texture();
+        HeightMap2Texture(TextureManager.instance.Settings.textureWidth);
         isEroded = true;
         UpdateSurfaceMaterialHeightMap();
         MapData.instance.Save();
@@ -1509,8 +1510,8 @@ public partial class Map : MonoBehaviour
         AppData.instance.Save();
         if (!firstUpdate)
         {
-            UpdateUIToggle(contextMenuPanelTransform, "Toggle Normal Map", AppData.instance.SaveLandMask);
-            UpdateUIToggle(zoomContextMenuPanelTransform, "Toggle Normal Map", AppData.instance.SaveLandMask);
+            UpdateUIToggle(contextMenuPanelTransform, "Toggle Normal Map", AppData.instance.SaveNormalMap);
+            UpdateUIToggle(zoomContextMenuPanelTransform, "Toggle Normal Map", AppData.instance.SaveNormalMap);
         }
     }
 
@@ -1531,8 +1532,8 @@ public partial class Map : MonoBehaviour
         AppData.instance.Save();
         if (!firstUpdate)
         {
-            UpdateUIToggle(contextMenuPanelTransform, "Toggle Temperature", AppData.instance.SaveLandMask);
-            UpdateUIToggle(zoomContextMenuPanelTransform, "Toggle Temperature", AppData.instance.SaveLandMask);
+            UpdateUIToggle(contextMenuPanelTransform, "Toggle Temperature", AppData.instance.SaveTemperature);
+            UpdateUIToggle(zoomContextMenuPanelTransform, "Toggle Temperature", AppData.instance.SaveTemperature);
         }
     }
 
@@ -1542,8 +1543,8 @@ public partial class Map : MonoBehaviour
         AppData.instance.Save();
         if (!firstUpdate)
         {
-            UpdateUIToggle(contextMenuPanelTransform, "Toggle Rivers", AppData.instance.SaveLandMask);
-            UpdateUIToggle(zoomContextMenuPanelTransform, "Toggle Rivers", AppData.instance.SaveLandMask);
+            UpdateUIToggle(contextMenuPanelTransform, "Toggle Rivers", AppData.instance.SaveRivers);
+            UpdateUIToggle(zoomContextMenuPanelTransform, "Toggle Rivers", AppData.instance.SaveRivers);
         }
     }
 
@@ -1568,6 +1569,19 @@ public partial class Map : MonoBehaviour
             UpdateUIInputField(contextMenuPanelTransform, "Cubemap Dimension Text Box", dimension.ToString());
         }
         AppData.instance.CubemapDimension = dimension;
+        AppData.instance.Save();
+    }
+
+    public void ExportHeight(string exportHeight)
+    {
+        int export = exportHeight.ToInt() / 2;
+        if (export > SystemInfo.maxTextureSize)
+        {
+            export = SystemInfo.maxTextureSize / 4;
+            UpdateUIInputField(contextMenuPanelTransform, "Export Height Text Box", (export * 2).ToString());
+        }
+        AppData.instance.ExportHeight = export;
+        UpdateUITextMeshPro(contextMenuPanelTransform, "Text Export Width", (AppData.instance.ExportHeight * 4).ToString());
         AppData.instance.Save();
     }
 
@@ -1633,6 +1647,7 @@ public partial class Map : MonoBehaviour
             return;
 
         uiCanvasTransform = canvas.transform;
+        menuButtonTransform = null;
         mainMenuPanelTransform = null;
         setupPanelTransform = null;
         worldNameTransform = null;
@@ -1702,6 +1717,10 @@ public partial class Map : MonoBehaviour
             else if (canvasChildTransform.name == "ZoomCam")
             {
                 zoomMapGameObject = canvasChildTransform.gameObject;
+            }
+            else if (canvasChildTransform.name == "Menu Button")
+            {
+                menuButtonTransform = canvasChildTransform;
             }
         }
     }
@@ -1777,6 +1796,8 @@ public partial class Map : MonoBehaviour
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Export as Cubemap", AppData.instance.ExportAsCubemap);
             UpdateUIToggle(contextMenuPanelTransform, "Toggle Transparent Oceans", AppData.instance.TransparentOceans);
             UpdateUIInputField(contextMenuPanelTransform, "Cubemap Dimension Text Box", AppData.instance.CubemapDimension.ToString());
+            UpdateUIInputField(contextMenuPanelTransform, "Export Height Text Box", (AppData.instance.ExportHeight * 2).ToString());
+            UpdateUITextMeshPro(contextMenuPanelTransform, "Text Export Width", (AppData.instance.ExportHeight * 4).ToString());
             UpdateUIInputField(contextMenuPanelTransform, "Cubemap Subdivisions Text Box", AppData.instance.CubemapDivisions.ToString());
             UpdateUIInputField(contextMenuPanelTransform, "Offset Pixels Text Box", AppData.instance.OffsetPixels.ToString());
 
@@ -2245,7 +2266,7 @@ public partial class Map : MonoBehaviour
         //    //TextureManager.instance.FlowTextureRandom = null;
         //    planetSurfaceMaterial.SetInt("_IsFlowTexSet", 0);
         //}
-        HeightMap2Texture();
+        HeightMap2Texture(TextureManager.instance.Settings.textureWidth);
         isEroded = TextureManager.instance.HeightMap != null;
         UpdateSurfaceMaterialHeightMap();
         worldNameText.interactable = true;
@@ -2414,10 +2435,26 @@ public partial class Map : MonoBehaviour
 
         RectTransform rectTransform = mainMenuPanelTransform as RectTransform;
         Vector2 prevAnchoredPosition = new Vector2(rectTransform.anchoredPosition.x, rectTransform.anchoredPosition.y);
-        rectTransform.sizeDelta = new Vector2(rectTransform.sizeDelta.x, 24 +
-            (AppData.instance.RecentWorlds.Count > 0 ? 8 : 0) +
-            AppData.instance.RecentWorlds.Count * 8);
+        rectTransform.sizeDelta = new Vector2(rectTransform.sizeDelta.x, 40 +
+            (AppData.instance.RecentWorlds.Count > 0 ? 20 : 0) +
+            AppData.instance.RecentWorlds.Count * 20);
         rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x, prevAnchoredPosition.y);
+    }
+
+    void RepositionRecentWorldsPanel()
+    {
+        RectTransform rectTransform = mainMenuPanelTransform as RectTransform;
+        rectTransform.anchoredPosition = new Vector2(mainMenuPanelTransform.position.x, rectTransform.sizeDelta.y + 5);
+    }
+
+    void UpodateRecentWorldsOriginalPosition()
+    {
+        MainMenu mainMenu = menuButtonTransform.GetComponent<MainMenu>();
+        if (mainMenu == null)
+            return;
+
+        RectTransform rectTransform = mainMenuPanelTransform as RectTransform;
+        mainMenu.StartingPosition = new Vector3(mainMenu.StartingPosition.x, rectTransform.sizeDelta.y + 5, mainMenu.StartingPosition.z);
     }
 
     void SelectButton(Transform panelTransform, string buttonName)
@@ -2466,7 +2503,7 @@ public partial class Map : MonoBehaviour
 
         string fileName = Path.GetFileName(AppData.instance.RecentWorlds[index]);
         fileName = fileName.Replace(".json", "");
-        textMeshProUGUI.text = fileName;
+        textMeshProUGUI.text = " " + fileName;
 
         RectTransform parentRectTransform = mainMenuPanelTransform as RectTransform;
 
@@ -2474,8 +2511,8 @@ public partial class Map : MonoBehaviour
         rectTransform.anchorMax = parentRectTransform.anchorMax;
         rectTransform.localScale = new Vector3(1, 1, 1);
         rectTransform.localPosition = new Vector3(10, 0, 0);
-        rectTransform.anchoredPosition = new Vector2(5, 0 - (index * 8 + 26));
-        rectTransform.sizeDelta = new Vector2(parentRectTransform.sizeDelta.x - 10, 10);
+        rectTransform.anchoredPosition = new Vector2(5, 0 - (index * 20 + 56));
+        rectTransform.sizeDelta = new Vector2(parentRectTransform.sizeDelta.x - 10, 18);
 
         Button button = gameObject.GetComponent<Button>();
         button.onClick.AddListener(ClickRecentWorld);
@@ -2513,6 +2550,7 @@ public partial class Map : MonoBehaviour
                         string fileName = AppData.instance.RecentWorlds[recentWorldId];
                         if (File.Exists(fileName) && MapData.instance.Load(fileName))
                         {
+                            TextureManager.instance.Settings = MapData.instance.textureSettings;
                             mapSettings = MapData.instance.mapSettings;
                             erosionSettings = MapData.instance.erosionSettings;
                             plotRiversSettings = MapData.instance.plotRiversSettings;
@@ -2526,6 +2564,7 @@ public partial class Map : MonoBehaviour
 
                             AppData.instance.AddRecentWorld(fileName);
                             UpdateRecentWorldsPanel();
+                            UpodateRecentWorldsOriginalPosition();
                             return;
                         }
                         else
@@ -2533,6 +2572,7 @@ public partial class Map : MonoBehaviour
                             AppData.instance.RemoveRecentWorld(fileName);
                         }
                         UpdateRecentWorldsPanel();
+                        UpodateRecentWorldsOriginalPosition();
                         AppData.instance.Save();
                         return;
                     }

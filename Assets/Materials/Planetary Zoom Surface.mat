@@ -9,6 +9,8 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Planetary Zoom Surface
   m_Shader: {fileID: 4800000, guid: bff2cfb2caec13247b7ccca7ccd907ca, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -17,6 +19,7 @@ Material:
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -83,8 +86,8 @@ Material:
     m_Ints: []
     m_Floats:
     - _BakedNormalIntensity: 1
-    - _BoundaryU: 0.07
-    - _BoundaryV: 0.14
+    - _BoundaryU: 0.075
+    - _BoundaryV: 0.075
     - _BumpScale: 1
     - _CenterU: 0.5
     - _CenterV: 0.5
@@ -114,10 +117,10 @@ Material:
     - _HeightExponent2: 2
     - _HighHumidityLightnessPercentage: 0.2
     - _HumidityExponent: 2.718281
-    - _HumidityMultiplier: 11
+    - _HumidityMultiplier: 10
     - _IceLandNormalScale: 75
-    - _IceTemperatureThreshold1: 3
-    - _IceTemperatureThreshold2: 2.8
+    - _IceTemperatureThreshold1: 0
+    - _IceTemperatureThreshold2: -0.2
     - _IceWaterNormalScale: 20
     - _IsFlowTexSet: 1
     - _IsLandmaskSet: 0
@@ -156,17 +159,17 @@ Material:
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _TemperatureElevationRatio: 10
+    - _TemperatureElevationRatio: 5
     - _TemperatureExponent: 2.718281
     - _TemperatureLatitudeDrop: 0
-    - _TemperatureLatitudeMultiplier: 22
-    - _TemperatureRatio: 7.3333335
-    - _TemperatureWaterDrop: 1.25
-    - _TextureWidth: 2048
+    - _TemperatureLatitudeMultiplier: 18
+    - _TemperatureRatio: 20.666666
+    - _TemperatureWaterDrop: 1
+    - _TextureWidth: 256
     - _UVSec: 0
     - _UnderwaterNormalInfluence: 0
-    - _UnderwaterNormalScale: 10
-    - _WaterLevel: 0.7
+    - _UnderwaterNormalScale: 30.000002
+    - _WaterLevel: 0.45
     - _XOffset: 0.39319837
     - _XOffset2: 0.44215328
     - _YOffset: 0.55095726
@@ -174,7 +177,7 @@ Material:
     - _ZOffset: 0.04737884
     - _ZOffset2: 0.5725585
     - _ZWrite: 1
-    - _ZoomTextureHeight: 2048
+    - _ZoomTextureHeight: 1024
     - _ZoomTextureWidth: 2048
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
@@ -195,3 +198,4 @@ Material:
     - _OceanColor4: {r: 0.19607843, g: 0.2, b: 0.2784314, a: 1}
     - _SpherePosition: {r: 0.00657701, g: 0.99997514, b: 0.0025382778, a: 0}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1

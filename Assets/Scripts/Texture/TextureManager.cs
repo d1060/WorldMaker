@@ -65,7 +65,22 @@ public class TextureManager
     }
 
     Texture2D flowTexture = null;
-    public Texture2D FlowTexture { get { return flowTexture; } set { if (value == null) { UnityEngine.Object.Destroy(flowTexture); } flowTexture = value; } }
+    public Texture2D FlowTexture
+    {
+        get
+        {
+            return flowTexture;
+        }
+        set
+        {
+            if (value == null)
+            {
+                UnityEngine.Object.Destroy(flowTexture);
+            }
+            flowTexture = value;
+        }
+    }
+
     public void InstantiateFlowTexture()
     {
         flowTexture = new Texture2D(settings.textureWidth * 4, settings.textureWidth * 2, TextureFormat.RGBA64, false, true);
@@ -87,10 +102,10 @@ public class TextureManager
 
     float[] heightMap;
     public float[] HeightMap { get { return heightMap; } set { heightMap = value; } }
-    public void InstantiateHeightMap()
+    public void InstantiateHeightMap(int heightmapHeight)
     {
-        if (heightMap == null || heightMap.Length != settings.textureWidth * 4 * settings.textureWidth * 2)
-            heightMap = new float[settings.textureWidth * 4 * settings.textureWidth * 2];
+        if (heightMap == null || heightMap.Length != heightmapHeight * 4 * heightmapHeight * 2)
+            heightMap = new float[heightmapHeight * 4 * heightmapHeight * 2];
     }
     public void HeightMapMinMaxHeights(ref float minHeight, ref float maxHeight)
     {
@@ -204,9 +219,9 @@ public class TextureManager
         }
     }
 
-    public void InstantiateFlowErosionMap()
+    public void InstantiateFlowErosionMap(int height)
     {
-        if (flowErosionMap == null || flowErosionMap.Length != settings.textureWidth * 4 * settings.textureWidth * 2)
-            flowErosionMap = new float[settings.textureWidth * 4 * settings.textureWidth * 2];
+        if (flowErosionMap == null || flowErosionMap.Length != height * 4 * height * 2)
+            flowErosionMap = new float[height * 4 * height * 2];
     }
 }

@@ -9,6 +9,8 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Planetary Surface
   m_Shader: {fileID: 4800000, guid: 8d15a961452ea4941a96959689076637, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -17,6 +19,7 @@ Material:
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -94,8 +97,8 @@ Material:
     - _DesertThreshold1: 10
     - _DesertThreshold2: 20
     - _DetailNormalMapScale: 1
-    - _DomainWarping: 2
-    - _DomainWarping2: 1
+    - _DomainWarping: 1.32
+    - _DomainWarping2: 0.97602046
     - _DrawType: 0
     - _DstBlend: 0
     - _GlossMapScale: 1
@@ -113,11 +116,11 @@ Material:
     - _HeightmapWidth: 12084
     - _HighHumidityLightnessPercentage: 0.549
     - _HumidityExponent: 2.718281
-    - _HumidityMultiplier: 11
-    - _HumiditySeed: 88308.52
+    - _HumidityMultiplier: 10
+    - _HumiditySeed: 113280.06
     - _IceLandNormalScale: 40
-    - _IceTemperatureThreshold1: 3
-    - _IceTemperatureThreshold2: 2.8
+    - _IceTemperatureThreshold1: 0
+    - _IceTemperatureThreshold2: -0.2
     - _IceWaterNormalScale: 30
     - _IsEroded: 0
     - _IsFlowTexSet: 0
@@ -125,20 +128,20 @@ Material:
     - _IsLandmaskSet: 0
     - _IsMainmapSet: 0
     - _IsNoiseMapSet: 1
-    - _Lacunarity: 1.58
-    - _Lacunarity2: 1.67
+    - _Lacunarity: 1.64
+    - _Lacunarity2: 1.6580452
     - _LandGlossiness: 0.376
     - _LandMetallic: 0
-    - _LayerStrength: 0.38
-    - _LayerStrength2: 0.5
+    - _LayerStrength: 0.22
+    - _LayerStrength2: 0.7841857
     - _LightFalloff: 16.55
     - _LightIntensity: 1
-    - _MaxHeight: 0.76
+    - _MaxHeight: 0.7
     - _Metallic: 0
-    - _MinHeight: 0.22
+    - _MinHeight: 0.15
     - _Mode: 0
-    - _Multiplier: 4.3
-    - _Multiplier2: 2.2
+    - _Multiplier: 4.1
+    - _Multiplier2: 2.4157
     - _NormalInfluence: 0
     - _NormalScale: 50
     - _OcclusionStrength: 1
@@ -147,38 +150,38 @@ Material:
     - _OceanColorStep3: 1
     - _OceanColorStep4: 1
     - _OceanColorSteps: 3
-    - _Octaves: 20
-    - _Octaves2: 20
+    - _Octaves: 13
+    - _Octaves2: 16
     - _Parallax: 0.02
     - _Persistence: 0.71
-    - _Persistence2: 0.61
-    - _RidgedNoise: 1
+    - _Persistence2: 0.68117154
+    - _RidgedNoise: 0
     - _RidgedNoise2: 0
-    - _Seed: 92549.01
-    - _Seed2: 542837.2
+    - _Seed: 750109.8
+    - _Seed2: 619787.6
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _SunDisk: 0.0065
-    - _TemperatureElevationRatio: 10
+    - _TemperatureElevationRatio: 5
     - _TemperatureExponent: 2.718281
     - _TemperatureLatitudeDrop: 0
-    - _TemperatureLatitudeMultiplier: 22
-    - _TemperatureRatio: 7.3333335
-    - _TemperatureSeed: 387978.1
-    - _TemperatureWaterDrop: 1.25
-    - _TextureHeight: 2048
-    - _TextureWidth: 2048
+    - _TemperatureLatitudeMultiplier: 18
+    - _TemperatureRatio: 20.666666
+    - _TemperatureSeed: 852059.7
+    - _TemperatureWaterDrop: 1
+    - _TextureHeight: 256
+    - _TextureWidth: 256
     - _UVSec: 0
     - _UnderwaterNormalInfluence: 0
-    - _UnderwaterNormalScale: 10
-    - _WaterLevel: 0.7
-    - _XOffset: 0.43
-    - _XOffset2: 0.25
-    - _YOffset: 0.68
-    - _YOffset2: 0.39
-    - _ZOffset: 0.47
-    - _ZOffset2: 0.57
+    - _UnderwaterNormalScale: 30.000002
+    - _WaterLevel: 0.45
+    - _XOffset: 0.05
+    - _XOffset2: 0.7527156
+    - _YOffset: 0.94
+    - _YOffset2: 0.5516428
+    - _ZOffset: 0.33
+    - _ZOffset2: 0.6855434
     - _ZWrite: 1
     m_Colors:
     - _AtmosphericColor: {r: 1, g: 1, b: 1, a: 1}
@@ -199,3 +202,4 @@ Material:
     - _OceanColor3: {r: 0.19607843, g: 0.2, b: 0.2784314, a: 1}
     - _OceanColor4: {r: 0.19607843, g: 0.2, b: 0.2784314, a: 1}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1

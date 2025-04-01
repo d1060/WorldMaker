@@ -239,6 +239,13 @@ public class Geosphere : MonoBehaviour
     {
         Vector3 positionVector = targetCameraPosition;
         float distance = positionVector.magnitude;
+
+        float distanceToMap = distance - Radius;
+        float zoomChangeRatio = distanceToMap / CameraController.MaxCameraDistance;
+        if (zoomChangeRatio > 1) zoomChangeRatio = 1;
+        if (zoomChangeRatio < CameraController.MinCameraDistance / CameraController.MaxCameraDistance) zoomChangeRatio = CameraController.MinCameraDistance / CameraController.MaxCameraDistance;
+        zoomAmount *= zoomChangeRatio;
+
         distance -= zoomAmount;
         if (distance - Radius < CameraController.MinCameraDistance)
             distance = CameraController.MinCameraDistance + Radius;

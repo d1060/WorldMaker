@@ -44,7 +44,7 @@ float erodeHeight(int mapIndex, float height)
     if (erodedHeight <= 0)
         return height;
 
-    float mergedHeight = height - erodedHeight * erosionNoiseMerge;
+    float mergedHeight = height - erodedHeight * _ErosionNoiseMerge;
 
     if (mergedHeight <= 0)
         return 0;
@@ -70,7 +70,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     heightMap[mapIndex] = height;
 
-    float erodedHeight = erodeHeight(cubemap, height);
+    float erodedHeight = erodeHeight(mapIndex, height);
 
     uint textureWidth = uv.x * _MapWidth * 4;
     uint textureHeight = uv.y * _MapWidth * 2;

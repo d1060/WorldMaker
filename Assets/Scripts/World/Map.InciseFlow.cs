@@ -41,7 +41,7 @@ public partial class Map : MonoBehaviour
         //    ShowPlottingRiversPanel();
         //}
 
-        GenerateHeightMap();
+        GenerateHeightMap(TextureManager.instance.Settings.textureWidth);
         if (connectivityMap == null)
             EstablishHeightmapConnectivity();
 
@@ -77,7 +77,7 @@ public partial class Map : MonoBehaviour
 
     void PerformInciseFlow(bool establishConnectivity, bool replotRivers, bool replotRandomRivers)
     {
-        GenerateHeightMap();
+        GenerateHeightMap(TextureManager.instance.Settings.textureWidth);
 
         if (establishConnectivity)
             EstablishHeightmapConnectivity();
@@ -108,7 +108,7 @@ public partial class Map : MonoBehaviour
         //int maxErosionIndex = -1;
         //float maxErosion = TextureManager.instance.FlowErosionMap.MaxAndIndex(ref maxErosionIndex);
 
-        HeightMap2Texture();
+        HeightMap2Texture(TextureManager.instance.Settings.textureWidth);
         isEroded = true;
         UpdateSurfaceMaterialHeightMap();
         UpdateZoomCamMaterialProperties();
@@ -120,7 +120,7 @@ public partial class Map : MonoBehaviour
         flowMapBuffer.SetData(TextureManager.instance.InciseFlowMap, 0, 0, TextureManager.instance.InciseFlowMap.Length);
 
         if (TextureManager.instance.FlowErosionMap == null || TextureManager.instance.FlowErosionMap.Length != TextureManager.instance.HeightMap.Length)
-            TextureManager.instance.InstantiateFlowErosionMap();
+            TextureManager.instance.InstantiateFlowErosionMap(TextureManager.instance.Settings.textureWidth);
 
         ComputeBuffer inciseFlowMapBuffer = new ComputeBuffer(TextureManager.instance.FlowErosionMap.Length, sizeof(uint));
 

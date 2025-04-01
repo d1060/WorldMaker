@@ -3,7 +3,6 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using UnityEngine;
 
 public struct Vector2i
 {
@@ -52,14 +51,14 @@ public struct Vector2i
         myMagnitude = float.NaN;
     }
 
-    public Vector2i(Vector2 v)
+    public Vector2i(Vector2f v)
     {
         this.x = (int)v.x;
         this.y = (int)v.y;
         myMagnitude = float.NaN;
     }
 
-    public Vector2i(Vector3 v)
+    public Vector2i(Vector3f v)
     {
         this.x = (int)v.x;
         this.y = (int)v.y;
@@ -96,7 +95,7 @@ public struct Vector2i
         return v2;
     }
 
-    public static implicit operator Vector2i(Vector2 v2)
+    public static implicit operator Vector2i(Vector2f v2)
     {
         Vector2i v = new Vector2i(v2);
         return v;
@@ -130,7 +129,7 @@ public struct Vector2i
         return v.x != v2.x || v.y != v2.y;
     }
 
-    public static implicit operator Vector2i(Vector3 v3)
+    public static implicit operator Vector2i(Vector3f v3)
     {
         Vector2i v2 = new Vector2i((int)v3.x, (int)v3.y);
         return v2;

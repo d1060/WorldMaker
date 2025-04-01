@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using UnityEngine;
 
 [Serializable]
 public class GranuralizedGeoSphere
@@ -17,7 +16,8 @@ public class GranuralizedGeoSphere
     static public readonly string baseFileBinary = "WorldGen.SpherePoints.dat";
     List<int> indexesOfIndexesBorderLeft = new List<int>();
     List<int> indexesOfIndexesBorderRight = new List<int>();
-    Dictionary<Duo<int, int>, List<Vector3>> sidesCache = new Dictionary<Duo<int, int>, List<Vector3>>();
+    Dictionary<Duo<int, int>, List<Vector3f>> sidesCache = new Dictionary<Duo<int, int>, List<Vector3f>>();
+    string streamingAssetsPath;
 
     #region Singleton
     static GranuralizedGeoSphere myInstance = null;
@@ -49,8 +49,9 @@ public class GranuralizedGeoSphere
     }
     #endregion
 
-    public void Init(int divisions = 5)
+    public void Init(string streamingAssetsPath, int divisions = 5)
     {
+        this.streamingAssetsPath = streamingAssetsPath;
         Divisions = divisions;
 
         indexesOfIndexesBorderLeft.Add(0);
@@ -63,7 +64,7 @@ public class GranuralizedGeoSphere
 
         bool forceSave = false;
         //string filePath = Path.Combine(Application.streamingAssetsPath, baseFile);
-        string filePath = Path.Combine(Application.streamingAssetsPath, baseFileBinary);
+        string filePath = Path.Combine(streamingAssetsPath, baseFileBinary);
         if (File.Exists(filePath))
         {
             // Loads a saved Geosphere.
@@ -120,22 +121,22 @@ public class GranuralizedGeoSphere
             {
                 if (sidesCache.ContainsKey(d21))
                 {
-                    List<Vector3> lineSplit21 = sidesCache[d21];
-                    List<Vector3> lineSplit12 = new List<Vector3>(lineSplit21);
+                    List<Vector3f> lineSplit21 = sidesCache[d21];
+                    List<Vector3f> lineSplit12 = new List<Vector3f>(lineSplit21);
                     lineSplit12.Reverse();
                     sidesCache.Add(d12, lineSplit12);
                 }
                 else
                 {
-                    List<Vector3> lineSplit12 = SplitLine(bf.p1, bf.p2, Divisions);
+                    List<Vector3f> lineSplit12 = SplitLine(bf.p1, bf.p2, Divisions);
                     sidesCache.Add(d12, lineSplit12);
                 }
             }
             bf.Side12 = sidesCache[d12];
             if (!sidesCache.ContainsKey(d21))
             {
-                List<Vector3> lineSplit12 = sidesCache[d12];
-                List<Vector3> lineSplit21 = new List<Vector3>(lineSplit12);
+                List<Vector3f> lineSplit12 = sidesCache[d12];
+                List<Vector3f> lineSplit21 = new List<Vector3f>(lineSplit12);
                 lineSplit21.Reverse();
                 sidesCache.Add(d21, lineSplit21);
             }
@@ -144,22 +145,22 @@ public class GranuralizedGeoSphere
             {
                 if (sidesCache.ContainsKey(d31))
                 {
-                    List<Vector3> lineSplit31 = sidesCache[d31];
-                    List<Vector3> lineSplit13 = new List<Vector3>(lineSplit31);
+                    List<Vector3f> lineSplit31 = sidesCache[d31];
+                    List<Vector3f> lineSplit13 = new List<Vector3f>(lineSplit31);
                     lineSplit13.Reverse();
                     sidesCache.Add(d13, lineSplit13);
                 }
                 else
                 {
-                    List<Vector3> lineSplit13 = SplitLine(bf.p1, bf.p3, Divisions);
+                    List<Vector3f> lineSplit13 = SplitLine(bf.p1, bf.p3, Divisions);
                     sidesCache.Add(d13, lineSplit13);
                 }
             }
             bf.Side13 = sidesCache[d13];
             if (!sidesCache.ContainsKey(d31))
             {
-                List<Vector3> lineSplit13 = sidesCache[d13];
-                List<Vector3> lineSplit31 = new List<Vector3>(lineSplit13);
+                List<Vector3f> lineSplit13 = sidesCache[d13];
+                List<Vector3f> lineSplit31 = new List<Vector3f>(lineSplit13);
                 lineSplit31.Reverse();
                 sidesCache.Add(d31, lineSplit31);
             }
@@ -168,22 +169,22 @@ public class GranuralizedGeoSphere
             {
                 if (sidesCache.ContainsKey(d23))
                 {
-                    List<Vector3> lineSplit23 = sidesCache[d23];
-                    List<Vector3> lineSplit32 = new List<Vector3>(lineSplit23);
+                    List<Vector3f> lineSplit23 = sidesCache[d23];
+                    List<Vector3f> lineSplit32 = new List<Vector3f>(lineSplit23);
                     lineSplit32.Reverse();
                     sidesCache.Add(d32, lineSplit32);
                 }
                 else
                 {
-                    List<Vector3> lineSplit32 = SplitLine(bf.p3, bf.p2, Divisions);
+                    List<Vector3f> lineSplit32 = SplitLine(bf.p3, bf.p2, Divisions);
                     sidesCache.Add(d32, lineSplit32);
                 }
             }
             bf.Side32 = sidesCache[d32];
             if (!sidesCache.ContainsKey(d23))
             {
-                List<Vector3> lineSplit32 = sidesCache[d32];
-                List<Vector3> lineSplit23 = new List<Vector3>(lineSplit32);
+                List<Vector3f> lineSplit32 = sidesCache[d32];
+                List<Vector3f> lineSplit23 = new List<Vector3f>(lineSplit32);
                 lineSplit23.Reverse();
                 sidesCache.Add(d23, lineSplit23);
             }
@@ -204,13 +205,13 @@ public class GranuralizedGeoSphere
 
     public void SplitFace(int faceIndex)
     {
-        Vector3 p1 = BaseFaces[faceIndex].p1;
-        Vector3 p2 = BaseFaces[faceIndex].p2;
-        Vector3 p3 = BaseFaces[faceIndex].p3;
+        Vector3f p1 = BaseFaces[faceIndex].p1;
+        Vector3f p2 = BaseFaces[faceIndex].p2;
+        Vector3f p3 = BaseFaces[faceIndex].p3;
 
         // Splits the sides.
-        List<Vector3> lineSplit12 = BaseFaces[faceIndex].Side12;
-        List<Vector3> lineSplit13 = BaseFaces[faceIndex].Side13;
+        List<Vector3f> lineSplit12 = BaseFaces[faceIndex].Side12;
+        List<Vector3f> lineSplit13 = BaseFaces[faceIndex].Side13;
 
         List<int> indexes = new List<int>();
 
@@ -232,7 +233,7 @@ public class GranuralizedGeoSphere
             }
             else
             {
-                List<Vector3> lineSplit32 = null;
+                List<Vector3f> lineSplit32 = null;
                 if (i == Divisions + 1)
                     lineSplit32 = BaseFaces[faceIndex].Side32;
                 else
@@ -242,7 +243,7 @@ public class GranuralizedGeoSphere
                 {
                     int uvXoffssetNum = Divisions + 1 - i;
                     GeoSpherePoint tf = null;
-                    Vector3 newPoint = Vector3.zero;
+                    Vector3f newPoint = Vector3f.zero;
 
                     newPoint = lineSplit32[a];
 
@@ -338,22 +339,22 @@ public class GranuralizedGeoSphere
         }
     }
 
-    List<Vector3> SplitLine(Vector3 v1, Vector3 v2, int level, bool doNormalize = true)
+    List<Vector3f> SplitLine(Vector3f v1, Vector3f v2, int level, bool doNormalize = true)
     {
-        Vector3 side = v2 - v1;
+        Vector3f side = v2 - v1;
         float length = side.magnitude;
         float newLength = length / (level + 1);
-        Vector3 step = side;
+        Vector3f step = side;
         step.Normalize();
         step *= newLength;
         step = step.Round();
-        List<Vector3> newPoints = new List<Vector3>();
+        List<Vector3f> newPoints = new List<Vector3f>();
         newPoints.Add(v1);
-        Vector3 point = v1 + step;
+        Vector3f point = v1 + step;
         point = point.Round();
         for (int i = 0; i < level; i++)
         {
-            Vector3 newPointInSphere = new Vector3(point.x, point.y, point.z);
+            Vector3f newPointInSphere = new Vector3f(point.x, point.y, point.z);
             if (!doNormalize)
                 newPointInSphere.Normalize();
             newPoints.Add(newPointInSphere);
@@ -365,13 +366,13 @@ public class GranuralizedGeoSphere
         return newPoints;
     }
 
-    int GetIndexOfPoint(Vector3 p)
+    int GetIndexOfPoint(Vector3f p)
     {
         for (int i = 0; i < Points.Count; i++)
         {
-            if (Mathf.Abs(Points[i].x - p.x) <= 0.00005 &&
-                Mathf.Abs(Points[i].y - p.y) <= 0.00005 &&
-                Mathf.Abs(Points[i].z - p.z) <= 0.00005)
+            if (Math.Abs(Points[i].x - p.x) <= 0.00005 &&
+                Math.Abs(Points[i].y - p.y) <= 0.00005 &&
+                Math.Abs(Points[i].z - p.z) <= 0.00005)
                 return i;
         }
         return -1;
@@ -425,7 +426,7 @@ public class GranuralizedGeoSphere
     {
         try
         {
-            string filePath = Path.Combine(Application.streamingAssetsPath, baseFileBinary);
+            string filePath = Path.Combine(streamingAssetsPath, baseFileBinary);
             using (BinaryWriter writer = new BinaryWriter(File.Open(filePath, FileMode.Create)))
             {
                 writer.Write(Divisions);
@@ -472,7 +473,7 @@ public class GranuralizedGeoSphere
     {
         try
         {
-            string filePath = Path.Combine(Application.streamingAssetsPath, baseFileBinary);
+            string filePath = Path.Combine(streamingAssetsPath, baseFileBinary);
             using (BinaryReader reader = new BinaryReader(File.Open(filePath, FileMode.Open)))
             {
                 Divisions = reader.ReadInt32();
@@ -502,7 +503,7 @@ public class GranuralizedGeoSphere
         return true;
     }
 
-    public GeoSpherePoint GetClosestPointTo(Vector3 point)
+    public GeoSpherePoint GetClosestPointTo(Vector3f point)
     {
         float closestBaseFaceDistance = float.MaxValue;
         GeoSphereFace closestFace = null;
@@ -521,7 +522,7 @@ public class GranuralizedGeoSphere
         foreach (int pointIndex in closestFace.Indexes)
         {
             GeoSpherePoint geoSpherePoint = Points[pointIndex];
-            Vector3 pointCoords = geoSpherePoint.AsVector3();
+            Vector3f pointCoords = geoSpherePoint.AsVector3();
             float pointDistance = (pointCoords - point).magnitude;
             if (pointDistance < closestGeoSpherePointDistance)
             {

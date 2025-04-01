@@ -18,6 +18,7 @@ public class AppData
     public bool SaveRivers = true;
     public bool ExportAsCubemap = false;
     public bool TransparentOceans = false;
+    public int ExportHeight = 2048;
     public int CubemapDimension = 256;
     public int CubemapDivisions = 2;
     public float OffsetPixels = 4;
@@ -80,6 +81,7 @@ public class AppData
                 RecentWorlds = ad.RecentWorlds;
                 ExportAsCubemap = ad.ExportAsCubemap;
                 CubemapDimension = ad.CubemapDimension;
+                ExportHeight = ad.ExportHeight;
                 CubemapDivisions = ad.CubemapDivisions;
                 TransparentOceans = ad.TransparentOceans;
                 OffsetPixels = ad.OffsetPixels;

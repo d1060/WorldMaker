@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using UnityEngine;
 
 public class Rivers
 {
@@ -33,7 +32,7 @@ public class Rivers
     public float waterLevel;
     public float flowHeightDelta;
     public float startingAlpha;
-    public Color riverColor;
+    public Colorf riverColor;
     public float heightWeight;
     public float brushSize;
     public float brushExponent;
@@ -41,46 +40,46 @@ public class Rivers
     public float[] heightMap;
 
     float alphaStep = (2 / 255f);
-    uint[] dropPoints;
-    Color[] flowMap;
+    uint[] dropPoints = { };
+    Colorf[] flowMap;
     List<Thread> threads = null;
     Thread controller;
     int iterationCount = 0;
-    Texture2D flowTex;
+    //Texture2D flowTex;
 
-    public void Init(Texture2D flowTex)
-    {
-        try
-        {
-            this.flowTex = flowTex;
-            System.Random random = new System.Random();
-            dropPoints = new uint[numIterations];
-            for (int i = 0; i < numIterations; i++)
-            {
-                Vector3 pointInSpace = new Vector3((float)(random.NextDouble() - 0.5), (float)(random.NextDouble() - 0.5), (float)(random.NextDouble() - 0.5));
-                Vector2 pointInMap = pointInSpace.CartesianToPolarRatio(1);
-                uint mapX = (uint)(pointInMap.x * textureWidth);
-                uint mapY = (uint)(pointInMap.y * textureHeight);
+    //public void Init(Texture2D flowTex)
+    //{
+    //    try
+    //    {
+    //        this.flowTex = flowTex;
+    //        System.Random random = new System.Random();
+    //        dropPoints = new uint[numIterations];
+    //        for (int i = 0; i < numIterations; i++)
+    //        {
+    //            Vector3 pointInSpace = new Vector3((float)(random.NextDouble() - 0.5), (float)(random.NextDouble() - 0.5), (float)(random.NextDouble() - 0.5));
+    //            Vector2 pointInMap = pointInSpace.CartesianToPolarRatio(1);
+    //            uint mapX = (uint)(pointInMap.x * textureWidth);
+    //            uint mapY = (uint)(pointInMap.y * textureHeight);
 
-                uint dropPointIndex = mapY * (uint)textureWidth + mapX;
-                if (heightMap[dropPointIndex] <= waterLevel)
-                {
-                    i--;
-                    continue;
-                }
-                dropPoints[i] = dropPointIndex;
-            }
+    //            uint dropPointIndex = mapY * (uint)textureWidth + mapX;
+    //            if (heightMap[dropPointIndex] <= waterLevel)
+    //            {
+    //                i--;
+    //                continue;
+    //            }
+    //            dropPoints[i] = dropPointIndex;
+    //        }
 
-            flowMap = new Color[textureWidth * textureHeight];
-            flowMap = flowTex.GetPixels();
-        }
-        catch (Exception e)
-        {
-            Debug.Log("Error initializing Incise Flow: " + e.Message + "\n" + e.StackTrace);
-        }
-    }
+    //        flowMap = new Colorf[textureWidth * textureHeight];
+    //        flowMap = flowTex.GetPixels();
+    //    }
+    //    catch (Exception e)
+    //    {
+    //        Debug.Log("Error initializing Incise Flow: " + e.Message + "\n" + e.StackTrace);
+    //    }
+    //}
 
-    public Color[] FlowMap { get { return flowMap;  } set { flowMap = value; } }
+    public Colorf[] FlowMap { get { return flowMap;  } set { flowMap = value; } }
 
     public void StartThreads()
     {
@@ -164,14 +163,14 @@ public class Rivers
             return;
 
         Dictionary<Vector2i, Vector2i> flowVectors = new Dictionary<Vector2i, Vector2i>();
-        Color[] thisFlowMap = new Color[textureWidth * textureHeight];
+        Colorf[] thisFlowMap = new Colorf[textureWidth * textureHeight];
         Array.Copy(flowMap, thisFlowMap, thisFlowMap.Length);
 
         float[] thisHeightMap = new float[heightMap.Length];
         Array.Copy(heightMap, thisHeightMap, thisFlowMap.Length);
 
         Dictionary<int, float> erosionInstructions = new Dictionary<int, float>();
-        Dictionary<int, Color> riverColorInstructions = new Dictionary<int, Color>();
+        Dictionary<int, Colorf> riverColorInstructions = new Dictionary<int, Colorf>();
 
         // Finds the A* path bewteen origin point and destination.
         AStar(position, closestUnderwater, thisHeightMap, thisFlowMap, flowVectors, erosionInstructions, riverColorInstructions);
@@ -245,7 +244,7 @@ public class Rivers
         }
     }
 
-    void AStar(Vector2i origin, Vector2i target, float[] thisHeightMap, Color[] thisFlowMap, Dictionary<Vector2i, Vector2i> flowVectors, Dictionary<int, float> erosionInstructions, Dictionary<int, Color> riverColorInstructions)
+    void AStar(Vector2i origin, Vector2i target, float[] thisHeightMap, Colorf[] thisFlowMap, Dictionary<Vector2i, Vector2i> flowVectors, Dictionary<int, float> erosionInstructions, Dictionary<int, Colorf> riverColorInstructions)
     {
         List<Vector2i> openSet = new List<Vector2i>();
         openSet.Add(origin);
@@ -282,7 +281,7 @@ public class Rivers
                     neighborDistance = 1.414213f;
 
                 float neighborHeight = thisHeightMap[neighbor.ToIndex(textureWidth)];
-                Color neighborColor = thisFlowMap[neighbor.ToIndex(textureWidth)];
+                Colorf neighborColor = thisFlowMap[neighbor.ToIndex(textureWidth)];
 
                 if (neighborHeight <= waterLevel || neighborColor.a > 0)
                 {
@@ -400,7 +399,7 @@ public class Rivers
         return heightDelta;
     }
 
-    void TracePath(Vector2i point, Dictionary<Vector2i, Vector2i> cameFrom, Color[] thisFlowMap, ref float[] thisHeightMap, Dictionary<Vector2i, Vector2i> flowVectors, Dictionary<int, float> erosionInstructions, Dictionary<int, Color> riverColorInstructions)
+    void TracePath(Vector2i point, Dictionary<Vector2i, Vector2i> cameFrom, Colorf[] thisFlowMap, ref float[] thisHeightMap, Dictionary<Vector2i, Vector2i> flowVectors, Dictionary<int, float> erosionInstructions, Dictionary<int, Colorf> riverColorInstructions)
     {
         List<Vector2i> pointsToErode = new List<Vector2i>();
         Vector2i current = point;
@@ -457,13 +456,13 @@ public class Rivers
                     {
                         if (!riverColorInstructions.ContainsKey(erodePointIndex))
                         {
-                            Color c = riverColor;
+                            Colorf c = riverColor;
                             c.a = alpha;
                             riverColorInstructions.Add(erodePointIndex, c);
                         }
                         else
                         {
-                            Color c = riverColorInstructions[erodePointIndex];
+                            Colorf c = riverColorInstructions[erodePointIndex];
                             c.a += alpha;
                             riverColorInstructions[erodePointIndex] = c;
                         }
@@ -478,7 +477,7 @@ public class Rivers
         }
     }
 
-    void ErodeHeightsAround(Vector2i point, ref float[] thisHeightMap, ref float lastHeight, ref float alpha, Dictionary<int, float> erosionInstructions, Dictionary<int, Color> riverColorInstructions, bool setAlphaToOne)
+    void ErodeHeightsAround(Vector2i point, ref float[] thisHeightMap, ref float lastHeight, ref float alpha, Dictionary<int, float> erosionInstructions, Dictionary<int, Colorf> riverColorInstructions, bool setAlphaToOne)
     {
         float pointHeight = thisHeightMap[point.ToIndex(textureWidth)];
         float thisflowHeightDelta = flowHeightDelta;
@@ -497,13 +496,13 @@ public class Rivers
         {
             if (!riverColorInstructions.ContainsKey(pointIndex))
             {
-                Color c = riverColor;
+                Colorf c = riverColor;
                 c.a = setAlphaToOne ? 1 : alpha;
                 riverColorInstructions.Add(pointIndex, c);
             }
             else
             {
-                Color c = riverColorInstructions[pointIndex];
+                Colorf c = riverColorInstructions[pointIndex];
                 c = riverColor;
                 c.a = setAlphaToOne ? 1 : alpha;
                 riverColorInstructions[pointIndex] = c;
@@ -530,12 +529,12 @@ public class Rivers
                 if (brushX < 0) brushX += textureWidth;
                 if (brushX >= textureWidth) brushX -= textureWidth;
 
-                float distanceToCenter = Mathf.Sqrt(yDelta * yDelta + xDelta * xDelta);
+                float distanceToCenter = (float)Math.Sqrt(yDelta * yDelta + xDelta * xDelta);
                 if (distanceToCenter > brushSize)
                     continue;
 
                 float heightRatio = (brushSize - distanceToCenter) / brushSize;
-                heightRatio = Mathf.Pow(Mathf.Abs(heightRatio), brushExponent);
+                heightRatio = (float)Math.Pow(Math.Abs(heightRatio), brushExponent);
 
                 float heightToDecrease = thisflowHeightDelta * heightRatio;
                 Vector2i brushPoint = new Vector2i(brushX, brushY);
@@ -560,7 +559,7 @@ public class Rivers
         }
     }
 
-    void PerformInstructions(Dictionary<int, float> erosionInstructions, Dictionary<int, Color> riverColorInstructions)
+    void PerformInstructions(Dictionary<int, float> erosionInstructions, Dictionary<int, Colorf> riverColorInstructions)
     {
         if (erosionInstructions.Count > 0)
         {
@@ -577,7 +576,7 @@ public class Rivers
         {
             lock (flowMap)
             {
-                foreach (KeyValuePair<int, Color> kvp in riverColorInstructions)
+                foreach (KeyValuePair<int, Colorf> kvp in riverColorInstructions)
                 {
                     flowMap[kvp.Key] = kvp.Value;
                 }

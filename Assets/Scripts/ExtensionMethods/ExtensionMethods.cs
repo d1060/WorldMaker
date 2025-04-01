@@ -581,4 +581,100 @@ public static partial class ExtensionMethods
             Debug.LogException(e);
         }
     }
+
+    public static Vector2 CartesianToPolarDegrees(this Vector3 cartesian, float radius)
+    {
+        cartesian.Normalize();
+        cartesian *= radius;
+
+        Vector2 retVal;
+        float xzAtan2 = 0;
+
+        if (cartesian.x == 0)
+        {
+            if (cartesian.z > 0)
+                xzAtan2 = Mathf.PI / 2.0f;
+            else
+                xzAtan2 = -Mathf.PI / 2.0f;
+        }
+        else
+            xzAtan2 = Mathf.Atan2(cartesian.z, cartesian.x);
+
+        retVal.x = xzAtan2;
+
+        retVal.y = Mathf.Asin(cartesian.y / radius);
+
+        retVal.x *= Mathf.Rad2Deg;
+        retVal.y *= Mathf.Rad2Deg;
+
+        return retVal;
+    }
+
+    public static Vector2 CartesianToPolarRatio(this Vector3 cartesian, float radius)
+    {
+        Vector2 polar = cartesian.CartesianToPolarDegrees(radius);
+        polar.x /= 360;
+        polar.y /= 180;
+        polar.x += 0.5f;
+        polar.y += 0.5f;
+        return polar;
+    }
+
+    public static Vector3 PolarRatioToCartesian(this Vector2 polar, float radius)
+    {
+        polar.x -= 0.5f;
+        polar.y -= 0.5f;
+        polar.x *= 360;
+        polar.y *= 180;
+
+        float a = radius * Mathf.Cos(polar.y * Mathf.Deg2Rad);
+        float y = radius * Mathf.Sin(polar.y * Mathf.Deg2Rad);
+        float z = a * Mathf.Sin(polar.x * Mathf.Deg2Rad);
+        float x = a * Mathf.Cos(polar.x * Mathf.Deg2Rad);
+
+        return new Vector3(x, y, z);
+    }
+
+    static public void SaveToFile(this RenderTexture renderTexture, string filePath)
+    {
+        Texture2D tex;
+        tex = new Texture2D(renderTexture.width, renderTexture.height, TextureFormat.RGBAFloat, false, true);
+        var oldRt = RenderTexture.active;
+        RenderTexture.active = renderTexture;
+        tex.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
+        tex.Apply();
+        RenderTexture.active = oldRt;
+        try
+        {
+            File.WriteAllBytes(filePath, tex.EncodeToPNG());
+        }
+        catch
+        {
+
+        }
+
+        if (Application.isPlaying)
+            UnityEngine.Object.Destroy(tex);
+        else
+            UnityEngine.Object.DestroyImmediate(tex);
+    }
+
+    public static Vector3 Round(this Vector3 v)
+    {
+        Vector3 vRounded = new Vector3(v.x, v.y, v.z);
+        vRounded.x = vRounded.x.Round();
+        vRounded.y = vRounded.y.Round();
+        vRounded.z = vRounded.z.Round();
+        return vRounded;
+    }
+
+    public static Vector3f ToVector3f(this Vector3 v)
+    {
+        return new Vector3f(v.x, v.y, v.z);
+    }
+
+    public static Vector3 ToVector3(this Vector3f v)
+    {
+        return new Vector3(v.x, v.y, v.z);
+    }
 }

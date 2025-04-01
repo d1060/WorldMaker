@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using UnityEngine;
 
 [Serializable]
 public class GeoSpherePoint
@@ -17,7 +16,7 @@ public class GeoSpherePoint
     public int Index { get { return index; } set { index = value; } }
 
     public GeoSpherePoint() { }
-    public GeoSpherePoint(Vector3 p1, int index)
+    public GeoSpherePoint(Vector3f p1, int index)
     {
         this.x = p1.x.Round();
         this.y = p1.y.Round();
@@ -26,9 +25,9 @@ public class GeoSpherePoint
         Neighbors = new List<int>();
     }
 
-    public Vector3 AsVector3()
+    public Vector3f AsVector3()
     {
-        return new Vector3(x, y, z);
+        return new Vector3f(x, y, z);
     }
 
     public override int GetHashCode()

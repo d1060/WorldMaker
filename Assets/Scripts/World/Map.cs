@@ -94,7 +94,7 @@ public partial class Map : MonoBehaviour
             MapData.instance.textureSettings = new TextureSettings();
             GenerateSeeds();
         }
-        GranuralizedGeoSphere.instance.Init(50);
+        GranuralizedGeoSphere.instance.Init(Application.streamingAssetsPath, 50);
         MapData.instance.LowestHeight = TextureManager.instance.Settings.minHeight;
         MapData.instance.HighestHeight = TextureManager.instance.Settings.maxHeight;
 
@@ -114,13 +114,14 @@ public partial class Map : MonoBehaviour
         centerScreenWorldPosition = new Vector2(0.5f, 0.5f);
         UpdateMenuFields();
         UpdateRecentWorldsPanel();
+        RepositionRecentWorldsPanel();
         UpdateSurfaceMaterialProperties(false);
-        InstantiateComputeBuffers();
+        InstantiateComputeBuffers(TextureManager.instance.Settings.textureWidth);
 
         if (!LoadTerrainTransformations())
         {
-            GenerateHeightMap();
-            HeightMap2Texture();
+            GenerateHeightMap(TextureManager.instance.Settings.textureWidth);
+            HeightMap2Texture(TextureManager.instance.Settings.textureWidth);
             //GenerateEquirectangularNoiseTexture();
             isEroded = true;
             UpdateSurfaceMaterialHeightMap();
@@ -631,6 +632,7 @@ public partial class Map : MonoBehaviour
             MapData.instance.Save(savedFile);
             AppData.instance.Save();
             UpdateRecentWorldsPanel();
+            UpodateRecentWorldsOriginalPosition();
         }
 
         EventSystem eventSystem = cameraController.eventSystemObject.GetComponent<EventSystem>();
@@ -676,6 +678,7 @@ public partial class Map : MonoBehaviour
             UpdateMenuFields();
             AppData.instance.AddRecentWorld(openFile);
             UpdateRecentWorldsPanel();
+            UpodateRecentWorldsOriginalPosition();
             return true;
         }
         return false;
@@ -820,7 +823,7 @@ public partial class Map : MonoBehaviour
 
     public float HeightAtCoordinates(Vector2 uv)
     {
-        GenerateHeightMap();
+        GenerateHeightMap(TextureManager.instance.Settings.textureWidth);
 
         float nextX = uv.x + 1 / TextureManager.instance.Settings.textureWidth;
         if (nextX >= 1) nextX -= 1.0f;
@@ -901,7 +904,7 @@ public partial class Map : MonoBehaviour
 
         if (updateMaterial)
         {
-            HeightMap2Texture();
+            HeightMap2Texture(TextureManager.instance.Settings.textureWidth);
             isEroded = true;
             UpdateSurfaceMaterialHeightMap();
         }

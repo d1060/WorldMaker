@@ -100,7 +100,7 @@ public class MapWaypoint : Pathfinding.Node
     {
         Vector3 pointInUnitySphere = position - controller.map.geoSphere.transform.position;
         pointInUnitySphere.Normalize();
-        geospherePoint = GranuralizedGeoSphere.instance.GetClosestPointTo(pointInUnitySphere);
+        geospherePoint = GranuralizedGeoSphere.instance.GetClosestPointTo(pointInUnitySphere.ToVector3f());
     }
 
     public void CreateLengthLabel(float length, Vector3 position, Vector3 forward, Vector3 up, Map map, Camera cam, bool isInGlobe)
@@ -139,8 +139,8 @@ public class MapWaypoint : Pathfinding.Node
         distanceLabel.minOutlineThicknessDistance = 0.5f;
         distanceLabel.maxDistanceAlphaZero = 1.1f;
         distanceLabel.minDistanceAlphaZero = 1;
-        distanceLabel.maxDistanceAlpha = 0.5f;
-        distanceLabel.minDistanceAlpha = 0.05f;
+        distanceLabel.maxDistanceAlpha = 0;
+        distanceLabel.minDistanceAlpha = 0;
         distanceLabel.maxSize = 1.2f;
         distanceLabel.minSize = 0.1f;
         distanceLabel.isInGlobe = isInGlobe;
@@ -160,7 +160,7 @@ public class MapWaypoint : Pathfinding.Node
                 GeoSpherePoint geoSpherePoint = GranuralizedGeoSphere.instance.GetPoint(pointIndex);
                 if (geoSpherePoint != null)
                 {
-                    Vector3 waypointPosition = geoSpherePoint.AsVector3();
+                    Vector3 waypointPosition = geoSpherePoint.AsVector3().ToVector3();
                     float height = controller.GetObjectHeightInUnityGlobe(waypointPosition);
                     //if (height < controller.map.WaterLevel)
                     //    height = controller.map.WaterLevel;

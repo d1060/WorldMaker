@@ -1,5 +1,4 @@
 ﻿using System;
-using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,49 +8,49 @@ public class Octodecahedron
 {
     public static readonly int baseFacesCount = 80;
 
-    public static readonly Vector3[] vertices = new Vector3[] {
-            new Vector3(-0.4472136f, 0.8506508f, -0.2763932f),
-            new Vector3(-0.5257311f, 0.8090169f, 0.2628656f),
-            new Vector3(0f, 1f, 0f),                                //
-            new Vector3(-0.4472136f, 0.5257311f, 0.7236068f),
-            new Vector3(0f, 0.8090169f, 0.5877853f),
-            new Vector3(0.4472136f, 0.8506508f, 0.2763932f),
-            new Vector3(0.5257311f, 0.8090169f, -0.2628656f),
-            new Vector3(0.4472136f, 0.5257311f, -0.7236068f),
-            new Vector3(0f, 0.8090169f, -0.5877853f),
-            new Vector3(0.8506508f, 0.5f, 0.1624598f),
-            new Vector3(1f, 0f, 0f),
-            new Vector3(0.8506508f, 0.309017f, -0.4253253f),
-            new Vector3(0.525731f, 0.5f, 0.6881909f),
-            new Vector3(0.4472136f, 0f, 0.8944272f),
-            new Vector3(0.8506508f, 0f, 0.5257311f),
-            new Vector3(-1f, 0f, 0f),
-            new Vector3(-0.8506508f, 0.5f, -0.1624598f),
-            new Vector3(-0.8506508f, 0f, -0.5257311f),
-            new Vector3(-0.525731f, 0.5f, -0.6881909f),
-            new Vector3(-0.4472136f, 0f, -0.8944272f),
-            new Vector3(-0.8506508f, 0.309017f, 0.4253253f),
-            new Vector3(-0.8506508f, -0.309017f, 0.4253253f),
-            new Vector3(-0.4472136f, -0.5257311f, 0.7236068f),
-            new Vector3(-0.5257311f, 0f, 0.8506508f),
-            new Vector3(-0f, 0.309017f, -0.9510564f),
-            new Vector3(0f, 0.309017f, 0.9510564f),
-            new Vector3(0.5257311f, 0f, -0.8506508f),
-            new Vector3(0.4472136f, -0.5257311f, -0.7236068f),
-            new Vector3(-0f, -0.309017f, -0.9510564f),
-            new Vector3(0f, -0.309017f, 0.9510564f),
-            new Vector3(0.8506508f, -0.309017f, -0.4253253f),
-            new Vector3(0.8506508f, -0.5f, 0.1624598f),
-            new Vector3(0.4472136f, -0.8506508f, 0.2763932f),
-            new Vector3(0.5257311f, -0.8090169f, -0.2628656f),
-            new Vector3(0.525731f, -0.5f, 0.6881909f),
-            new Vector3(0f, -0.8090169f, 0.5877853f),
-            new Vector3(-0.8506508f, -0.5f, -0.1624598f),
-            new Vector3(-0.525731f, -0.5f, -0.6881909f),
-            new Vector3(-0.4472136f, -0.8506508f, -0.2763932f),
-            new Vector3(-0.5257311f, -0.8090169f, 0.2628656f),
-            new Vector3(0f, -1f, 0f),                                 //
-            new Vector3(0f, -0.8090169f, -0.5877853f)
+    public static readonly Vector3f[] vertices = new Vector3f[] {
+            new Vector3f(-0.4472136f, 0.8506508f, -0.2763932f),
+            new Vector3f(-0.5257311f, 0.8090169f, 0.2628656f),
+            new Vector3f(0f, 1f, 0f),                                //
+            new Vector3f(-0.4472136f, 0.5257311f, 0.7236068f),
+            new Vector3f(0f, 0.8090169f, 0.5877853f),
+            new Vector3f(0.4472136f, 0.8506508f, 0.2763932f),
+            new Vector3f(0.5257311f, 0.8090169f, -0.2628656f),
+            new Vector3f(0.4472136f, 0.5257311f, -0.7236068f),
+            new Vector3f(0f, 0.8090169f, -0.5877853f),
+            new Vector3f(0.8506508f, 0.5f, 0.1624598f),
+            new Vector3f(1f, 0f, 0f),
+            new Vector3f(0.8506508f, 0.309017f, -0.4253253f),
+            new Vector3f(0.525731f, 0.5f, 0.6881909f),
+            new Vector3f(0.4472136f, 0f, 0.8944272f),
+            new Vector3f(0.8506508f, 0f, 0.5257311f),
+            new Vector3f(-1f, 0f, 0f),
+            new Vector3f(-0.8506508f, 0.5f, -0.1624598f),
+            new Vector3f(-0.8506508f, 0f, -0.5257311f),
+            new Vector3f(-0.525731f, 0.5f, -0.6881909f),
+            new Vector3f(-0.4472136f, 0f, -0.8944272f),
+            new Vector3f(-0.8506508f, 0.309017f, 0.4253253f),
+            new Vector3f(-0.8506508f, -0.309017f, 0.4253253f),
+            new Vector3f(-0.4472136f, -0.5257311f, 0.7236068f),
+            new Vector3f(-0.5257311f, 0f, 0.8506508f),
+            new Vector3f(-0f, 0.309017f, -0.9510564f),
+            new Vector3f(0f, 0.309017f, 0.9510564f),
+            new Vector3f(0.5257311f, 0f, -0.8506508f),
+            new Vector3f(0.4472136f, -0.5257311f, -0.7236068f),
+            new Vector3f(-0f, -0.309017f, -0.9510564f),
+            new Vector3f(0f, -0.309017f, 0.9510564f),
+            new Vector3f(0.8506508f, -0.309017f, -0.4253253f),
+            new Vector3f(0.8506508f, -0.5f, 0.1624598f),
+            new Vector3f(0.4472136f, -0.8506508f, 0.2763932f),
+            new Vector3f(0.5257311f, -0.8090169f, -0.2628656f),
+            new Vector3f(0.525731f, -0.5f, 0.6881909f),
+            new Vector3f(0f, -0.8090169f, 0.5877853f),
+            new Vector3f(-0.8506508f, -0.5f, -0.1624598f),
+            new Vector3f(-0.525731f, -0.5f, -0.6881909f),
+            new Vector3f(-0.4472136f, -0.8506508f, -0.2763932f),
+            new Vector3f(-0.5257311f, -0.8090169f, 0.2628656f),
+            new Vector3f(0f, -1f, 0f),                                 //
+            new Vector3f(0f, -0.8090169f, -0.5877853f)
         };
 
     public static readonly int[] triangles = new int[] {

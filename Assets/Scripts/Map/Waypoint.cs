@@ -48,13 +48,6 @@ public class Waypoint
             pathGameObject.transform.position = map.geoSphere.transform.position;
             pathGameObject.transform.parent = map.geoSphere.transform;
 
-            currentDistance = -cameraController.transform.position.z;
-        }
-        else
-        {
-            pathGameObject.transform.position = map.transform.position;
-            pathGameObject.transform.parent = map.transform;
-
             Camera camera = cameraController.map.geoSphere.transform.GetComponentInChildren<Camera>();
             Vector3 positionVector = camera.transform.localPosition;
             currentDistance = positionVector.magnitude - cameraController.map.geoSphere.Radius;
@@ -63,11 +56,20 @@ public class Waypoint
             else if (currentDistance > CameraController.MaxCameraDistance)
                 currentDistance = CameraController.MaxCameraDistance;
         }
+        else
+        {
+            pathGameObject.transform.position = map.transform.position;
+            pathGameObject.transform.parent = map.transform;
+
+            currentDistance = -cameraController.transform.position.z;
+        }
         LineRenderer lineRenderer = pathGameObject.AddComponent<LineRenderer>();
         lineRenderer.materials = new Material[] { map.pathMaterial };
         lineRenderer.startColor = new Color(1, 1, 1, 1);
         lineRenderer.endColor = new Color(1, 1, 1, 1);
         lineRenderer.useWorldSpace = false;
+        float multiplierRatio = ((currentDistance - CameraController.MinCameraDistance) / (CameraController.MaxCameraDistance - CameraController.MinCameraDistance));
+        lineRenderer.widthMultiplier = multiplierRatio;
         int positionsCount = path.Count + (index > 0 ? 1 : 0);
         Vector3[] linePositions = new Vector3[positionsCount];
         int i = 0;
@@ -134,9 +136,6 @@ public class Waypoint
         }
         lineRenderer.positionCount = linePositions.Length;
         lineRenderer.SetPositions(linePositions);
-
-        float multiplierRatio = ((currentDistance - CameraController.MinCameraDistance) / (CameraController.MaxCameraDistance - CameraController.MinCameraDistance));
-        lineRenderer.widthMultiplier = multiplierRatio;
 
         if (isGlobe)
         {

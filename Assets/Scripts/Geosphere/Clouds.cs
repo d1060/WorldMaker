@@ -30,7 +30,7 @@ public class Clouds : MonoBehaviour
         float xzRotation = speed * (Random.value + 1) / divisionFactor;
         transform.Rotate(Vector3.down, xzRotation);
 
-        float xyRotation = speed2 * Random.value / (divisionFactor * 2) - (1 / (divisionFactor * 4));
+        float xyRotation = speed2 * (Random.value / (divisionFactor * 2) - (1 / (divisionFactor * 4)));
         transform.Rotate(Vector3.forward, xyRotation);
 
         if (CurrentDistance != prevDistance)

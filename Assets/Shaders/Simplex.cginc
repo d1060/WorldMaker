@@ -182,8 +182,7 @@ float fbm(float3 coords, float3 offset, int seed, float multiplier, int octaves,
     float val = 0;
     for (int n = 0; n < octaves; n++)
     {
-        float noiseValue = 0;
-        noiseValue = simplexNoise(coords, seed); // 3D Simplex Noise ranges from -Sqrt(3/4) to +Sqrt(3/4)
+        float noiseValue = simplexNoise(coords, seed); // 3D Simplex Noise ranges from -Sqrt(3/4) to +Sqrt(3/4)
 
         if (ridged > 0)
             noiseValue = 1 - abs(noiseValue);
@@ -206,6 +205,19 @@ float fbm(float3 coords, float3 offset, int seed, float multiplier, int octaves,
     return val;
 }
 
+float minMaxAdjust(float value, float min, float max)
+{
+	if (value <= min)
+		value = 0;
+	else if (value >= max)
+		value = 1;
+	else if (value > min && value < max)
+	{
+		value = (value - min) / (max - min);
+	}
+	return value;
+}
+
 float sphereNoise(float2 coords, float3 offset, int seed, float multiplier, int octaves, float lacunarity, float persistence, int ridged, float domainWarping, float minHeight, float maxHeight)
 {
     float3 sphereCoords = UvToSphere(coords) + 1;
@@ -221,9 +233,9 @@ float sphereNoise(float2 coords, float3 offset, int seed, float multiplier, int 
 		float qCoordsY = fbm(sphereCoords + sphereCoordsOffset2, offset, seed, multiplier, octaves, lacunarity, persistence, ridged);
 		float qCoordsZ = fbm(sphereCoords + sphereCoordsOffset3, offset, seed, multiplier, octaves, lacunarity, persistence, ridged);
 
-		qCoordsX = (qCoordsX - minHeight) / (maxHeight - minHeight);
-		qCoordsY = (qCoordsY - minHeight) / (maxHeight - minHeight);
-		qCoordsZ = (qCoordsZ - minHeight) / (maxHeight - minHeight);
+		qCoordsX = minMaxAdjust(qCoordsX, minHeight, maxHeight);
+		qCoordsY = minMaxAdjust(qCoordsY, minHeight, maxHeight);
+		qCoordsZ = minMaxAdjust(qCoordsZ, minHeight, maxHeight);
 
 		float3 qCoords = float3(qCoordsX, qCoordsY, qCoordsZ);
 
@@ -249,7 +261,7 @@ float sphereNoise(float2 coords, float3 offset, int seed, float multiplier, int 
 		noiseValue = fbm(sphereCoords, offset, seed, multiplier, octaves, lacunarity, persistence, ridged);
 	}
 
-	noiseValue = (noiseValue - minHeight) / (maxHeight - minHeight);
+	noiseValue = minMaxAdjust(noiseValue, minHeight, maxHeight);
 
     return noiseValue;
 }

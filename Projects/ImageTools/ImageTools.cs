@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
-using UnityEngine;
 using System.Drawing;
 using System.Drawing.Imaging;
 
@@ -69,13 +68,13 @@ public partial class ImageTools
                 for (int x = 0; x < 2 * width; x++)
                 {
                     float u = (float)(2 * width - x - 1) / (2 * width);
-                    Vector2 uv = new Vector2(u, v);
-                    Vector3 cartesian = uv.PolarRatioToCartesian(1);
-                    Vector3 cubemap = cartesian.CartesianToCubemap();
+                    Vector2f uv = new Vector2f(u, v);
+                    Vector3f cartesian = uv.PolarRatioToCartesian(1);
+                    Vector3f cubemap = cartesian.CartesianToCubemap();
                     cubemap.x *= width;
                     cubemap.y *= width;
 
-                    int cubemapIndex = (int)(Mathf.Floor(cubemap.x) + cubemap.z * width + Mathf.Floor(cubemap.y) * 6 * width);
+                    int cubemapIndex = (int)(Math.Floor(cubemap.x) + cubemap.z * width + Math.Floor(cubemap.y) * 6 * width);
                     int colorIndex = (x + (width - y - 1) * 2 * width) * 3;
                     float value = 0;
                     if (cubemapIndex >= 0 && cubemapIndex < floatArray.Length)

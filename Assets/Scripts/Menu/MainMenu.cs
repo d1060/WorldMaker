@@ -13,30 +13,27 @@ public class MainMenu : MonoBehaviour
     public GameObject[] extraMenus;
     Vector3 startingPosition;
     Vector3[] extraMenusStartingPositions;
-    public float xDelta;
-    float shiftDelta = 0;
     bool shifting = false;
     bool shifted = false;
-    Vector3 currentPosition;
     float currentShift = 0;
     float shiftStep = 0.1f;
     public MainMenuShiftEvent ShiftIn;
     public MainMenuShiftEvent ShiftOut;
+    Vector3 finalPosition;
 
     // Start is called before the first frame update
     void Start()
     {
-        currentPosition = subMenu.transform.position;
-
         RectTransform rectTransform = subMenu.GetComponent<RectTransform>();
         startingPosition = rectTransform.anchoredPosition3D;
 
         RectTransform baseRectTransform = GetComponent<RectTransform>();
 
-        float baseMenuX = baseRectTransform.anchoredPosition3D.x - baseRectTransform.localScale.x * baseRectTransform.rect.width / 2;
-        float startingMenuX = rectTransform.anchoredPosition3D.x - rectTransform.localScale.x * rectTransform.rect.width / 2;
+        float baseMenuX = baseRectTransform.anchoredPosition3D.x;
+        float startingMenuX = rectTransform.anchoredPosition3D.x;
 
-        shiftDelta = (baseMenuX - startingMenuX) + xDelta;
+        float baseMenuY = baseRectTransform.anchoredPosition3D.y;
+        float startingMenuY = rectTransform.anchoredPosition3D.y;
 
         extraMenusStartingPositions = new Vector3[extraMenus != null ? extraMenus.Length : 0];
         if (extraMenus != null)
@@ -48,6 +45,8 @@ public class MainMenu : MonoBehaviour
                 extraMenusStartingPositions[i] = extraMenuRectTransform.anchoredPosition3D;
             }
         }
+
+        finalPosition = new Vector3(baseMenuX, baseMenuY - baseRectTransform.localScale.y * baseRectTransform.rect.height - 5, 1);
     }
 
     // Update is called once per frame
@@ -86,9 +85,10 @@ public class MainMenu : MonoBehaviour
             shifting = false;
             shifted = true;
         }
-        float positionX = (shiftDelta * actualCurrentShift) + startingPosition.x;
+        float positionX = (finalPosition.x * actualCurrentShift) + (startingPosition.x * (1 - actualCurrentShift));
+        float positionY = (finalPosition.y * actualCurrentShift) + (startingPosition.y * (1 - actualCurrentShift));
 
-        Vector3 newPosition = new Vector3(positionX, startingPosition.y, startingPosition.z);
+        Vector3 newPosition = new Vector3(positionX, positionY, startingPosition.z);
 
         RectTransform rectTransform = subMenu.GetComponent<RectTransform>();
         rectTransform.anchoredPosition3D = newPosition;
@@ -146,9 +146,10 @@ public class MainMenu : MonoBehaviour
             shifting = false;
             shifted = false;
         }
-        float positionX = (shiftDelta * actualCurrentShift) + startingPosition.x;
+        float positionX = (finalPosition.x * actualCurrentShift) + (startingPosition.x * (1 - actualCurrentShift));
+        float positionY = (finalPosition.y * actualCurrentShift) + (startingPosition.y * (1 - actualCurrentShift));
 
-        Vector3 newPosition = new Vector3(positionX, startingPosition.y, startingPosition.z);
+        Vector3 newPosition = new Vector3(positionX, positionY, startingPosition.z);
 
         RectTransform rectTransform = subMenu.GetComponent<RectTransform>();
         rectTransform.anchoredPosition3D = newPosition;
@@ -166,5 +167,11 @@ public class MainMenu : MonoBehaviour
                 extraMenuRectTransform.anchoredPosition3D = extraMenuNewPosition;
             }
         }
+    }
+
+    public Vector3 StartingPosition
+    {
+        get { return startingPosition; }
+        set { startingPosition = value; }
     }
 }

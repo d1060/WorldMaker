@@ -438,10 +438,14 @@ public class CameraController : MonoBehaviour
     void DoZoom(float zoomChange, Vector3 hitPoint)
     {
         zoomChange *= zoomSpeed;
-
         if (!map.ShowGlobe)
         {
             Vector3 zoomDirection = hitPoint - transform.position;
+            float distanceToMap = zoomDirection.magnitude;
+            float zoomChangeRatio = distanceToMap / maxCameraDistance;
+            if (zoomChangeRatio > 1) zoomChangeRatio = 1;
+            if (zoomChangeRatio < minCameraDistance / maxCameraDistance) zoomChangeRatio = minCameraDistance / maxCameraDistance;
+            zoomChange *= zoomChangeRatio;
 
             zoomDirection.Normalize();
             zoomDirection *= zoomChange;
