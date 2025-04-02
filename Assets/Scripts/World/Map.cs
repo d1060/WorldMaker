@@ -69,6 +69,7 @@ public partial class Map : MonoBehaviour
         totalPathLabel.enabled = false;
         Log.Reset();
         AppData.instance.Load();
+        ColorSchemes.instance.Load();
 
         if (mapSettings.Seed == -1)
         {

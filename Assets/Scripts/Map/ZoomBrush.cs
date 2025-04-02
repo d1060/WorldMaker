@@ -138,52 +138,6 @@ public class ZoomBrush : MonoBehaviour
         zoomCamMaterial.SetFloat("_HumidityExponent", MapData.instance.textureSettings.humidityExponent);
         zoomCamMaterial.SetFloat("_HumidityMultiplier", MapData.instance.textureSettings.humidityMultiplier);
 
-        int landColorSteps = TextureManager.instance.Settings.landColorStages.Length < TextureManager.instance.Settings.land1Color.Length ? TextureManager.instance.Settings.landColorStages.Length : TextureManager.instance.Settings.land1Color.Length;
-        if (landColorSteps > 8) landColorSteps = 8;
-        zoomCamMaterial.SetInt("_ColorSteps", landColorSteps);
-
-        for (int i = 1; i <= 8; i++)
-        {
-            float stage = 0;
-            Color color = Color.white;
-
-            if (i <= landColorSteps)
-            {
-                stage = TextureManager.instance.Settings.landColorStages[i - 1];
-                color = TextureManager.instance.Settings.land1Color[i - 1];
-            }
-            else
-            {
-                stage = TextureManager.instance.Settings.landColorStages[landColorSteps - 1];
-                color = TextureManager.instance.Settings.land1Color[landColorSteps - 1];
-            }
-            zoomCamMaterial.SetFloat("_ColorStep" + i, stage);
-            zoomCamMaterial.SetColor("_Color" + i, color);
-        }
-
-        int oceanColorSteps = TextureManager.instance.Settings.oceanStages.Length < TextureManager.instance.Settings.oceanColors.Length ? TextureManager.instance.Settings.oceanStages.Length : TextureManager.instance.Settings.oceanColors.Length;
-        if (oceanColorSteps > 4) oceanColorSteps = 4;
-        zoomCamMaterial.SetInt("_OceanColorSteps", oceanColorSteps);
-
-        for (int i = 1; i <= 4; i++)
-        {
-            float stage = 0;
-            Color color = Color.white;
-
-            if (i <= oceanColorSteps)
-            {
-                stage = TextureManager.instance.Settings.oceanStages[i - 1];
-                color = TextureManager.instance.Settings.oceanColors[i - 1];
-            }
-            else
-            {
-                stage = TextureManager.instance.Settings.oceanStages[oceanColorSteps - 1];
-                color = TextureManager.instance.Settings.oceanColors[oceanColorSteps - 1];
-            }
-            zoomCamMaterial.SetFloat("_OceanColorStep" + i, stage);
-            zoomCamMaterial.SetColor("_OceanColor" + i, color);
-        }
-
         zoomCamMaterial.SetFloat("_IceTemperatureThreshold1", TextureManager.instance.Settings.iceTemperatureThreshold);
         zoomCamMaterial.SetFloat("_IceTemperatureThreshold2", TextureManager.instance.Settings.iceTemperatureThreshold - TextureManager.instance.Settings.iceTransition);
         zoomCamMaterial.SetFloat("_DesertThreshold1", TextureManager.instance.Settings.desertThreshold);
@@ -214,6 +168,9 @@ public class ZoomBrush : MonoBehaviour
 
         zoomCamMaterial.SetTexture("_NoiseMap", noiseRT);
         zoomCamMaterial.SetInt("_IsNoiseMapSet", 1);
+
+        zoomCamMaterial.SetTexture("_LandColorsMap", ColorSchemes.instance.GetColorScheme(TextureManager.instance.Settings.landColorLabel, TextureManager.instance.Settings.landColorIndex).GetTexture());
+        zoomCamMaterial.SetTexture("_WaterColorsMap", ColorSchemes.instance.GetColorScheme(TextureManager.instance.Settings.waterColorLabel, TextureManager.instance.Settings.waterColorIndex).GetTexture());
     }
 
     public void SetRadius(float radius)

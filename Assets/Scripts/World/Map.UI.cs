@@ -1625,15 +1625,11 @@ public partial class Map : MonoBehaviour
 
     public void OnLandGradientChanged(GradientSlider gradientSlider)
     {
-        TextureManager.instance.Settings.landColorStages = gradientSlider.Stages;
-        TextureManager.instance.Settings.land1Color = gradientSlider.Colors;
         UpdateSurfaceMaterialProperties();
     }
 
     public void OnOnceanGradientChanged(GradientSlider gradientSlider)
     {
-        TextureManager.instance.Settings.oceanStages = gradientSlider.Stages;
-        TextureManager.instance.Settings.oceanColors = gradientSlider.Colors;
         UpdateSurfaceMaterialProperties();
     }
 
@@ -1762,13 +1758,13 @@ public partial class Map : MonoBehaviour
             UpdateUIToggle(setupPanelTransform, "Toggle Keep Seed", AppData.instance.KeepSeedOnRegenerate);
             UpdateUIToggle(setupPanelTransform, "Toggle Auto Regenerate", AppData.instance.AutoRegenerate);
             UpdateUIToggle(setupPanelTransform, "Toggle Use Images", mapSettings.UseImages);
+            UpdateUIColorScheme(setupPanelTransform, "Land Colors", TextureManager.instance.Settings.landColorLabel, TextureManager.instance.Settings.landColorIndex);
+            UpdateUIColorScheme(setupPanelTransform, "Water Colors", TextureManager.instance.Settings.waterColorLabel, TextureManager.instance.Settings.waterColorIndex);
 
             if (TextureManager.instance.Settings.SelectedLayer == 1)
                 SelectButton(setupPanelTransform, "Button Layer 1");
             else
                 SelectButton(setupPanelTransform, "Button Layer 2");
-
-            UpdateUIGradientSlider(gradientPanelTransform, TextureManager.instance.Settings.landColorStages, TextureManager.instance.Settings.land1Color, TextureManager.instance.Settings.oceanStages, TextureManager.instance.Settings.oceanColors);
         }
 
         UpdateNoiseLayerFields();
@@ -2136,6 +2132,11 @@ public partial class Map : MonoBehaviour
             return;
 
         toggle.isOn = toggleValue;
+    }
+
+    void UpdateUIColorScheme(Transform panelTransform, string fieldName, string colorSchemeLabel, int colorSchemeIndex)
+    {
+
     }
 
     private void UpdateUIElementActive(Transform panelTransform, string elementName, bool active)

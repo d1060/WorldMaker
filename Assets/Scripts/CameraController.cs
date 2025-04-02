@@ -47,6 +47,8 @@ public class CameraController : MonoBehaviour
     public TMP_InputField worldNameText;
     public float smoothTime = 0.1f;
     private Vector3 velocity = Vector3.zero;
+    bool prevMouseLeftButtonDown = false;
+    bool prevMouseRightButtonDown = false;
 
     double visibleLowerLongitude = 0;
     double visibleUpperLongitude = 1;
@@ -159,15 +161,25 @@ public class CameraController : MonoBehaviour
             yAxisMovement = lastYAxisMovement;
         }
 
-        bool isMouseButtonDown = false;
         bool isLeftMouseButtonDown = false;
+        bool isRightMouseButtonDown = false;
+
+        bool isLeftMouseButtonUp = false;
+        bool isRightMouseButtonUp = false;
+
         //bool isMouseButton2Down = false;
         if (Input.GetMouseButton(0))
-            isMouseButtonDown = true;
+            isLeftMouseButtonDown = true;
         //if (Input.GetMouseButton(1))
         //    isMouseButton2Down = true;
         if(Input.GetKeyDown(KeyCode.Mouse1))
-            isLeftMouseButtonDown = true;
+            isRightMouseButtonDown = true;
+
+        if (prevMouseLeftButtonDown && !isLeftMouseButtonDown) isLeftMouseButtonUp = true;
+        if (prevMouseRightButtonDown && !isRightMouseButtonDown) isRightMouseButtonDown = true;
+
+        prevMouseLeftButtonDown = isLeftMouseButtonDown;
+        prevMouseRightButtonDown = isRightMouseButtonDown;
 
         bool performZoom = true;
         if ((Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl)) && mouseWheel != 0)
@@ -195,7 +207,7 @@ public class CameraController : MonoBehaviour
         List<RaycastResult> graphicRaycastResults = new List<RaycastResult>();
         graphicRaycaster.Raycast(pointerEventData, graphicRaycastResults);
 
-        if (isMouseButtonDown)
+        if (isLeftMouseButtonDown)
         {
             bool isClickingContextMenu = false;
             foreach (RaycastResult raycastResult in graphicRaycastResults)
@@ -211,7 +223,7 @@ public class CameraController : MonoBehaviour
         }
 
         // Only moves camera if no UI element was pressed.
-        if (graphicRaycastResults.Count == 0 && !isLeftMouseButtonDown && (xAxisMovement != 0 || yAxisMovement != 0 || mouseWheel != 0))
+        if (graphicRaycastResults.Count == 0 && !isRightMouseButtonDown && (xAxisMovement != 0 || yAxisMovement != 0 || mouseWheel != 0))
         {
             //Debug.Log("Moving camera by " + xAxisMovement + " x " + yAxisMovement + " y" + " wheel " + mouseWheel);
             //Debug.Log("Moving camera to " + targetCameraPosition);
@@ -244,7 +256,7 @@ public class CameraController : MonoBehaviour
                 DoZoom(mouseWheel, isMapHit ? mapHit.point : planeHitPoint);
             }
 
-            if ((xAxisMovement != 0 || yAxisMovement != 0) && isMouseButtonDown && prevMousePosition.x != float.MinValue)
+            if ((xAxisMovement != 0 || yAxisMovement != 0) && isLeftMouseButtonDown && prevMousePosition.x != float.MinValue)
             {
                 //Debug.Log("Doing Pan.");
                 DoPan();
@@ -255,7 +267,7 @@ public class CameraController : MonoBehaviour
                 DoFixedPan(xAxisMovement * navigationSpeed, yAxisMovement * navigationSpeed);
             }
 
-            if (isMouseButtonDown)
+            if (isLeftMouseButtonDown)
             {
                 prevMousePosition = Input.mousePosition;
                 prevMapHit = mapHit;
@@ -268,7 +280,7 @@ public class CameraController : MonoBehaviour
         }
 
         // Context Menu Opening.
-        else if (graphicRaycastResults.Count == 0 && isLeftMouseButtonDown)
+        else if (graphicRaycastResults.Count == 0 && isRightMouseButtonDown)
         {
             if (!IsClickGoingToHitAWaypointMarker())
             {
@@ -286,6 +298,39 @@ public class CameraController : MonoBehaviour
             if (mouseWheel != 0)
             {
                 SliderMouseWheel(graphicRaycastResults[0], mouseWheel);
+            }
+            else if (isLeftMouseButtonUp)
+            {
+                foreach (RaycastResult raycastResult in graphicRaycastResults)
+                {
+                    if (raycastResult.gameObject != null)
+                    {
+                        ColorSchemeOption colorSchemeOption = raycastResult.gameObject.transform.GetComponent<ColorSchemeOption>();
+                        if (colorSchemeOption != null)
+                        {
+                            colorSchemeOption.OnMouseDown();
+                        }
+                    }
+                }
+            }
+            else if (Input.GetKey(KeyCode.Escape))
+            {
+                foreach (RaycastResult raycastResult in graphicRaycastResults)
+                {
+                    if (raycastResult.gameObject != null)
+                    {
+                        ColorSchemePanel colorSchemePanel = raycastResult.gameObject.transform.GetComponent<ColorSchemePanel>();
+                        if (colorSchemePanel != null)
+                        {
+                            colorSchemePanel.ReturnToOrigin();
+                        }
+                        MainMenu mainMenu = raycastResult.gameObject.transform.GetComponent<MainMenu>();
+                        if (mainMenu != null && mainMenu.IsOut)
+                        {
+                            mainMenu.ShiftMenu();
+                        }
+                    }
+                }
             }
         }
 

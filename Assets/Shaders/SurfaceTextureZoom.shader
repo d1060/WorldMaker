@@ -20,39 +20,13 @@ Shader "Noise/PlanetarySurfaceTextureZoom"
         _IsNoiseMapSet("Is Noise Texture Set", Int) = 0
         _ZoomHeightMap("Zoomed Heightmap", 2D) = "white" {}
         _IsZoomHeightMapSet("Is Zoom Height Map Set", Int) = 0
+		_LandColorsMap("Land Colors Map", 2D) = "black" {}
+		_WaterColorsMap("Water Colors Map", 2D) = "black" {}
 
         _Glossiness("Smoothness", Range(0,1)) = 1.0
         _Metallic("Metallicity", Range(0,1)) = 0.4
         _LandGlossiness("Land Smoothness", Range(0,1)) = 0.25
         _LandMetallic("Land Metallicity", Range(0,1)) = 0.1
-
-        _ColorSteps("Color Steps", Int) = 6
-        _ColorStep1("Color Step 1", Range(0, 1)) = 0.01
-        _Color1("Color 1", Color) = (0.69, 0.63, 0.43)
-        _ColorStep2("Color Step 2", Range(0, 1)) = 0.1
-        _Color2("Color 2", Color) = (0.5, 0.5, 0.27)
-        _ColorStep3("Color Step 3", Range(0, 1)) = 0.6
-        _Color3("Color 3", Color) = (0.2, 0.27, 0.03)
-        _ColorStep4("Color Step 4", Range(0, 1)) = 0.8
-        _Color4("Color 4", Color) = (0.53, 0.54, 0.36)
-        _ColorStep5("Color Step 5", Range(0, 1)) = 0.95
-        _Color5("Color 5", Color) = (0.45, 0.41, 0.32)
-        _ColorStep6("Color Step 6", Range(0, 1)) = 1.0
-        _Color6("Color 6", Color) = (0.95, 0.95, 0.95)
-        _ColorStep7("Color Step 7", Range(0, 1)) = 1.0
-        _Color7("Color 7", Color) = (0.95, 0.95, 0.95)
-        _ColorStep8("Color Step 8", Range(0, 1)) = 1.0
-        _Color8("Color 8", Color) = (0.95, 0.95, 0.95)
-
-        _OceanColorSteps("OceanColor Steps", Int) = 3
-        _OceanColorStep1("Ocean Color Step 1", Range(0, 1)) = 0
-        _OceanColor1("Ocean Color 1", Color) = (0.25, 0.33, 0.39)
-        _OceanColorStep2("Ocean Color Step 2", Range(0, 1)) = 0.5
-        _OceanColor2("Ocean Color 2", Color) = (0.19, 0.21, 0.29)
-        _OceanColorStep3("Ocean Color Step 3", Range(0, 1)) = 1
-        _OceanColor3("Ocean Color 3", Color) = (0.19, 0.2, 0.27)
-        _OceanColorStep4("Ocean Color Step 4", Range(0, 1)) = 1
-        _OceanColor4("Ocean Color 4", Color) = (0.19, 0.2, 0.27)
 
         _IceTemperatureThreshold1("Ice Threshold 1", Float) = 0
         _IceTemperatureThreshold2("Ice Threshold 2", Float) = -10
@@ -122,6 +96,8 @@ Shader "Noise/PlanetarySurfaceTextureZoom"
         int _IsNoiseMapSet;
         sampler2D_float _ZoomHeightMap;
         int _IsZoomHeightMapSet;
+		sampler2D_float _LandColorsMap;
+		sampler2D_float _WaterColorsMap;
 
         struct Input
         {
@@ -136,31 +112,6 @@ Shader "Noise/PlanetarySurfaceTextureZoom"
         half _LandMetallic;
 
         float _WaterLevel;
-        float _ColorStep1;
-        fixed4 _Color1;
-        float _ColorStep2;
-        fixed4 _Color2;
-        float _ColorStep3;
-        fixed4 _Color3;
-        float _ColorStep4;
-        fixed4 _Color4;
-        float _ColorStep5;
-        fixed4 _Color5;
-        float _ColorStep6;
-        fixed4 _Color6;
-        float _ColorStep7;
-        fixed4 _Color7;
-        float _ColorStep8;
-        fixed4 _Color8;
-
-        float _OceanColorStep1;
-        fixed4 _OceanColor1;
-        float _OceanColorStep2;
-        fixed4 _OceanColor2;
-        float _OceanColorStep3;
-        fixed4 _OceanColor3;
-        float _OceanColorStep4;
-        fixed4 _OceanColor4;
 
         float _IceTemperatureThreshold1;
         float _IceTemperatureThreshold2;
@@ -244,6 +195,56 @@ Shader "Noise/PlanetarySurfaceTextureZoom"
 
             return SphereToUv(rotated);
         }
+
+		float4 colorAtElevation(float height, float temperature, float humidity, int isAboveWater)
+		{
+			float4 color = float4(0, 0, 0, 0);
+
+			if (height > _WaterLevel)
+			{
+				float overlandHeight = 1 - (height - _WaterLevel) / (1 - _WaterLevel);
+				float2 colorPickerUV = float2(overlandHeight, 0.5);
+				color = tex2D(_LandColorsMap, colorPickerUV);
+
+
+				float desertRate = 0;
+				float desertTendency = temperature * (1 - humidity);
+
+				if (desertTendency >= _DesertThreshold2)
+					color = _DesertColor;
+				else
+				{
+					if (desertTendency >= _DesertThreshold1 && desertTendency < _DesertThreshold2)
+						desertRate = (desertTendency - _DesertThreshold1) / (_DesertThreshold2 - _DesertThreshold1);
+
+					if (desertRate > 0)
+					{
+						float humidityLightness = (1 - _HighHumidityLightnessPercentage * (1 - humidity) * (1 - desertRate));
+						color *= humidityLightness;
+						color = interpolateColor(desertRate, _DesertColor, color);
+					}
+					else
+					{
+						float humidityLightness = (1 - _HighHumidityLightnessPercentage * (1 - humidity));
+						color *= humidityLightness;
+					}
+				}
+			}
+			else
+			{
+				float oceanHeight = 1 - (height / _WaterLevel);
+				float2 colorPickerUV = float2(oceanHeight, 0.5);
+				color = tex2D(_WaterColorsMap, colorPickerUV);
+			}
+
+			if (temperature < _IceTemperatureThreshold1)
+			{
+				float temperatureRatio = (_IceTemperatureThreshold1 - temperature) / (_IceTemperatureThreshold1 - _IceTemperatureThreshold2);
+				if (temperatureRatio > 1) temperatureRatio = 1;
+				color = (_IceColor - color) * temperatureRatio + color;
+			}
+			return color;
+		}
 
         void surf(Input IN, inout SurfaceOutputStandard o)
         {
@@ -555,13 +556,7 @@ Shader "Noise/PlanetarySurfaceTextureZoom"
                             }
                             else
                             {
-                                color = colorAtElevation(height, _WaterLevel, temperature, humidity,
-                                    _IceTemperatureThreshold1, _IceTemperatureThreshold2,
-                                    _DesertThreshold1, _DesertThreshold2,
-                                    _HighHumidityLightnessPercentage, _IceColor, _DesertColor,
-                                    _IsLandmaskSet, isAboveWater,
-                                    _ColorStep1, _Color1, _ColorStep2, _Color2, _ColorStep3, _Color3, _ColorStep4, _Color4, _ColorStep5, _Color5, _ColorStep6, _Color6, _ColorStep7, _Color7, _ColorStep8, _Color8,
-                                    _OceanColorStep1, _OceanColor1, _OceanColorStep2, _OceanColor2, _OceanColorStep3, _OceanColor3, _OceanColorStep4, _OceanColor4);
+								color = colorAtElevation(height, temperature, humidity, isAboveWater);
 
                                 if (flowColor.a > 0 && isAboveWater)
                                 {

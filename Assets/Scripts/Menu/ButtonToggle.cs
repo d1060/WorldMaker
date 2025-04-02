@@ -12,9 +12,12 @@ public class ButtonToggle : MonoBehaviour
     public Sprite disabledSprite;
     public Map map;
     public ToggleButtonEvent OnToggle;
+    public ToggleButtonEventWithSender OnToggleWithSender;
+    public ToggleButtonEventWithString OnToggleWithString;
     public bool activeIfDisabled = true;
     public GameObject hintPanel = null;
     public GameObject[] objectsToHideWhenEnabled;
+    public string stringData;
 
     // Start is called before the first frame update
     void Start()
@@ -60,6 +63,8 @@ public class ButtonToggle : MonoBehaviour
                 }
             }
             OnToggle?.Invoke(isEnabled);
+            OnToggleWithSender?.Invoke(transform);
+            OnToggleWithString?.Invoke(stringData);
         }
     }
 
@@ -102,3 +107,9 @@ public class ButtonToggle : MonoBehaviour
 
 [Serializable]
 public class ToggleButtonEvent : UnityEvent<bool> { }
+
+[Serializable]
+public class ToggleButtonEventWithSender : UnityEvent<Transform> { }
+
+[Serializable]
+public class ToggleButtonEventWithString : UnityEvent<string> { }

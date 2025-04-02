@@ -9,6 +9,13 @@ public class MainMenuShiftEvent : UnityEvent { }
 
 public class MainMenu : MonoBehaviour
 {
+    public enum REST_TYPE
+    {
+        DOWN,
+        RIGHT,
+        RIGHT_AFTER_PARENT
+    }
+
     public GameObject subMenu;
     public GameObject[] extraMenus;
     Vector3 startingPosition;
@@ -20,6 +27,11 @@ public class MainMenu : MonoBehaviour
     public MainMenuShiftEvent ShiftIn;
     public MainMenuShiftEvent ShiftOut;
     Vector3 finalPosition;
+    public REST_TYPE restType = REST_TYPE.DOWN;
+
+    public bool IsOut { get { return currentShift == 1; } }
+    public bool IsIn { get { return currentShift == 0; } }
+    public bool IsShifting { get { return currentShift != 0 && currentShift != 1; } }
 
     // Start is called before the first frame update
     void Start()
@@ -46,7 +58,15 @@ public class MainMenu : MonoBehaviour
             }
         }
 
-        finalPosition = new Vector3(baseMenuX, baseMenuY - baseRectTransform.localScale.y * baseRectTransform.rect.height - 5, 1);
+        if (restType == REST_TYPE.DOWN)
+            finalPosition = new Vector3(baseMenuX, baseMenuY - baseRectTransform.localScale.y * baseRectTransform.rect.height - 5, 1);
+        else if (restType == REST_TYPE.RIGHT)
+            finalPosition = new Vector3(baseMenuX + baseRectTransform.localScale.x * baseRectTransform.rect.width + 5, baseMenuY, 1);
+        else if (restType == REST_TYPE.RIGHT_AFTER_PARENT)
+        {
+            RectTransform parentRectTransform = transform.parent.GetComponent<RectTransform>();
+            finalPosition = new Vector3(parentRectTransform.anchoredPosition.x + parentRectTransform.sizeDelta.x + 5, baseMenuY, 1);
+        }
     }
 
     // Update is called once per frame
@@ -129,6 +149,12 @@ public class MainMenu : MonoBehaviour
         foreach (ColorBox colorBox in colorBoxes)
         {
             colorBox.DestroyColorPicker();
+        }
+
+        ColorSchemePanel[] colorSchemePanels = transform.parent.GetComponentsInChildren<ColorSchemePanel>();
+        foreach (ColorSchemePanel colorSchemePanel in colorSchemePanels)
+        {
+            colorSchemePanel.ReturnToOrigin();
         }
 
         GradientSliderHandleColorBox[] gradientSliderHandleColorBoxes = subMenu.transform.GetComponentsInChildren<GradientSliderHandleColorBox>();

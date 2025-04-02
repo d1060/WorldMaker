@@ -677,4 +677,22 @@ public static partial class ExtensionMethods
     {
         return new Vector3(v.x, v.y, v.z);
     }
+
+    public static Color32 ReadBinary(this Color32 c, BinaryReader reader)
+    {
+        byte r = reader.ReadByte();
+        byte g = reader.ReadByte();
+        byte b = reader.ReadByte();
+        c.r = r;
+        c.g = g;
+        c.b = b;
+        return c;
+    }
+
+    public static void WriteBinary(this Color32 c, BinaryWriter writer)
+    {
+        writer.Write(c.r);
+        writer.Write(c.g);
+        writer.Write(c.b);
+    }
 }

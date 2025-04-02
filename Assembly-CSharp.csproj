@@ -86,6 +86,7 @@
     <Compile Include="Assets\Scripts\World\Map.cs" />
     <Compile Include="Assets\Shaders\SurfaceNoise.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\BoxSlider.cs" />
+    <Compile Include="Assets\Scripts\Menu\ColorSchemeBox.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorPickerControl.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_DigitValidator.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_FrameRateCounter.cs" />
@@ -121,6 +122,9 @@
     <Compile Include="Assets\StandaloneFileBrowser\StandaloneFileBrowserEditor.cs" />
     <Compile Include="Assets\Scripts\Map\Waypoint.cs" />
     <Compile Include="Assets\Scripts\Math\Utils.cs" />
+    <Compile Include="Assets\Scripts\Menu\ColorSchemeOption.cs" />
+    <Compile Include="Assets\Scripts\Menu\ColorSchemePanel.cs" />
+    <Compile Include="Assets\Scripts\ColorSchemes.cs" />
     <Compile Include="Assets\Scripts\Menu\GradientSliderHandleColorBox.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorValues.cs" />
     <Compile Include="Assets\Scripts\World\BrushController.cs" />
@@ -163,6 +167,7 @@
     <Compile Include="Assets\Scripts\Erosion\PlotRiversSettings.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextSelector_B.cs" />
     <Compile Include="Assets\Scripts\Texture\BMPLoader.cs" />
+    <Compile Include="Assets\ColorScheme.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\SkewTextExample.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\WarpTextExample.cs" />
     <Compile Include="Assets\Scripts\NameGenerator\NameGeneratorSyllabes.cs" />
@@ -244,7 +249,7 @@
     <None Include="Assets\Libraries\ImageTools.dll" />
     <None Include="Assets\Shaders\ComputeShaders\Heightmap2ZoomTexture.compute" />
     <None Include="Assets\StandaloneFileBrowser\Plugins\System.Windows.Forms.dll" />
-    <None Include="Assets\Shaders\SurfaceTexture.shader" />
+    <None Include="Assets\Shaders\PlanetarySurfaceTexture.shader" />
     <None Include="Assets\Shaders\ComputeShaders\LandMask.compute" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Mobile.shader" />

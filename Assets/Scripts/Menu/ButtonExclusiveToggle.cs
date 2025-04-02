@@ -10,6 +10,9 @@ public class ButtonExclusiveToggle : MonoBehaviour
     public Color colorDeselected;
     public bool isEnabled = false;
     public ToggleButtonEvent OnToggle;
+    public ToggleButtonEventWithSender OnToggleWithSender;
+    public ToggleButtonEventWithString OnToggleWithString;
+    public string data;
 
     // Start is called before the first frame update
     void Start()
@@ -47,6 +50,7 @@ public class ButtonExclusiveToggle : MonoBehaviour
                 buttonExclusiveToggle.Deselect();
             }
             OnToggle?.Invoke(isEnabled);
+            OnToggleWithString?.Invoke(data);
         }
     }
 

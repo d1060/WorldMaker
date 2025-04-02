@@ -51,6 +51,14 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _LancColorsMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _LandColorsMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _LandMask:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -79,6 +87,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _WaterColorsMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _AtmosphericFalloff: 0.5
@@ -95,7 +107,7 @@ Material:
     - _ColorSteps: 6
     - _Cutoff: 0.5
     - _DesertThreshold1: 10
-    - _DesertThreshold2: 20
+    - _DesertThreshold2: 17.5
     - _DetailNormalMapScale: 1
     - _DomainWarping: 1.32
     - _DomainWarping2: 0.97602046
@@ -116,11 +128,11 @@ Material:
     - _HeightmapWidth: 12084
     - _HighHumidityLightnessPercentage: 0.549
     - _HumidityExponent: 2.718281
-    - _HumidityMultiplier: 10
+    - _HumidityMultiplier: 11
     - _HumiditySeed: 113280.06
     - _IceLandNormalScale: 40
-    - _IceTemperatureThreshold1: 0
-    - _IceTemperatureThreshold2: -0.2
+    - _IceTemperatureThreshold1: -2
+    - _IceTemperatureThreshold2: -3.4
     - _IceWaterNormalScale: 30
     - _IsEroded: 0
     - _IsFlowTexSet: 0
@@ -136,14 +148,14 @@ Material:
     - _LayerStrength2: 0.7841857
     - _LightFalloff: 16.55
     - _LightIntensity: 1
-    - _MaxHeight: 0.7
+    - _MaxHeight: 0.65
     - _Metallic: 0
-    - _MinHeight: 0.15
+    - _MinHeight: 0.24
     - _Mode: 0
     - _Multiplier: 4.1
     - _Multiplier2: 2.4157
     - _NormalInfluence: 0
-    - _NormalScale: 50
+    - _NormalScale: 60.000183
     - _OcclusionStrength: 1
     - _OceanColorStep1: 0
     - _OceanColorStep2: 0.5
@@ -163,18 +175,18 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _SunDisk: 0.0065
-    - _TemperatureElevationRatio: 5
+    - _TemperatureElevationRatio: 16.5
     - _TemperatureExponent: 2.718281
     - _TemperatureLatitudeDrop: 0
-    - _TemperatureLatitudeMultiplier: 18
-    - _TemperatureRatio: 20.666666
+    - _TemperatureLatitudeMultiplier: 19
+    - _TemperatureRatio: 7.3333335
     - _TemperatureSeed: 852059.7
     - _TemperatureWaterDrop: 1
     - _TextureHeight: 256
     - _TextureWidth: 256
     - _UVSec: 0
-    - _UnderwaterNormalInfluence: 0
-    - _UnderwaterNormalScale: 30.000002
+    - _UnderwaterNormalInfluence: 0.417651
+    - _UnderwaterNormalScale: 65.88278
     - _WaterLevel: 0.45
     - _XOffset: 0.05
     - _XOffset2: 0.7527156

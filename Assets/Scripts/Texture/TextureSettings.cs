@@ -13,36 +13,10 @@ public class TextureSettings
     public float iceTemperatureThreshold = 0;
     public Color32 desertColor = new Color32(192, 226, 142, 255);
     public float desertThreshold = 10;
-    public Color32[] land1Color = new Color32[] 
-    {
-        new Color32(176, 163, 110, 255),
-        new Color32(130, 128, 69, 255),
-        new Color32(52, 70, 10, 255),
-        new Color32(135, 138, 93, 255),
-        new Color32(117, 105, 83, 255),
-        new Color32(244, 244, 244, 255)
-    };
-    public float[] landColorStages = new float[]
-    {
-        0.01f,
-        0.1f,
-        0.3f,
-        0.6f,
-        0.95f,
-        1.0f
-    };
-    public Color32[] oceanColors = new Color32[]
-    {
-        new Color32(64, 85, 100, 255),
-        new Color32(49, 54, 73, 255),
-        new Color32(50, 51, 71, 255)
-    };
-    public float[] oceanStages = new float[]
-    {
-        0.0f,
-        0.5f,
-        1.0f
-    };
+    public string landColorLabel = "Rock";
+    public int landColorIndex = 0;
+    public string waterColorLabel = "Water";
+    public int waterColorIndex = 0;
     public float[] zoomLevelDistances = new float[] { 200, 95, 47.5f, 23.75f, 11.875f, 5.9375f, float.MinValue };
     float[] textureSteps = null; // In Longitudes per pixel
 
@@ -106,40 +80,14 @@ public class TextureSettings
     public void Clear()
     {
         textureWidth = 512;
+        landColorLabel = "Rock";
+        landColorIndex = 0;
+        waterColorLabel = "Water";
+        waterColorIndex = 0;
         iceColor = new Color32(244, 244, 244, 255);
         iceTemperatureThreshold = 0;
         desertColor = new Color32(192, 226, 142, 255);
         desertThreshold = 10;
-        land1Color = new Color32[]
-        {
-            new Color32(176, 163, 110, 255),
-            new Color32(130, 128, 69, 255),
-            new Color32(52, 70, 10, 255),
-            new Color32(135, 138, 93, 255),
-            new Color32(117, 105, 83, 255),
-            new Color32(244, 244, 244, 255)
-        };
-        landColorStages = new float[]
-        {
-            0.01f,
-            0.1f,
-            0.3f,
-            0.6f,
-            0.95f,
-            1.0f
-        };
-        oceanColors = new Color32[]
-        {
-            new Color32(64, 85, 100, 255),
-            new Color32(49, 54, 73, 255),
-            new Color32(50, 51, 71, 255)
-        };
-        oceanStages = new float[]
-        {
-            0.0f,
-            0.5f,
-            1.0f
-        };
         zoomLevelDistances = new float[] { 200, 95, 47.5f, 23.75f, 11.875f, 5.9375f, float.MinValue };
         textureSteps = null;
 
@@ -159,6 +107,9 @@ public class TextureSettings
     {
         if (surfaceMaterial == null)
             return;
+
+        surfaceMaterial.SetTexture("_LandColorsMap", ColorSchemes.instance.GetColorScheme(landColorLabel, landColorIndex).GetTexture());
+        surfaceMaterial.SetTexture("_WaterColorsMap", ColorSchemes.instance.GetColorScheme(waterColorLabel, waterColorIndex).GetTexture());
 
         surfaceMaterial.SetFloat("_TextureWidth", textureWidth);
         surfaceMaterial.SetFloat("_TextureHeight", textureWidth);
@@ -211,52 +162,6 @@ public class TextureSettings
         surfaceMaterial.SetFloat("_TemperatureLatitudeDrop", MapData.instance.textureSettings.temperatureLatitudeDrop);
         surfaceMaterial.SetFloat("_HumidityExponent", MapData.instance.textureSettings.humidityExponent);
         surfaceMaterial.SetFloat("_HumidityMultiplier", MapData.instance.textureSettings.humidityMultiplier);
-
-        int landColorSteps = landColorStages.Length < land1Color.Length ? landColorStages.Length : land1Color.Length;
-        if (landColorSteps > 8) landColorSteps = 8;
-        surfaceMaterial.SetInt("_ColorSteps", landColorSteps);
-
-        for (int i = 1; i <= 8; i++)
-        {
-            float stage = 0;
-            Color color = Color.white;
-
-            if (i <= landColorSteps)
-            {
-                stage = landColorStages[i - 1];
-                color = land1Color[i - 1];
-            }
-            else
-            {
-                stage = landColorStages[landColorSteps - 1];
-                color = land1Color[landColorSteps - 1];
-            }
-            surfaceMaterial.SetFloat("_ColorStep" + i, stage);
-            surfaceMaterial.SetColor("_Color" + i, color);
-        }
-
-        int oceanColorSteps = oceanStages.Length < oceanColors.Length ? oceanStages.Length : oceanColors.Length;
-        if (oceanColorSteps > 4) oceanColorSteps = 4;
-        surfaceMaterial.SetInt("_OceanColorSteps", oceanColorSteps);
-
-        for (int i = 1; i <= 4; i++)
-        {
-            float stage = 0;
-            Color color = Color.white;
-
-            if (i <= oceanColorSteps)
-            {
-                stage = oceanStages[i - 1];
-                color = oceanColors[i - 1];
-            }
-            else
-            {
-                stage = oceanStages[oceanColorSteps - 1];
-                color = oceanColors[oceanColorSteps - 1];
-            }
-            surfaceMaterial.SetFloat("_OceanColorStep" + i, stage);
-            surfaceMaterial.SetColor("_OceanColor" + i, color);
-        }
 
         surfaceMaterial.SetFloat("_IceTemperatureThreshold1", iceTemperatureThreshold);
         surfaceMaterial.SetFloat("_IceTemperatureThreshold2", iceTemperatureThreshold - iceTransition);

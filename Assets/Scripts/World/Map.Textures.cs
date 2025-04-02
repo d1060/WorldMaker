@@ -461,7 +461,7 @@ public partial class Map : MonoBehaviour
         }
     }
 
-    void UpdateSurfaceMaterialProperties(bool resetEroded = true)
+    public void UpdateSurfaceMaterialProperties(bool resetEroded = true)
     {
         if (planetSurfaceMaterial == null)
             return;
