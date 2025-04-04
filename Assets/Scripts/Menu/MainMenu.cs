@@ -121,9 +121,15 @@ public class MainMenu : MonoBehaviour
                 otherMenu.ShiftMenuOut();
             }
         }
+
+        ColorSchemePanel[] colorSchemePanels = transform.parent.parent.GetComponentsInChildren<ColorSchemePanel>();
+        foreach (ColorSchemePanel colorSchemePanel in colorSchemePanels)
+        {
+            colorSchemePanel.ReturnToOrigin();
+        }
     }
 
-    void ShiftMenuOut()
+    public void ShiftMenuOut()
     {
         List<GameObject> children = new List<GameObject>();
         foreach (Transform child in transform)

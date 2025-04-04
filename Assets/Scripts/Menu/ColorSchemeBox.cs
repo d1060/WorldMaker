@@ -62,6 +62,16 @@ public class ColorSchemeBox : MonoBehaviour
         ColorSchemePanel colorSchemePanel = colorSchemePanelRectTransform.GetComponent<ColorSchemePanel>();
         colorSchemePanel.source = transform;
         colorSchemePanel.ActivateLabel(schemeLabel);
+
+        MainMenu[] otherSubMenus = transform.parent.GetComponentsInChildren<MainMenu>();
+        foreach (MainMenu otherMenu in otherSubMenus)
+        {
+            if (otherMenu != this)
+            {
+                otherMenu.ShiftMenu();
+                otherMenu.ShiftMenuOut();
+            }
+        }
     }
 
     public void SetColorScheme(int index, string label)

@@ -329,6 +329,11 @@ public class CameraController : MonoBehaviour
                         {
                             mainMenu.ShiftMenu();
                         }
+                        MainMenuPanel mainMenuPanel = raycastResult.gameObject.transform.GetComponent<MainMenuPanel>();
+                        if (mainMenuPanel != null && mainMenuPanel.parentMainMenu != null && mainMenuPanel.parentMainMenu.IsOut)
+                        {
+                            mainMenuPanel.parentMainMenu.ShiftMenu();
+                        }
                     }
                 }
             }

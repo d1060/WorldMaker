@@ -132,6 +132,7 @@
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorImage.cs" />
     <Compile Include="Assets\Scripts\Math\Cubemap.cs" />
     <Compile Include="Assets\Scripts\Geosphere\Clouds.cs" />
+    <Compile Include="Assets\Scripts\Menu\MainMenuPanel.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorSampler.cs" />
     <Compile Include="Assets\Scripts\Menu\MapSlider.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_ExampleScript_01.cs" />
