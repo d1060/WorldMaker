@@ -127,16 +127,34 @@ public class ColorSchemePanel : MonoBehaviour
 
         RectTransform parentRectTransform = colorSchemePanelTransform.GetComponent<RectTransform>();
 
+        string goName = "ColorScheme " + parentIndex + "." + index + " Panel";
+        GameObject gameObject = null;
+
+        foreach (Transform child in viewportContent)
+        {
+            if (child.gameObject.name == goName)
+            {
+                gameObject = child.gameObject;
+                break;
+            }
+        }
+
         int rowIndex = index / schemesPerRow;
         int columnIndex = index % schemesPerRow;
         float width = ((parentRectTransform.sizeDelta.x - schemesPadding - scrollBarWidth) / schemesPerRow) - schemesPadding;
         float positionX = (columnIndex + 1) * (width + schemesPadding) - width / 2;
         float positionY = schemesHeight / 2 - (rowIndex + 1) * (schemesHeight + schemesPadding);
 
-        GameObject gameObject = new GameObject("ColorScheme " + parentIndex + "." + index + " Panel");
-        gameObject.transform.parent = viewportContent;
+        if (gameObject == null)
+        {
+            gameObject = new GameObject("ColorScheme " + parentIndex + "." + index + " Panel");
+            gameObject.transform.SetParent(viewportContent);
+        }
 
-        RectTransform rectTransform = gameObject.AddComponent<RectTransform>();
+        RectTransform rectTransform = gameObject.GetComponent<RectTransform>();
+        if (rectTransform == null)
+            rectTransform = gameObject.AddComponent<RectTransform>();
+
         rectTransform.sizeDelta = new Vector2(width, schemesHeight);
         rectTransform.localScale = new Vector3(1, 1, 1);
         rectTransform.anchorMin = new Vector2(0, 1);
@@ -145,10 +163,16 @@ public class ColorSchemePanel : MonoBehaviour
         gameObject.transform.position = new Vector3(positionX, positionY, 0);
         gameObject.transform.localPosition = new Vector3(positionX, positionY, 0);
 
-        Image image = gameObject.AddComponent<Image>();
+        Image image = gameObject.GetComponent<Image>();
+        if (image == null)
+            image = gameObject.AddComponent<Image>();
+
         image.sprite = cs.GetSprite();
 
-        ColorSchemeOption colorSchemeOption = gameObject.AddComponent<ColorSchemeOption>();
+        ColorSchemeOption colorSchemeOption = gameObject.GetComponent<ColorSchemeOption>();
+        if (colorSchemeOption == null)
+            colorSchemeOption = gameObject.AddComponent<ColorSchemeOption>();
+
         colorSchemeOption.index = index;
         colorSchemeOption.groupIndex = parentIndex;
         colorSchemeOption.groupLabel = parentLabel;

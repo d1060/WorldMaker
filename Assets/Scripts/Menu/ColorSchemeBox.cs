@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
 public class ColorSchemeBox : MonoBehaviour
@@ -53,7 +54,7 @@ public class ColorSchemeBox : MonoBehaviour
 
     }
 
-    void OnMouseDown()
+    public void MouseDown(BaseEventData ed)
     {
         RectTransform rectTransform = GetComponent<RectTransform>();
         RectTransform parentRectTransform = transform.parent.GetComponent<RectTransform>();

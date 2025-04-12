@@ -85,6 +85,7 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ChatController.cs" />
     <Compile Include="Assets\Scripts\World\Map.cs" />
     <Compile Include="Assets\Shaders\SurfaceNoise.cs" />
+    <Compile Include="Assets\Scripts\Nodes\NodeTreePanel.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\BoxSlider.cs" />
     <Compile Include="Assets\Scripts\Menu\ColorSchemeBox.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorPickerControl.cs" />
@@ -103,9 +104,11 @@
     <Compile Include="Assets\Scripts\Menu\GradientSlider.cs" />
     <Compile Include="Assets\Scripts\Erosion\InciseFlow.cs" />
     <Compile Include="Assets\Scripts\Geosphere\GeoSphereBaseFaces.cs" />
+    <Compile Include="Assets\Scripts\Nodes\NodeContextMenu.cs" />
     <Compile Include="Assets\Scripts\Geosphere\GeoSphereSector.cs" />
     <Compile Include="Assets\Scripts\Erosion\HydraulicErosion.cs" />
     <Compile Include="Assets\Scripts\Menu\HideObjectsWhenEnabled.cs" />
+    <Compile Include="Assets\Scripts\Nodes\NodeInputType.cs" />
     <Compile Include="Assets\Scripts\Map\TerrainBrush.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorSlider.cs" />
     <Compile Include="Assets\Scripts\NameGenerator\NameGenerator.cs" />
@@ -131,6 +134,7 @@
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\HexColorField.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorImage.cs" />
     <Compile Include="Assets\Scripts\Math\Cubemap.cs" />
+    <Compile Include="Assets\Scripts\Nodes\NodeZoomablePanel.cs" />
     <Compile Include="Assets\Scripts\Geosphere\Clouds.cs" />
     <Compile Include="Assets\Scripts\Menu\MainMenuPanel.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorSampler.cs" />
@@ -145,6 +149,7 @@
     <Compile Include="Assets\Scripts\Menu\ContextMenu.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\TiltWindow.cs" />
     <Compile Include="Assets\Scripts\Erosion\PluvialErosion.cs" />
+    <Compile Include="Assets\Scripts\Nodes\Node.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ObjectSpin.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_PhoneNumberValidator.cs" />
     <Compile Include="Assets\Scripts\Map\WaypointSize.cs" />
@@ -178,10 +183,12 @@
     <Compile Include="Assets\StandaloneFileBrowser\StandaloneFileBrowserMac.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\SVBoxSlider.cs" />
     <Compile Include="Assets\Scripts\ExtensionMethods\ExtensionMethods.cs" />
+    <Compile Include="Assets\Scripts\Nodes\NodeContextButton.cs" />
     <Compile Include="Assets\Scripts\Menu\GradientSliderHandle.cs" />
     <Compile Include="Assets\Scripts\World\Map.Textures.cs" />
     <Compile Include="Assets\Scripts\Menu\MapName.cs" />
     <Compile Include="Assets\Scripts\CameraController.cs" />
+    <Compile Include="Assets\Scripts\Nodes\HorizontalDragArea.cs" />
     <Compile Include="Assets\com.unity.uiextensions\Runtime\Scripts\Controls\ColorPicker\ColorSliderImage.cs" />
     <Compile Include="Assets\Scripts\Map\MapSettings.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextInfoDebugTool.cs" />

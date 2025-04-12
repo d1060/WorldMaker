@@ -176,7 +176,7 @@ public class CameraController : MonoBehaviour
             isRightMouseButtonDown = true;
 
         if (prevMouseLeftButtonDown && !isLeftMouseButtonDown) isLeftMouseButtonUp = true;
-        if (prevMouseRightButtonDown && !isRightMouseButtonDown) isRightMouseButtonDown = true;
+        if (prevMouseRightButtonDown && !isRightMouseButtonDown) isRightMouseButtonUp = true;
 
         prevMouseLeftButtonDown = isLeftMouseButtonDown;
         prevMouseRightButtonDown = isRightMouseButtonDown;
@@ -298,6 +298,18 @@ public class CameraController : MonoBehaviour
             if (mouseWheel != 0)
             {
                 SliderMouseWheel(graphicRaycastResults[0], mouseWheel);
+
+                foreach (RaycastResult raycastResult in graphicRaycastResults)
+                {
+                    if (raycastResult.gameObject != null)
+                    {
+                        NodeTreePanel nodeTreePanel = raycastResult.gameObject.transform.GetComponent<NodeTreePanel>();
+                        if (nodeTreePanel != null)
+                        {
+                            nodeTreePanel.MouseWheel(mouseWheel);
+                        }
+                    }
+                }
             }
             else if (isLeftMouseButtonUp)
             {
@@ -309,6 +321,20 @@ public class CameraController : MonoBehaviour
                         if (colorSchemeOption != null)
                         {
                             colorSchemeOption.OnMouseDown();
+                        }
+                    }
+                }
+            }
+            else if (isRightMouseButtonUp)
+            {
+                foreach (RaycastResult raycastResult in graphicRaycastResults)
+                {
+                    if (raycastResult.gameObject != null)
+                    {
+                        NodeTreePanel nodeTreePanel = raycastResult.gameObject.transform.GetComponent<NodeTreePanel>();
+                        if (nodeTreePanel != null)
+                        {
+                            //nodeTreePanel.OpenContextMenu();
                         }
                     }
                 }
@@ -333,6 +359,12 @@ public class CameraController : MonoBehaviour
                         if (mainMenuPanel != null && mainMenuPanel.parentMainMenu != null && mainMenuPanel.parentMainMenu.IsOut)
                         {
                             mainMenuPanel.parentMainMenu.ShiftMenu();
+                        }
+
+                        NodeContextMenu nodeContextMenu = raycastResult.gameObject.transform.GetComponent<NodeContextMenu>();
+                        if (nodeContextMenu != null)
+                        {
+                            nodeContextMenu.Close();
                         }
                     }
                 }
